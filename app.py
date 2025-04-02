@@ -130,7 +130,7 @@ with tab1:
 
         rule_rows.append({
             "Rule Index": idx,
-            "Source": ", ".join(source_names), ".join(source_names), ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["srcCidr"].split(",")]),
+            "Source": ", ".join(source_names),
             "Destination": ", ".join(dest_names),
             "Source Port": rule.get("srcPort", ""),
             "Ports": rule["destPort"],
