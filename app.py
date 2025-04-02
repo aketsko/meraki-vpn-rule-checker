@@ -130,7 +130,7 @@ with tab1:
             "Matched ✅": matched_any,
             "Exact Match ✅": is_exact_match,
             "Partial Match 🔶": is_partial_match
-        }
+        })
 
     df = pd.DataFrame(rule_rows)
     df_to_show = df[df["Matched ✅"]] if filter_toggle else df
