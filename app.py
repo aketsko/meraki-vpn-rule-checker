@@ -108,7 +108,29 @@ with tab1:
         is_exact_match = idx == first_exact_match_index
         is_partial_match = matched_any and not is_exact_match
 
-        , ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["srcCidr"].split(",")]),
+        source_names = []
+        for cidr in rule["srcCidr"].split(","):
+            cidr = cidr.strip()
+            resolved = resolve_to_cidrs([cidr], object_map, group_map)
+            name = id_to_name(cidr, object_map, group_map)
+            if not skip_src_check and match_input_to_rule(resolved, source_ip):
+                source_names.append(f"<b>{name}</b>")
+            else:
+                source_names.append(name)
+
+        dest_names = []
+        for cidr in rule["destCidr"].split(","):
+            cidr = cidr.strip()
+            resolved = resolve_to_cidrs([cidr], object_map, group_map)
+            name = id_to_name(cidr, object_map, group_map)
+            if not skip_dst_check and match_input_to_rule(resolved, destination_ip):
+                dest_names.append(f"<b>{name}</b>")
+            else:
+                dest_names.append(name)
+
+        rule_rows.append({
+            "Rule Index": idx,
+            "Source": ", ".join(source_names),
             "Destination": ", ".join(dest_names),
             "Source Port": rule.get("srcPort", ""),
             "Ports": rule["destPort"],
