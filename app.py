@@ -134,8 +134,32 @@ with tab1:
 
     
 # Show interactive grid with filters
+
+# Define dynamic row styling for AG Grid
+def get_row_style(row):
+    if row["Exact Match ✅"]:
+        return {
+            "style": {
+                "backgroundColor": "limegreen" if row["Action"] == "ALLOW" else "crimson",
+                "color": "white"
+            }
+        }
+    elif row["Partial Match 🔶"]:
+        return {
+            "style": {
+                "backgroundColor": "lightgreen" if row["Action"] == "ALLOW" else "lightcoral"
+            }
+        }
+    return {"style": {}}
+
+row_styles = [get_row_style(row) for _, row in df_to_show.iterrows()]
+for i, s in enumerate(row_styles):
+    df_to_show.loc[i, '_rowStyle'] = s["style"]
+
+
 gb = GridOptionsBuilder.from_dataframe(df_to_show)
 gb.configure_default_column(filter=True, sortable=True, resizable=True)
+gb.configure_grid_options(getRowStyle=lambda params: params.data._rowStyle)
 grid_options = gb.build()
 
 AgGrid(
