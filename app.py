@@ -120,7 +120,7 @@ with tab1:
             "Destination": ", ".join(dest_names),
             "Ports": rule["destPort"],
             "Matched Ports": ", ".join(matched_ports_for_rule),
-            "Matched ✅": matched_any,
+#            "Matched ✅": matched_any,
             "Exact Match ✅": is_exact_match,
             "Partial Match 🔶": is_partial_match
         })
