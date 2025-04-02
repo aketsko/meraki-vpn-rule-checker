@@ -151,22 +151,22 @@ with tab1:
 
 gb = GridOptionsBuilder.from_dataframe(df_to_show)
 gb.configure_default_column(filter=True, sortable=True, resizable=True)
+column_defs = [
+    {"field": "Rule Index", "width": 100},
+    {"field": "Action", "width": 90},
+    {"field": "Protocol", "width": 100},
+    {"field": "Source", "width": 300},
+    {"field": "Destination", "width": 300},
+    {"field": "Source Port", "width": 130},
+    {"field": "Ports", "width": 130},
+    {"field": "Comment", "width": 350},
+    {"field": "Matched Ports", "width": 130},
+    {"field": "Matched ✅", "width": 100},
+    {"field": "Exact Match ✅", "width": 130},
+    {"field": "Partial Match 🔶", "width": 150}
+]
+gb.configure_columns(column_defs)
 
-    column_defs = [
-        {"field": "Rule Index", "width": 100},
-        {"field": "Action", "width": 90},
-        {"field": "Protocol", "width": 100},
-        {"field": "Source", "width": 300},
-        {"field": "Destination", "width": 300},
-        {"field": "Source Port", "width": 130},
-        {"field": "Ports", "width": 130},
-        {"field": "Comment", "width": 350},
-        {"field": "Matched Ports", "width": 130},
-        {"field": "Matched ✅", "width": 100},
-        {"field": "Exact Match ✅", "width": 130},
-        {"field": "Partial Match 🔶", "width": 150}
-    ]
-        gb.configure_columns(column_defs)
 
 
 """
