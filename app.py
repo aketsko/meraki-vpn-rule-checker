@@ -292,8 +292,7 @@ with tab1:
             return ['background-color: lightgreen' if row["Action"] == "ALLOW" else 'background-color: lightcoral' for _ in row]
         return ['' for _ in row]
 
-    st.dataframe(df_to_show.style.apply(highlight_row, axis=1), use_container_width=True)
-
+   st.dataframe(df_to_show.style.apply(highlight_row, axis=1), use_container_width=True, height=800)
 
 #-------------------------------------------------------------------------------------------------------------------------------------
 with tab2:
