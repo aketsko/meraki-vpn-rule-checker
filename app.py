@@ -269,6 +269,7 @@ with tab4:
             "FQDN": o.get("fqdn", ""),
             "Group IDs": o.get("groupIds", []),
             "Network IDs": o.get("networkIds", [])
+        })
     st.dataframe(safe_dataframe(object_rows))
 
     st.subheader("🔸 Matching Object Groups")
