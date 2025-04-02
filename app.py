@@ -217,7 +217,6 @@ with tab1:
 
     matched_ports = {}
     rule_match_ports = {}
-    exact_match_candidates = []
     found_partial_match = False
     first_exact_match_index = None
 
@@ -238,8 +237,15 @@ with tab1:
 
         full_match = src_match and dst_match and proto_match and port_match
 
-        exact_src = skip_src_check or is_exact_subnet_match(source_ip, resolved_src_cidrs)
-        exact_dst = skip_dst_check or is_exact_subnet_match(destination_ip, resolved_dst_cidrs)
+        # ✅ Exact match logic (updated)
+        exact_src = (
+            (skip_src_check and "Any" in rule["srcCidr"]) or
+            (not skip_src_check and is_exact_subnet_match(source_ip, resolved_src_cidrs))
+        )
+        exact_dst = (
+            (skip_dst_check and "Any" in rule["destCidr"]) or
+            (not skip_dst_check and is_exact_subnet_match(destination_ip, resolved_dst_cidrs))
+        )
         exact_ports = skip_port_check or len(matched_ports_list) == len(ports_to_loop)
         is_exact = full_match and exact_src and exact_dst and exact_ports
 
@@ -254,7 +260,7 @@ with tab1:
             elif not is_exact:
                 found_partial_match = True
 
-    # Build table
+    # Build results table
     rule_rows = []
     for idx, rule in enumerate(rules_data):
         matched_ports_for_rule = rule_match_ports.get(idx, [])
@@ -287,6 +293,7 @@ with tab1:
         return ['' for _ in row]
 
     st.dataframe(df_to_show.style.apply(highlight_row, axis=1), use_container_width=True)
+
 
 #-------------------------------------------------------------------------------------------------------------------------------------
 with tab2:
