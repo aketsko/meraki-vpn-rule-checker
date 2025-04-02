@@ -39,32 +39,38 @@ with tab1:
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        source_ip = st.text_input("Source IP or Subnet", "192.168.255.1")
+        source_ip = st.text_input("Source IP/Subnet (SRC)", "192.168.255.1")
     with col2:
-        destination_ip = st.text_input("Destination IP or Subnet", "172.17.200.56")
+        destination_ip = st.text_input("Destination IP/Subnet (DST)", "172.17.200.56")
     with col3:
-        protocol = st.text_input("Protocol", "any")
+        protocol = st.text_input("Protocol (e.g., tcp, udp, any)", "any")
     with col4:
-        port_input = st.text_input("Port(s)", "443, 8080")
+        source_port_input = st.text_input("Source Port(s)", "any")
+    with col4:
+        port_input = st.text_input("Destination Port(s)", "443, 8080")
 
     filter_toggle = st.checkbox("Show only matching rules", value=False)
 
     skip_src_check = source_ip.strip().lower() == "any"
     skip_dst_check = destination_ip.strip().lower() == "any"
     skip_proto_check = protocol.strip().lower() == "any"
-    skip_port_check = port_input.strip().lower() == "any"
+    skip_dport_check = port_input.strip().lower() == "any"
+    skip_sport_check = source_port_input.strip().lower() == "any"
 
-    ports_to_check = [] if skip_port_check else [p.strip() for p in port_input.split(",") if p.strip().isdigit()]
-    ports_to_loop = ["any"] if skip_port_check else ports_to_check
+    dports_to_check = [] if skip_dport_check else [p.strip() for p in port_input.split(",") if p.strip().isdigit()]
+    dports_to_loop = ["any"] if skip_dport_check else dports_to_check
 
     matched_ports = {}
+    matched_sports = {}
     rule_match_ports = {}
+    rule_match_sports = {}
     found_partial_match = False
     first_exact_match_index = None
 
     for idx, rule in enumerate(rules_data):
         rule_protocol = rule["protocol"].lower()
-        rule_ports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
+        rule_dports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
+        rule_sports = [p.strip() for p in rule.get("srcPort", "").split(",")] if rule.get("srcPort", "").lower() != "any" else ["any"]
 
         src_ids = rule["srcCidr"].split(",") if rule["srcCidr"] != "Any" else ["Any"]
         dst_ids = rule["destCidr"].split(",") if rule["destCidr"] != "Any" else ["Any"]
@@ -74,8 +80,11 @@ with tab1:
         src_match = True if skip_src_check else match_input_to_rule(resolved_src_cidrs, source_ip)
         dst_match = True if skip_dst_check else match_input_to_rule(resolved_dst_cidrs, destination_ip)
         proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
-        matched_ports_list = ports_to_loop if skip_port_check else [p for p in ports_to_loop if p in rule_ports or "any" in rule_ports]
-        port_match = len(matched_ports_list) > 0
+        matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
+        matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
+        matched_sports_list = [p.strip() for p in matched_sports_list if p.strip() in rule_sports or "any" in rule_sports]
+        sport_match = len(matched_sports_list) > 0
+        port_match = len(matched_ports_list) > 0 and sport_match
 
         full_match = src_match and dst_match and proto_match and port_match
 
@@ -114,6 +123,7 @@ with tab1:
             "Protocol": rule["protocol"],
             "Source": ", ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["srcCidr"].split(",")]),
             "Destination": ", ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["destCidr"].split(",")]),
+            "Source Port": rule.get("srcPort", ""),
             "Ports": rule["destPort"],
             "Comment": rule.get("comment", ""),
             "Matched Ports": ", ".join(matched_ports_for_rule),
@@ -121,14 +131,45 @@ with tab1:
             "Exact Match ✅": is_exact_match,
             "Partial Match 🔶": is_partial_match
         })
-from st_aggrid import JsCode
 
-# Create DataFrame
-df = pd.DataFrame(rule_rows)
-df_to_show = df[df["Matched ✅"]] if filter_toggle else df
+    df = pd.DataFrame(rule_rows)
+    df_to_show = df[df["Matched ✅"]] if filter_toggle else df
 
-# Define the JS for row styling
-row_style_js = JsCode("""
+    def highlight_row(row):
+        if row["Exact Match ✅"]:
+            return ['background-color: limegreen' if row["Action"] == "ALLOW" else 'background-color: crimson' for _ in row]
+        elif row["Partial Match 🔶"]:
+            return ['background-color: lightgreen' if row["Action"] == "ALLOW" else 'background-color: lightcoral' for _ in row]
+        return ['' for _ in row]
+
+    
+# Show interactive grid with filters
+
+
+
+
+
+gb = GridOptionsBuilder.from_dataframe(df_to_show)
+gb.configure_default_column(filter=True, sortable=True, resizable=True)
+
+    column_defs = [
+        {"field": "Rule Index", "width": 100},
+        {"field": "Action", "width": 90},
+        {"field": "Protocol", "width": 100},
+        {"field": "Source", "width": 300},
+        {"field": "Destination", "width": 300},
+        {"field": "Source Port", "width": 130},
+        {"field": "Ports", "width": 130},
+        {"field": "Comment", "width": 350},
+        {"field": "Matched Ports", "width": 130},
+        {"field": "Matched ✅", "width": 100},
+        {"field": "Exact Match ✅", "width": 130},
+        {"field": "Partial Match 🔶", "width": 150}
+    ]
+    gb.configure_columns(column_defs)
+
+
+"""
 function(params) {
     if (params.data["Exact Match ✅"] === true) {
         return {
@@ -136,35 +177,56 @@ function(params) {
                 backgroundColor: params.data.Action === "ALLOW" ? 'limegreen' : 'crimson',
                 color: 'white'
             }
-        };
+        }
     }
     if (params.data["Partial Match 🔶"] === true) {
         return {
             style: {
                 backgroundColor: params.data.Action === "ALLOW" ? 'lightgreen' : 'lightcoral'
             }
-        };
+        }
     }
     return {};
 }
-""")
 
-# Build AG Grid options
-gb = GridOptionsBuilder.from_dataframe(df_to_show)
-gb.configure_default_column(filter=True, sortable=True, resizable=True)
-gb.configure_grid_options(getRowStyle=row_style_js)
-grid_options = gb.build()
 
-# Show interactive grid with styling
+
+
+        if (params.data["Exact Match ✅"] === true) {
+            return {
+                style: {
+                    backgroundColor: params.data.Action === "ALLOW" ? 'limegreen' : 'crimson',
+                    color: 'white'
+                }
+            }
+        }
+        if (params.data["Partial Match 🔶"] === true) {
+            return {
+                style: {
+                    backgroundColor: params.data.Action === "ALLOW" ? 'lightgreen' : 'lightcoral'
+                }
+            }
+        }
+        return {};
+    }
+"""
+})
+
+
+
+
+
+# AG Grid dynamic row styling using JS (safe)
 AgGrid(
     df_to_show,
     gridOptions=grid_options,
     enable_enterprise_modules=False,
     fit_columns_on_grid_load=True,
     height=800,
-    use_container_width=True,
-    allow_unsafe_jscode=True  # Required for custom JsCode to work
+    use_container_width=True
 )
+
+
 # ------------------ TAB 2: Optimization Insights ------------------
 with tab2:
     st.header("🧠 Optimization Insights")
