@@ -130,7 +130,6 @@ with tab1:
             "Matched ✅": matched_any,
             "Exact Match ✅": is_exact_match,
             "Partial Match 🔶": is_partial_match
-        })
 
     df = pd.DataFrame(rule_rows)
     df_to_show = df[df["Matched ✅"]] if filter_toggle else df
@@ -210,7 +209,6 @@ function(params) {
         return {};
     }
 """
-})
 
 
 
@@ -270,7 +268,6 @@ with tab4:
             "FQDN": o.get("fqdn", ""),
             "Group IDs": o.get("groupIds", []),
             "Network IDs": o.get("networkIds", [])
-        })
     st.dataframe(safe_dataframe(object_rows))
 
     st.subheader("🔸 Matching Object Groups")
@@ -282,7 +279,6 @@ with tab4:
             "Type": str(g.get("category", "")),
             "Object Count": str(len(g.get("objectIds", []))),
             "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else ""
-        })
     st.dataframe(safe_dataframe(group_rows))
 
     if filtered_grps:
@@ -306,7 +302,6 @@ with tab4:
                     "Name": o.get("name", ""),
                     "CIDR": o.get("cidr", ""),
                     "FQDN": o.get("fqdn", "")
-                })
 
             if member_data:
                 st.dataframe(safe_dataframe(member_data))
