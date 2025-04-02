@@ -132,7 +132,7 @@ with tab1:
         if (params.data["Exact Match ✅"] === true) {
             return {
                 style: {
-                    backgroundColor: params.data.Action === "ALLOW" ? 'limegreen' : 'crimson',
+                    backgroundColor: params.data.Action === "ALLOW" ? '#00cc44' : '#cc0000',
                     color: 'white'
                 }
             };
@@ -140,13 +140,13 @@ with tab1:
         if (params.data["Partial Match 🔶"] === true) {
             return {
                 style: {
-                    backgroundColor: params.data.Action === "ALLOW" ? 'lightgreen' : 'lightcoral'
+                    backgroundColor: params.data.Action === "ALLOW" ? '#99e6b3' : '#ff9999'
                 }
             };
         }
         return {};
     }
-    """)
+""")
 
     gb = GridOptionsBuilder.from_dataframe(df_to_show)
     gb.configure_default_column(filter=True, sortable=True, resizable=True)
