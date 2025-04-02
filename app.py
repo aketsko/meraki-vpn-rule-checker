@@ -108,11 +108,18 @@ with tab1:
         is_exact_match = idx == first_exact_match_index
         is_partial_match = matched_any and not is_exact_match
 
-        rule_rows.append({
-            "Rule Index": idx,
-            "Action": rule["policy"].upper(),
-            "Protocol": rule["protocol"],
-            "Source": ", ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["srcCidr"].split(",")]),
+        source_names = []
+        for cidr in rule["srcCidr"].split(","):
+            cidr = cidr.strip()
+            resolved = resolve_to_cidrs([cidr], object_map, group_map)
+            name = id_to_name(cidr, object_map, group_map)
+            if not skip_src_check and match_input_to_rule(resolved, source_ip):
+                source_names.append(f"<b>{name}</b>")
+            else:
+                source_names.append(name)
+
+        dest_names = []
+        for cidr ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["srcCidr"].split(",")]),
             "Destination": ", ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["destCidr"].split(",")]),
             "Source Port": rule.get("srcPort", ""),
             "Ports": rule["destPort"],
@@ -149,6 +156,32 @@ function(params) {
     gb = GridOptionsBuilder.from_dataframe(df_to_show)
     gb.configure_default_column(filter=True, sortable=True, resizable=True)
     gb.configure_grid_options(getRowStyle=row_style_js)
+
+# Bold matching object/group in Source column
+source_cell_style = JsCode("""
+function(params) {
+    const input = '""" + source_ip + """';
+    if (input.toLowerCase() === 'any') return {};
+    if (params.value && params.value.includes(input)) {
+        return { fontWeight: 'bold' };
+    }
+    return {};
+}
+""")
+gb.configure_column("Source", cellStyle=source_cell_style)
+
+# Bold matching object/group in Destination column
+dest_cell_style = JsCode("""
+function(params) {
+    const input = '""" + destination_ip + """';
+    if (input.toLowerCase() === 'any') return {};
+    if (params.value && params.value.includes(input)) {
+        return { fontWeight: 'bold' };
+    }
+    return {};
+}
+""")
+gb.configure_column("Destination", cellStyle=dest_cell_style)
     grid_options = gb.build()
 
     AgGrid(
