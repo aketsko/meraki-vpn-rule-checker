@@ -192,7 +192,8 @@ function(params) {
     return {};
 }
 """)
-gb.configure_column("Destination", cellStyle=dest_cell_style)
+ gb.configure_column("Destination", cellStyle=dest_cell_style)
+
     grid_options = gb.build()
 
     AgGrid(
