@@ -166,7 +166,7 @@ gb.configure_default_column(filter=True, sortable=True, resizable=True)
         {"field": "Exact Match ✅", "width": 130},
         {"field": "Partial Match 🔶", "width": 150}
     ]
-    gb.configure_columns(column_defs)
+        gb.configure_columns(column_defs)
 
 
 """
