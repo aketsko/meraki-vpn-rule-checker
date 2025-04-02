@@ -121,28 +121,14 @@ with tab1:
             "Exact Match ✅": is_exact_match,
             "Partial Match 🔶": is_partial_match
         })
+from st_aggrid import JsCode
 
-    df = pd.DataFrame(rule_rows)
-    df_to_show = df[df["Matched ✅"]] if filter_toggle else df
+# Create DataFrame
+df = pd.DataFrame(rule_rows)
+df_to_show = df[df["Matched ✅"]] if filter_toggle else df
 
-    def highlight_row(row):
-        if row["Exact Match ✅"]:
-            return ['background-color: limegreen' if row["Action"] == "ALLOW" else 'background-color: crimson' for _ in row]
-        elif row["Partial Match 🔶"]:
-            return ['background-color: lightgreen' if row["Action"] == "ALLOW" else 'background-color: lightcoral' for _ in row]
-        return ['' for _ in row]
-
-    
-# Show interactive grid with filters
-
-
-
-
-
-gb = GridOptionsBuilder.from_dataframe(df_to_show)
-gb.configure_default_column(filter=True, sortable=True, resizable=True)
-
-"""
+# Define the JS for row styling
+row_style_js = JsCode("""
 function(params) {
     if (params.data["Exact Match ✅"] === true) {
         return {
@@ -150,57 +136,35 @@ function(params) {
                 backgroundColor: params.data.Action === "ALLOW" ? 'limegreen' : 'crimson',
                 color: 'white'
             }
-        }
+        };
     }
     if (params.data["Partial Match 🔶"] === true) {
         return {
             style: {
                 backgroundColor: params.data.Action === "ALLOW" ? 'lightgreen' : 'lightcoral'
             }
-        }
+        };
     }
     return {};
 }
 """)
 
+# Build AG Grid options
+gb = GridOptionsBuilder.from_dataframe(df_to_show)
+gb.configure_default_column(filter=True, sortable=True, resizable=True)
+gb.configure_grid_options(getRowStyle=row_style_js)
+grid_options = gb.build()
 
-
-
-        if (params.data["Exact Match ✅"] === true) {
-            return {
-                style: {
-                    backgroundColor: params.data.Action === "ALLOW" ? 'limegreen' : 'crimson',
-                    color: 'white'
-                }
-            }
-        }
-        if (params.data["Partial Match 🔶"] === true) {
-            return {
-                style: {
-                    backgroundColor: params.data.Action === "ALLOW" ? 'lightgreen' : 'lightcoral'
-                }
-            }
-        }
-        return {};
-    }
-"""
-})
-
-
-
-
-
-# AG Grid dynamic row styling using JS (safe)
+# Show interactive grid with styling
 AgGrid(
     df_to_show,
     gridOptions=grid_options,
     enable_enterprise_modules=False,
     fit_columns_on_grid_load=True,
     height=800,
-    use_container_width=True
+    use_container_width=True,
+    allow_unsafe_jscode=True  # Required for custom JsCode to work
 )
-
-
 # ------------------ TAB 2: Optimization Insights ------------------
 with tab2:
     st.header("🧠 Optimization Insights")
