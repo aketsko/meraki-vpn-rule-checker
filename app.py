@@ -119,8 +119,19 @@ with tab1:
                 source_names.append(name)
 
         dest_names = []
-        for cidr ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["srcCidr"].split(",")]),
-            "Destination": ", ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["destCidr"].split(",")]),
+        for cidr in rule["destCidr"].split(","):
+            cidr = cidr.strip()
+            resolved = resolve_to_cidrs([cidr], object_map, group_map)
+            name = id_to_name(cidr, object_map, group_map)
+            if not skip_dst_check and match_input_to_rule(resolved, destination_ip):
+                dest_names.append(f"<b>{name}</b>")
+            else:
+                dest_names.append(name)
+
+        rule_rows.append({
+            "Rule Index": idx,
+            "Source": ", ".join(source_names), ".join(source_names), ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["srcCidr"].split(",")]),
+            "Destination": ", ".join(dest_names), ".join([id_to_name(x.strip(), object_map, group_map) for x in rule["destCidr"].split(",")]),
             "Source Port": rule.get("srcPort", ""),
             "Ports": rule["destPort"],
             "Comment": rule.get("comment", ""),
