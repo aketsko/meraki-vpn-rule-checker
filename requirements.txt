@@ -3,3 +3,4 @@ pandas
 ipaddress
 plotly
 kaleido
+streamlit-aggrid
