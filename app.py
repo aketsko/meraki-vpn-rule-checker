@@ -128,24 +128,20 @@ with tab1:
 
     # AG Grid Styling
     row_style_js = JsCode("""
-    function(params) {
-        if (params.data["Exact Match ✅"] === true) {
-            return {
-                style: {
-                    backgroundColor: params.data.Action === "ALLOW" ? '#00cc44' : '#cc0000',
-                    color: 'white'
-                }
-            };
-        }
-        if (params.data["Partial Match 🔶"] === true) {
-            return {
-                style: {
-                    backgroundColor: params.data.Action === "ALLOW" ? '#99e6b3' : '#ff9999'
-                }
-            };
-        }
-        return {};
+function(params) {
+    if (params.data["Exact Match ✅"] === true) {
+        return {
+            backgroundColor: params.data.Action === "ALLOW" ? '#00cc44' : '#cc0000',
+            color: 'white'
+        };
     }
+    if (params.data["Partial Match 🔶"] === true) {
+        return {
+            backgroundColor: params.data.Action === "ALLOW" ? '#99e6b3' : '#ff9999'
+        };
+    }
+    return {};
+}
 """)
 
     gb = GridOptionsBuilder.from_dataframe(df_to_show)
