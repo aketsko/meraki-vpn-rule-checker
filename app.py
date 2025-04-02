@@ -170,6 +170,22 @@ function(params) {
 """)
 
 gb.configure_default_column(filter=True, sortable=True, resizable=True)
+
+column_defs = [
+    {"field": "Rule Index", "width": 70},
+    {"field": "Action", "width": 80},
+    {"field": "Protocol", "width": 80},
+    {"field": "Source", "width": 400},
+    {"field": "Destination", "width": 400},
+    {"field": "Source Port", "width": 80},
+    {"field": "Ports", "width": 80},
+    {"field": "Comment", "width": 500},
+    {"field": "Matched Ports", "width": 80},
+    {"field": "Matched ✅", "width": 80},
+    {"field": "Exact Match ✅", "width": 100},
+    {"field": "Partial Match 🔶", "width": 120}
+]
+gb.configure_columns(column_defs)
 gb.configure_column("Comment", wrapText=True, autoHeight=True)
 gb.configure_column("Source", wrapText=True, autoHeight=True)
 gb.configure_column("Destination", wrapText=True, autoHeight=True)
