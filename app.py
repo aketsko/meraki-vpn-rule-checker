@@ -270,7 +270,6 @@ with tab4:
             "Group IDs": o.get("groupIds", []),
             "Network IDs": o.get("networkIds", [])
         })
-        })
     st.dataframe(safe_dataframe(object_rows))
 
     st.subheader("🔸 Matching Object Groups")
