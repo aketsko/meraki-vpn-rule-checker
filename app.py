@@ -47,7 +47,7 @@ with tab1:
     with col4:
         port_input = st.text_input("Destination Port(s)", "443, 8080")
 
-    protocol = st.text_input("Protocol (e.g., tcp, udp, any)", "any")
+    protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
     filter_toggle = st.checkbox("Show only matching rules", value=False)
 
     skip_src_check = source_ip.strip().lower() == "any"
