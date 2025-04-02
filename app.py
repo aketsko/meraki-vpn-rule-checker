@@ -132,12 +132,14 @@ function(params) {
     if (params.data["Exact Match ✅"] === true) {
         return {
             backgroundColor: params.data.Action === "ALLOW" ? '#00cc44' : '#cc0000',
-            color: 'white'
+            color: 'white',
+            fontWeight: 'bold'
         };
     }
     if (params.data["Partial Match 🔶"] === true) {
         return {
-            backgroundColor: params.data.Action === "ALLOW" ? '#99e6b3' : '#ff9999'
+            backgroundColor: params.data.Action === "ALLOW" ? '#99e6b3' : '#ff9999',
+            fontWeight: 'bold'
         };
     }
     return {};
