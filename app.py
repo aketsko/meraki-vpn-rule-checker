@@ -114,11 +114,11 @@ with tab1:
 
         rule_rows.append({
             "Rule Index": idx,
-            "Source": ", ".join(source_names),
-            "Destination": ", ".join(dest_names),
-            "Source Port": rule.get("srcPort", ""),
-            "Ports": rule["destPort"],
             "Comment": rule.get("comment", ""),
+            "Source": ", ".join(source_names),
+            "Source Port": rule.get("srcPort", ""),
+            "Destination": ", ".join(dest_names),
+            "Ports": rule["destPort"],
             "Matched Ports": ", ".join(matched_ports_for_rule),
             "Matched ✅": matched_any,
             "Exact Match ✅": is_exact_match,
