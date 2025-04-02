@@ -185,7 +185,7 @@ def resolve_to_cidrs(id_list):
     return cidrs
 
 # ------------------ STREAMLIT TABS ------------------
-tab1, tab2, tab3, tab4 = st.tabs(["🔍 Rule Checker", "🧠 Optimization Insights", "🌐 Network Map", "🔎 Object Search"])
+tab1, tab2, tab4 = st.tabs(["🔍 Rule Checker", "🧠 Optimization Insights",  "🔎 Object Search"])
 
 
 
@@ -318,44 +318,6 @@ with tab2:
     else:
         st.success("✅ No optimization issues detected.")
         
-with tab3:
-    st.header("🌐 Visual Network Map")
-    edges = []
-    for rule in rules_data:
-        srcs = rule["srcCidr"].split(",")
-        dsts = rule["destCidr"].split(",")
-        for s in srcs:
-            for d in dsts:
-                edges.append((
-                    id_to_name(s.strip()),
-                    id_to_name(d.strip()),
-                    rule["policy"].upper(),
-                    rule["protocol"],
-                    rule["destPort"]
-                ))
-
-    fig = go.Figure()
-    for src, dst, action, proto, port in edges:
-        color = "green" if action == "ALLOW" else "red"
-        fig.add_trace(go.Scatter(
-            x=[0, 1], y=[hash(src)%10, hash(dst)%10],
-            mode='lines+text',
-            line=dict(color=color),
-            text=[f"{src}", f"{dst}"],
-            hoverinfo='text',
-            hovertext=f"{src} → {dst}<br>{proto.upper()}:{port} ({action})",
-            showlegend=False
-        ))
-
-    st.plotly_chart(fig, use_container_width=True)
-
-    try:
-        buffer = BytesIO()
-        fig.write_image(buffer, format="png")
-        st.download_button("📥 Download Graph as PNG", buffer.getvalue(), file_name="network_map.png")
-    except Exception as e:
-        st.warning("❗ PNG export requires `kaleido`. Install it via `pip install -U kaleido`.")
-
 with tab4:
     st.header("🔎 Object & Group Search")
 
