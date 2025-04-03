@@ -30,6 +30,26 @@ groups_data = load_json_file(groups_file)
 object_map = get_object_map(objects_data)
 group_map = get_group_map(groups_data)
 
+def show_rule_summary(indexes):
+    rows = []
+    for i in indexes:
+        if 1 <= i <= len(rules_data):
+            r = rules_data[i - 1]  # Convert 1-based to 0-based
+            rows.append({
+                "Index": i,
+                "Action": r["policy"].upper(),
+                "Protocol": r["protocol"],
+                "Src": r["srcCidr"],
+                "Dst": r["destCidr"],
+                "DPort": r["destPort"],
+                "Comment": r.get("comment", "")
+            })
+        else:
+            st.warning(f"⚠️ Skipping invalid rule index: {i}")
+    if rows:
+        st.dataframe(pd.DataFrame(rows), use_container_width=True)
+
+
 # ------------------ STREAMLIT TABS ------------------
 tab1, tab2, tab4 = st.tabs(["🔍 Rule Checker", "🧠 Optimization Insights", "🔎 Object Search"])
 
@@ -183,25 +203,6 @@ function(params) {
 
 with tab2:
     st.header("🧠 Optimization Insights")
-
-def show_rule_summary(indexes):
-    rows = []
-    for i in indexes:
-        if 1 <= i <= len(rules_data):
-            r = rules_data[i - 1]  # Convert 1-based to 0-based
-            rows.append({
-                "Index": i,
-                "Action": r["policy"].upper(),
-                "Protocol": r["protocol"],
-                "Src": r["srcCidr"],
-                "Dst": r["destCidr"],
-                "DPort": r["destPort"],
-                "Comment": r.get("comment", "")
-            })
-        else:
-            st.warning(f"⚠️ Skipping invalid rule index: {i}")
-    if rows:
-        st.dataframe(pd.DataFrame(rows), use_container_width=True)
 
     def rule_covers(rule_a, rule_b):
         return (
