@@ -71,20 +71,20 @@ green_start, green_end = [0, 128, 0], [144, 238, 144]
 red_start, red_end = [139, 0, 0], [255, 192, 203]
 
 # Header
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎛️ Rule Highlighting Colors")
+with st.sidebar.expander("🎛️ Toolbox: Rule Highlighting Colors", expanded=True):
+    st.markdown("Adjust the colors used to highlight rule matches:")
 
 # Sliders
-green1_val = st.sidebar.slider("Exact Match (ALLOW)", 0, 256, 64)
+green1_val = st.sidebar.slider("Exact Match (ALLOW)", 0, 256, 27)
 st.sidebar.markdown(get_gradient_image(green_start, green_end), unsafe_allow_html=True)
 
-green2_val = st.sidebar.slider("Partial Match (ALLOW)", 0, 256, 192)
+green2_val = st.sidebar.slider("Partial Match (ALLOW)", 0, 256, 244)
 st.sidebar.markdown(get_gradient_image(green_start, green_end), unsafe_allow_html=True)
 
-red1_val = st.sidebar.slider("Exact Match (DENY)", 0, 256, 64)
+red1_val = st.sidebar.slider("Exact Match (DENY)", 0, 256, 20)
 st.sidebar.markdown(get_gradient_image(red_start, red_end), unsafe_allow_html=True)
 
-red2_val = st.sidebar.slider("Partial Match (DENY)", 0, 256, 192)
+red2_val = st.sidebar.slider("Partial Match (DENY)", 0, 256, 241)
 st.sidebar.markdown(get_gradient_image(red_start, red_end), unsafe_allow_html=True)
 
 # Get hex colors
