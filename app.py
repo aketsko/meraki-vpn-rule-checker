@@ -295,9 +295,12 @@ with tab2:
 with tab4:
     st.header("🔎 Object & Group Search")
 
-    search_term = st.text_input("Search by name:", "")
+    search_term = st.text_input("Search by name or CIDR:", "").lower()
 
-    filtered_objs = [o for o in objects_data if search_term.lower() in o["name"].lower()] if search_term else objects_data
+    def match_object(obj, term):
+        return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
+
+    filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
     filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
 
     st.subheader("🔹 Matching Network Objects")
