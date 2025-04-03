@@ -187,7 +187,7 @@ with tab2:
     def show_rule_summary(indexes):
         rows = []
         for i in indexes:
-            r = rules_data[i]
+            r = rules_data[i-1]
             rows.append({
                 "Index": i + 1,
                 "Action": r["policy"].upper(),
