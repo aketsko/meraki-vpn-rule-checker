@@ -181,7 +181,7 @@ with tab1:
         port_input = st.text_input("Destination Port(s)", "443, 8080")
 
     # Wide row below search inputs
-    st.markdown("### Match Criteria")
+    #st.markdown("### Match Criteria")
     col_center = st.columns([2, 1, 2])[1]  # Center column only
 
     with col_center:
