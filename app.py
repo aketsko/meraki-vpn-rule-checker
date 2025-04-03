@@ -71,11 +71,11 @@ with tab1:
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        source_ip = st.text_input("Source IP/Subnet/Object (SRC)", "192.168.255.0/24")
+        source_input = st.text_input("Source (IP/Subnet/Object/Group)", "192.168.255.1")
     with col2:
         source_port_input = st.text_input("Source Port(s)", "any")
     with col3:
-        destination_ip = st.text_input("Destination IP/Subnet/Object (DST)", "172.17.200.56")
+        destination_input = st.text_input("Destination (IP/Subnet/Object/Group)", "172.17.200.56")
     with col4:
         port_input = st.text_input("Destination Port(s)", "443, 8080")
 
