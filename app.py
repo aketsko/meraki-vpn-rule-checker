@@ -232,16 +232,20 @@ with tab1:
 
         full_match = src_match and dst_match and proto_match and port_match
 
-        exact_src = skip_src_check or all(
+        exact_src = ("Any" in rule["srcCidr"]) if skip_src_check else all(
             any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_src_cidrs)
             for cidr in source_cidrs
         )
-        exact_dst = skip_dst_check or all(
+
+        exact_dst = ("Any" in rule["destCidr"]) if skip_dst_check else all(
             any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_dst_cidrs)
             for cidr in destination_cidrs
         )
-        exact_ports = skip_dport_check or len(matched_ports_list) == len(dports_to_loop)
-        is_exact = full_match and exact_src and exact_dst and exact_ports
+
+        exact_ports = skip_dport_check and rule["destPort"].lower() == "any" and rule.get("srcPort", "").lower() == "any"
+        exact_proto = skip_proto_check and rule["protocol"].lower() == "any"
+        
+        is_exact = full_match and exact_src and exact_dst and exact_ports and exact_proto
 
         if full_match:
             rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
