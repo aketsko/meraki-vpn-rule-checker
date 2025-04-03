@@ -4,6 +4,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
 from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match
+from streamlit_searchbox import st_searchbox
 
 # ------------------ PAGE SETUP ------------------
 st.set_page_config(
@@ -71,11 +72,21 @@ with tab1:
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        source_input = st.text_input("Source (IP/Subnet/Object/Group)", "192.168.255.0/24")
+        source_input = st_searchbox(
+            search_objects_and_groups,
+            placeholder="Search Source (Object, Group, or CIDR)",
+            label="Source (SRC)",
+            key="src_searchbox"
+        )
     with col2:
         source_port_input = st.text_input("Source Port(s)", "any")
     with col3:
-        destination_input = st.text_input("Destination (IP/Subnet/Object/Group)", "172.17.200.56")
+        destination_input = st_searchbox(
+            search_objects_and_groups,
+            placeholder="Search Destination (Object, Group, or CIDR)",
+            label="Destination (DST)",
+            key="dst_searchbox"
+        )
     with col4:
         port_input = st.text_input("Destination Port(s)", "443, 8080")
 
