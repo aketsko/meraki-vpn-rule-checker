@@ -121,7 +121,7 @@ with tab1:
             "Destination": ", ".join(dest_names),
             "Ports": rule["destPort"],
             "Matched Ports": ", ".join(matched_ports_for_rule),
-            "Matched ✅": matched_any,
+           "Matched ✅": matched_any,
             "Exact Match ✅": is_exact_match,
             "Partial Match 🔶": is_partial_match
         })
@@ -149,34 +149,56 @@ function(params) {
 }
 """)
 
-
     gb = GridOptionsBuilder.from_dataframe(df_to_show)
-    column_defs = [
-        {"field": "Rule Index", "width": 70},
-        {"field": "Action", "width": 80},
-        {"field": "Protocol", "width": 80},
-        {"field": "Source", "width": 400},
-        {"field": "Destination", "width": 400},
-        {"field": "Source Port", "width": 80},
-        {"field": "Ports", "width": 80},
-        {"field": "Comment", "width": 500},
-        {"field": "Matched Ports", "width": 80},
-        {"field": "Matched ✅", "width": 80},
-        {"field": "Exact Match ✅", "width": 100},
-        {"field": "Partial Match 🔶", "width": 120}
-    ]
-    gb.configure_columns(column_defs)
-    gb.configure_column("Comment", wrapText=True, autoHeight=True)
-    gb.configure_column("Source", wrapText=True, autoHeight=True)
-    gb.configure_column("Destination", wrapText=True, autoHeight=True)
-    gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
-    grid_options = gb.build()
+from st_aggrid import JsCode
+row_style_js = JsCode("""
+function(params) {
+    if (params.data["Exact Match ✅"] === true) {
+        return {
+            backgroundColor: params.data.Action === "ALLOW" ? '#00cc44' : '#cc0000',
+            color: 'white',
+            fontWeight: 'bold'
+        };
+    }
+    if (params.data["Partial Match 🔶"] === true) {
+        return {
+            backgroundColor: params.data.Action === "ALLOW" ? '#99e6b3' : '#ff9999',
+            fontWeight: 'bold'
+        };
+    }
+    return {};
+}
+""")
 
-    AgGrid(
-        df_to_show,
-        gridOptions=grid_options,
+gb.configure_default_column(filter=True, sortable=True, resizable=True)
+
+column_defs = [
+    {"field": "Rule Index", "width": 70},
+    {"field": "Action", "width": 80},
+    {"field": "Protocol", "width": 80},
+    {"field": "Source", "width": 400},
+    {"field": "Destination", "width": 400},
+    {"field": "Source Port", "width": 80},
+    {"field": "Ports", "width": 80},
+    {"field": "Comment", "width": 500},
+    {"field": "Matched Ports", "width": 80},
+    {"field": "Matched ✅", "width": 80},
+    {"field": "Exact Match ✅", "width": 100},
+    {"field": "Partial Match 🔶", "width": 120}
+]
+gb.configure_columns(column_defs)
+gb.configure_column("Comment", wrapText=True, autoHeight=True)
+gb.configure_column("Source", wrapText=True, autoHeight=True)
+gb.configure_column("Destination", wrapText=True, autoHeight=True)
+gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
+grid_options = gb.build()
+
+AgGrid(
+    df_to_show,
+    gridOptions=grid_options,
         enable_enterprise_modules=False,
         fit_columns_on_grid_load=True,
+        
         use_container_width=True,
         allow_unsafe_jscode=True
     )
