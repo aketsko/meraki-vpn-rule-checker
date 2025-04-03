@@ -185,64 +185,24 @@ with tab2:
     st.header("🧠 Optimization Insights")
 
     insights = []
-    seen_rules = set()
-
+    seen = set()
     for i, rule in enumerate(rules_data):
         sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
-        if sig in seen_rules:
-            insights.append(f"🔁 **Duplicate Rule** at index {i}: same action, protocol, source, destination, and port.")
+        if sig in seen:
+            insights.append(f"🔁 Redundant rule at index {i}: {rule.get('comment', '')}")
         else:
-            seen_rules.add(sig)
+            seen.add(sig)
 
-        if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
-            and rule["destPort"].lower() == "any"
-            and rule["protocol"].lower() == "any"):
-            insights.append(f"⚠️ **Broad Rule Risk** at index {i}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.")
+        if rule["srcCidr"] == "Any" and rule["destCidr"] == "Any" and rule["destPort"].lower() == "any":
+            insights.append(f"⚠️ Broad rule at index {i} allows/denies all traffic: {rule.get('comment', '')}")
 
-        # Shadowing check: if traffic is already caught
-        for j in range(i):
-            earlier = rules_data[j]
-            if (earlier["policy"] == rule["policy"] and
-                (earlier["srcCidr"] == rule["srcCidr"] or earlier["srcCidr"] == "Any") and
-                (earlier["destCidr"] == rule["destCidr"] or earlier["destCidr"] == "Any") and
-                (earlier["destPort"] == rule["destPort"] or earlier["destPort"].lower() == "any") and
-                (earlier["protocol"] == rule["protocol"] or earlier["protocol"].lower() == "any")):
-                insights.append(f"🚫 **Shadowed Rule** at index {i}: redundant due to similar rule at index {j}.")
-                break
-
-        # Merge opportunity with next rule
-        if i < len(rules_data) - 1:
-            next_rule = rules_data[i+1]
-            fields_to_compare = ["policy", "srcCidr", "destCidr"]
-            if all(rule[f] == next_rule[f] for f in fields_to_compare):
-                # Try port merge
-                if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
-                    insights.append(f"🔄 **Merge Candidate** at index {i} & {i+1}: same action/source/destination, different ports.")
-                # Try protocol merge
-                elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
-                    insights.append(f"🔄 **Merge Candidate** at index {i} & {i+1}: same action/src/dst/ports, different protocol.")
-
-    # Show insights
     if insights:
         for tip in insights:
-            st.markdown(tip)
-
+            st.write(tip)
         st.download_button("📥 Download Insights", "\n".join(insights), file_name="optimization_insights.txt")
+#".join(insights), file_name="optimization_insights.txt")
     else:
         st.success("✅ No optimization issues detected.")
-
-    # 🧠 Legend
-    st.markdown("---")
-    st.subheader("🧠 Logic Layers Summary (Legend)")
-    st.markdown("""
-| Term               | Description                                                                 | Example                                                                 |
-|--------------------|-----------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| 🔁 **Duplicate Rule** | Rule is identical to a previous one (all fields except comment)           | Rule 1 and Rule 5 both allow `TCP 80` from `192.168.1.0/24` to `10.0.0.0/24`. |
-| 🔄 **Merge Candidate** | Rules could be combined (only one field differs, e.g., port)              | Rule 2 allows `TCP 80`, Rule 3 allows `TCP 443` for the same source/destination. |
-| ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               | Rule 4 allows `ANY` to `ANY` on `ANY`, making specific rules below ineffective. |
-| 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic | Rule 6 is redundant because Rule 2 already matches the same traffic.         |
-""")
-
 
 # ------------------ TAB 4: Object Search ------------------
 with tab4:
