@@ -15,9 +15,9 @@ st.set_page_config(
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
 st.sidebar.header("🔧 Upload Configuration Files")
-rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
-objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
-groups_file = st.sidebar.file_uploader("Upload Object Groups.json", type="json")
+rules_file = st.sidebar.file_uploader("Upload Rules.json - Get it from /organizations/:organizationId/appliance/vpn/vpnFirewallRules", type="json")
+objects_file = st.sidebar.file_uploader("Upload Objects.json - Get it from /organizations/:organizationId/policyObjects", type="json")
+groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
 
 if not all([rules_file, objects_file, groups_file]):
     st.warning("Please upload all three JSON files to proceed.")
