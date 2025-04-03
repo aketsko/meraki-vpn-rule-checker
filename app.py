@@ -146,22 +146,29 @@ with tab1:
     if "destination_raw_input" not in st.session_state:
         st.session_state["destination_raw_input"] = "any"
 
-    def custom_search(term: str):
-        term = term.strip()
-        results = []
-        # Match objects
-        for obj in objects_data:
-            if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
-                results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
-        # Match groups
-        for group in groups_data:
-            if term.lower() in group["name"].lower():
-                results.append((f"{group['name']} (Group)", group["name"]))
-    
-        # 🔁 If nothing found, return the raw input so it stays visible
-        if not results:
-            results.append((f"Use: {term}", term))
-        return results
+def custom_search(term: str):
+    term = term.strip()
+    results = []
+
+    # ✅ Special case: if user typed "any" exactly
+    if term.lower() == "any":
+        return [("Any (all traffic)", "any")]
+
+    # 🔍 Search objects
+    for obj in objects_data:
+        if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
+            results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
+
+    # 🔍 Search groups
+    for group in groups_data:
+        if term.lower() in group["name"].lower():
+            results.append((f"{group['name']} (Group)", group["name"]))
+
+    # ✅ Return raw input if no results
+    if not results:
+        results.append((f"Use: {term}", term))
+
+    return results
 
 
     col1, col2, col3, col4 = st.columns(4)
