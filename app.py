@@ -72,7 +72,7 @@ red_start, red_end = [139, 0, 0], [255, 192, 203]
 
 # Header
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎛️ Toolbox: Rule Highlighting Colors")
+st.sidebar.markdown("### 🎛️ Rule Highlighting Colors")
 
 # Sliders
 green1_val = st.sidebar.slider("Exact Match (ALLOW)", 0, 256, 64)
