@@ -254,7 +254,7 @@ with tab2:
                 if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
                     insight_rows.append((
                         f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
-                        [i, i+1]
+                        [i+1, i+2]
                     ))
                 elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
                     if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
