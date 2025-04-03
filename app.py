@@ -30,6 +30,49 @@ st.sidebar.header("🔧 Upload Configuration Files")
 rules_file = st.sidebar.file_uploader("Upload Rules.json - Get it from /organizations/:organizationId/appliance/vpn/vpnFirewallRules", type="json")
 objects_file = st.sidebar.file_uploader("Upload Objects.json - Get it from /organizations/:organizationId/policyObjects", type="json")
 groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
+#______________________________________________________________________
+import numpy as np
+
+# Color helper
+def color_gradient(start_color, end_color, n=256):
+    return [(np.array(start_color)*(1-i/n) + np.array(end_color)*(i/n)).astype(int) for i in range(n+1)]
+
+def rgb_to_hex(rgb):
+    return '#%02x%02x%02x' % tuple(rgb)
+
+# Build palettes
+green_palette = color_gradient([0, 128, 0], [144, 238, 144])
+red_palette = color_gradient([139, 0, 0], [255, 192, 203])
+
+# Toolbox UI
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🎛️ Toolbox: Rule Highlighting Colors")
+
+green1_val = st.sidebar.slider("Exact Match (ALLOW)", 0, 256, 64)
+green2_val = st.sidebar.slider("Partial Match (ALLOW)", 0, 256, 192)
+red1_val = st.sidebar.slider("Exact Match (DENY)", 0, 256, 64)
+red2_val = st.sidebar.slider("Partial Match (DENY)", 0, 256, 192)
+
+# Convert to HEX
+green1 = rgb_to_hex(green_palette[green1_val])
+green2 = rgb_to_hex(green_palette[green2_val])
+red1 = rgb_to_hex(red_palette[red1_val])
+red2 = rgb_to_hex(red_palette[red2_val])
+
+# Show color boxes
+st.sidebar.markdown(f"**Exact ALLOW:** <div style='background-color:{green1};width:100%;height:25px'></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"**Partial ALLOW:** <div style='background-color:{green2};width:100%;height:25px'></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"**Exact DENY:** <div style='background-color:{red1};width:100%;height:25px'></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"**Partial DENY:** <div style='background-color:{red2};width:100%;height:25px'></div>", unsafe_allow_html=True)
+
+# You can then pass these into AG Grid style logic like:
+highlight_colors = {
+    "exact_allow": green1,
+    "partial_allow": green2,
+    "exact_deny": red1,
+    "partial_deny": red2,
+}
+#______________________________________________________________________
 
 if not all([rules_file, objects_file, groups_file]):
     st.warning("Please upload all three JSON files to proceed.")
