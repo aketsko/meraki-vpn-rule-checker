@@ -62,7 +62,9 @@ def get_gradient_image(start_color, end_color, width=300, height=25):
 
 # RGB to HEX
 def rgb_to_hex(rgb):
+    rgb = np.array(rgb).astype(int)  # Ensure integers
     return '#%02x%02x%02x' % tuple(rgb)
+
 
 # Define palettes
 green_start, green_end = [0, 128, 0], [144, 238, 144]
@@ -86,10 +88,11 @@ red2_val = st.sidebar.slider("Partial Match (DENY)", 0, 256, 192)
 st.sidebar.markdown(get_gradient_image(red_start, red_end), unsafe_allow_html=True)
 
 # Get hex colors
-green1 = rgb_to_hex(np.array(green_start)*(1-green1_val/256) + np.array(green_end)*(green1_val/256))
-green2 = rgb_to_hex(np.array(green_start)*(1-green2_val/256) + np.array(green_end)*(green2_val/256))
-red1 = rgb_to_hex(np.array(red_start)*(1-red1_val/256) + np.array(red_end)*(red1_val/256))
-red2 = rgb_to_hex(np.array(red_start)*(1-red2_val/256) + np.array(red_end)*(red2_val/256))
+green1 = rgb_to_hex((np.array(green_start)*(1-green1_val/256) + np.array(green_end)*(green1_val/256)).astype(int))
+green2 = rgb_to_hex((np.array(green_start)*(1-green2_val/256) + np.array(green_end)*(green2_val/256)).astype(int))
+red1 = rgb_to_hex((np.array(red_start)*(1-red1_val/256) + np.array(red_end)*(red1_val/256)).astype(int))
+red2 = rgb_to_hex((np.array(red_start)*(1-red2_val/256) + np.array(red_end)*(red2_val/256)).astype(int))
+
 
 # Color mapping
 highlight_colors = {
