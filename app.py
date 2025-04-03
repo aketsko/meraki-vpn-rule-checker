@@ -183,9 +183,7 @@ with tab1:
     with col5:
         protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
     
-    # Wide row below search inputs
-    #st.markdown("### Match Criteria")
-    col_left = st.columns(3)  
+    col_left = st.columns(1)  
 
     with col_left:
         filter_toggle = st.checkbox("Show only matching rules", value=False)
