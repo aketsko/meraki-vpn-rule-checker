@@ -160,7 +160,7 @@ with tab1:
             results.append((f"Use: {term}", term))
         return results
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(4)
     with col1:
         source_input = st_searchbox(
             custom_search,
@@ -179,13 +179,15 @@ with tab1:
         )
     with col4:
         port_input = st.text_input("Destination Port(s)", "443, 8080")
-
+    
+    with col5
+        protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
+    
     # Wide row below search inputs
     #st.markdown("### Match Criteria")
     col_center = st.columns([2, 1, 2])[1]  # Center column only
 
     with col_center:
-        protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
         filter_toggle = st.checkbox("Show only matching rules", value=False)
 
 
