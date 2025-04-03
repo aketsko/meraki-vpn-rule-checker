@@ -77,6 +77,7 @@ with st.sidebar.expander("🎛️Rule Highlighting Colors", expanded=True):
     # Sliders
     green1_val = st.sidebar.slider("Exact Match (ALLOW)", 0, 256, 27)
     st.sidebar.markdown(get_gradient_image(green_start, green_end), unsafe_allow_html=True)
+    st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(green_start)}, {rgb_to_hex(green_end)}); height: 25px;'></div>", unsafe_allow_html=True)
     
     green2_val = st.sidebar.slider("Partial Match (ALLOW)", 0, 256, 244)
     st.sidebar.markdown(get_gradient_image(green_start, green_end), unsafe_allow_html=True)
