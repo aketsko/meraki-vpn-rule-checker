@@ -199,5 +199,90 @@ AgGrid(
         fit_columns_on_grid_load=True,
         
         use_container_width=True,
-        allow_unsafe_jscode=True
-    )
+        allow_unsafe_jscode=with tab2:
+    st.header("🧠 Optimization Insights")
+
+    insights = []
+    seen = set()
+    for i, rule in enumerate(rules_data):
+        sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
+        if sig in seen:
+            insights.append(f"🔁 Redundant rule at index {i}: {rule.get('comment', '')}")
+        else:
+            seen.add(sig)
+
+        if rule["srcCidr"] == "Any" and rule["destCidr"] == "Any" and rule["destPort"].lower() == "any":
+            insights.append(f"⚠️ Broad rule at index {i} allows/denies all traffic: {rule.get('comment', '')}")
+
+    if insights:
+        for tip in insights:
+            st.write(tip)
+        st.download_button("📥 Download Insights", "\n".join(insights), file_name="optimization_insights.txt")
+#".join(insights), file_name="optimization_insights.txt")
+    else:
+        st.success("✅ No optimization issues detected.")
+
+# ------------------ TAB 4: Object Search ------------------
+with tab4:
+    st.header("🔎 Object & Group Search")
+
+    search_term = st.text_input("Search by name:", "")
+
+    filtered_objs = [o for o in objects_data if search_term.lower() in o["name"].lower()] if search_term else objects_data
+    filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
+
+    st.subheader("🔹 Matching Network Objects")
+    object_rows = []
+    for o in filtered_objs:
+        object_rows.append({
+            "ID": o.get("id", ""),
+            "Name": o.get("name", ""),
+            "CIDR": o.get("cidr", ""),
+            "FQDN": o.get("fqdn", ""),
+            "Group IDs": o.get("groupIds", []),
+            "Network IDs": o.get("networkIds", [])
+        })
+    st.dataframe(safe_dataframe(object_rows))
+
+    st.subheader("🔸 Matching Object Groups")
+    group_rows = []
+    for g in filtered_grps:
+        group_rows.append({
+            "ID": str(g.get("id", "")),
+            "Name": str(g.get("name", "")),
+            "Type": str(g.get("category", "")),
+            "Object Count": str(len(g.get("objectIds", []))),
+            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else ""
+        })
+    st.dataframe(safe_dataframe(group_rows))
+
+    if filtered_grps:
+        selected_group = st.selectbox(
+            "Explore group membership:",
+            options=[g["id"] for g in filtered_grps],
+            format_func=lambda x: group_map.get(x, {}).get("name", f"(unknown: {x})")
+        )
+
+        if selected_group and selected_group in group_map:
+            group_members = group_map[selected_group].get("objectIds", [])
+            member_objs = [object_map[oid] for oid in group_members if oid in object_map]
+
+            st.markdown(f"**Group Name:** `{group_map[selected_group]['name']}`")
+            st.markdown(f"**Members:** `{len(member_objs)}` object(s)`")
+
+            member_data = []
+            for o in member_objs:
+                member_data.append({
+                    "Object ID": o.get("id", ""),
+                    "Name": o.get("name", ""),
+                    "CIDR": o.get("cidr", ""),
+                    "FQDN": o.get("fqdn", "")
+                })
+
+            if member_data:
+                st.dataframe(safe_dataframe(member_data))
+            else:
+                st.info("This group has no valid or displayable objects.")
+    else:
+        st.info("No groups match the current search.")
+
