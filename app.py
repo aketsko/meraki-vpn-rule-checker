@@ -182,11 +182,12 @@ with tab1:
 
     # Wide row below search inputs
     st.markdown("### Match Criteria")
-    col_proto, col_filter = st.columns([1, 1])
-    with col_proto:
+    col_center = st.columns([2, 1, 2])[1]  # Center column only
+
+    with col_center:
         protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
-    with col_filter:
         filter_toggle = st.checkbox("Show only matching rules", value=False)
+
 
     source_input = source_input or "any"
     destination_input = destination_input or "any"
