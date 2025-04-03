@@ -136,28 +136,56 @@ def show_rule_summary(indexes):
 tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
 # ------------------ RULE CHECKER TAB ------------------
+# ------------------ RULE CHECKER TAB ------------------
 with tab1:
     st.header("🛡️ Rule Checker")
 
+    # -- Collect and persist input values --
+    if "source_raw_input" not in st.session_state:
+        st.session_state["source_raw_input"] = "any"
+    if "destination_raw_input" not in st.session_state:
+        st.session_state["destination_raw_input"] = "any"
+
+    def custom_search(term: str):
+        term = term.strip().lower()
+        results = []
+        for obj in objects_data:
+            if term in obj["name"].lower() or term in obj.get("cidr", ""):
+                results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
+        for group in groups_data:
+            if term in group["name"].lower():
+                results.append((f"{group['name']} (Group)", group["name"]))
+        return results
+
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        source_input = st_searchbox(
-            search_objects_and_groups,
-            placeholder="Search Source (Object, Group, or CIDR)",
+        source_selected = st_searchbox(
+            search_function=custom_search,
+            key="src_searchbox",
             label="Source (SRC)",
-            key="src_searchbox"
+            placeholder="Type Object, Group, IP, or 'any'",
+            default=st.session_state["source_raw_input"]
         )
+        source_input = source_selected or st.session_state["source_raw_input"]
+        st.session_state["source_raw_input"] = source_input
+
     with col2:
         source_port_input = st.text_input("Source Port(s)", "any")
+
     with col3:
-        destination_input = st_searchbox(
-            search_objects_and_groups,
-            placeholder="Search Destination (Object, Group, or CIDR)",
+        destination_selected = st_searchbox(
+            search_function=custom_search,
+            key="dst_searchbox",
             label="Destination (DST)",
-            key="dst_searchbox"
+            placeholder="Type Object, Group, IP, or 'any'",
+            default=st.session_state["destination_raw_input"]
         )
+        destination_input = destination_selected or st.session_state["destination_raw_input"]
+        st.session_state["destination_raw_input"] = destination_input
+
     with col4:
-        port_input = st.text_input("Destination Port(s)", "443, 8080")
+        port_input = st.text_input("Destination Port(s)", "any")
+
 
     protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
     filter_toggle = st.checkbox("Show only matching rules", value=False)
