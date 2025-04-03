@@ -185,7 +185,7 @@ with tab1:
     
     # Wide row below search inputs
     #st.markdown("### Match Criteria")
-    col_left = st.columns(3]  
+    col_left = st.columns(3)  
 
     with col_left:
         filter_toggle = st.checkbox("Show only matching rules", value=False)
