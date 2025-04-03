@@ -88,6 +88,8 @@ highlight_colors = {
     "partial_deny": red2,
 }
 
+if st.sidebar.button("🔄 Resize Table"):
+    st.experimental_rerun()
 
 #______________________________________________________________________
 
