@@ -149,8 +149,8 @@ with tab1:
         full_match = src_match and dst_match and proto_match and port_match
 
         exact_src = skip_src_check or all(
-            any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_dst_cidrs)
-            for cidr in destination_cidrs
+            any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_src_cidrs)
+            for cidr in source_cidrs
         )
         exact_dst = skip_dst_check or all(
             any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_dst_cidrs)
