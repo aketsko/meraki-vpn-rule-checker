@@ -145,80 +145,68 @@ tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 
 with tab1:
     st.header("🛡️ Rule Checker")
 
-    # -- Collect and persist input values --
-    if "source_raw_input" not in st.session_state:
-        st.session_state["source_raw_input"] = "any"
-    if "destination_raw_input" not in st.session_state:
-        st.session_state["destination_raw_input"] = "any"
-
     def custom_search(term: str):
         term = term.strip()
         results = []
-    
         if term.lower() == "any":
             return [("Any (all traffic)", "any")]
-    
         for obj in objects_data:
             if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
                 results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
-    
         for group in groups_data:
             if term.lower() in group["name"].lower():
                 results.append((f"{group['name']} (Group)", group["name"]))
-    
         if not results:
             results.append((f"Use: {term}", term))
+        return results
 
-    return results
-    # 🚨 Now define the columns OUTSIDE of the function!
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        ource_input = st_searchbox(
-         custom_search,
-        placeholder="Search Source (Object, Group, CIDR, or 'any')",
-        label="Source (SRC)",
-        key="src_searchbox"
+        source_input = st_searchbox(
+            custom_search,
+            placeholder="Search Source (Object, Group, CIDR, or 'any')",
+            label="Source (SRC)",
+            key="src_searchbox"
         )
     with col2:
         source_port_input = st.text_input("Source Port(s)", "any")
     with col3:
         destination_input = st_searchbox(
-        custom_search,
-        placeholder="Search Destination (Object, Group, CIDR, or 'any')",
-        label="Destination (DST)",
-        key="dst_searchbox"
+            custom_search,
+            placeholder="Search Destination (Object, Group, CIDR, or 'any')",
+            label="Destination (DST)",
+            key="dst_searchbox"
         )
     with col4:
         port_input = st.text_input("Destination Port(s)", "443, 8080")
-    
+
+    # Wide row below search inputs
     st.markdown("### Match Criteria")
-        col_proto, col_filter = st.columns([1, 1])
-        with col_proto:
-            protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
-        with col_filter:
-            filter_toggle = st.checkbox("Show only matching rules", value=False)
-    
-    
-        source_input = source_input or "any"
-        destination_input = destination_input or "any"
-        
-        source_cidrs = resolve_search_input(source_input)
-        destination_cidrs = resolve_search_input(destination_input)
-    
-        skip_src_check = not source_input or source_input.strip().lower() == "any"
-        skip_dst_check = not destination_input or destination_input.strip().lower() == "any"
-    
-        skip_proto_check = protocol.strip().lower() == "any"
-        skip_dport_check = port_input.strip().lower() == "any"
-        skip_sport_check = source_port_input.strip().lower() == "any"
-    
-        dports_to_check = [] if skip_dport_check else [p.strip() for p in port_input.split(",") if p.strip().isdigit()]
-        dports_to_loop = ["any"] if skip_dport_check else dports_to_check
-    
-        matched_ports = {}
-        rule_match_ports = {}
-        found_partial_match = False
-        first_exact_match_index = None
+    col_proto, col_filter = st.columns([1, 1])
+    with col_proto:
+        protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
+    with col_filter:
+        filter_toggle = st.checkbox("Show only matching rules", value=False)
+
+    source_input = source_input or "any"
+    destination_input = destination_input or "any"
+
+    source_cidrs = resolve_search_input(source_input)
+    destination_cidrs = resolve_search_input(destination_input)
+
+    skip_src_check = source_input.strip().lower() == "any"
+    skip_dst_check = destination_input.strip().lower() == "any"
+    skip_proto_check = protocol.strip().lower() == "any"
+    skip_dport_check = port_input.strip().lower() == "any"
+    skip_sport_check = source_port_input.strip().lower() == "any"
+
+    dports_to_check = [] if skip_dport_check else [p.strip() for p in port_input.split(",") if p.strip().isdigit()]
+    dports_to_loop = ["any"] if skip_dport_check else dports_to_check
+
+    matched_ports = {}
+    rule_match_ports = {}
+    found_partial_match = False
+    first_exact_match_index = None
 
     for idx, rule in enumerate(rules_data):
         rule_protocol = rule["protocol"].lower()
@@ -290,47 +278,30 @@ with tab1:
     df = pd.DataFrame(rule_rows)
     df_to_show = df[df["Matched ✅"]] if filter_toggle else df
 
-    # AG Grid Styling
-    row_style_js = JsCode("""
-function(params) {
-    if (params.data["Exact Match ✅"] === true) {
-        return {
-            backgroundColor: params.data.Action === "ALLOW" ? '#00cc44' : '#cc0000',
+    row_style_js = JsCode(f"""
+function(params) {{
+    if (params.data["Exact Match ✅"] === true) {{
+        return {{
+            backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
             color: 'white',
             fontWeight: 'bold'
-        };
-    }
-    if (params.data["Partial Match 🔶"] === true) {
-        return {
-            backgroundColor: params.data.Action === "ALLOW" ? '#99e6b3' : '#ff9999',
+        }};
+    }}
+    if (params.data["Partial Match 🔶"] === true) {{
+        return {{
+            backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
             fontWeight: 'bold'
-        };
-    }
-    return {};
-}
+        }};
+    }}
+    return {{}};
+}}
 """)
 
-
     gb = GridOptionsBuilder.from_dataframe(df_to_show)
-    column_defs = [
-        {"field": "Rule Index", "width": 70},
-        {"field": "Action", "width": 80},
-        {"field": "Protocol", "width": 80},
-        {"field": "Source", "width": 400},
-        {"field": "Destination", "width": 400},
-        {"field": "Source Port", "width": 80},
-        {"field": "Ports", "width": 80},
-        {"field": "Comment", "width": 500},
-        {"field": "Matched Ports", "width": 80},
-        {"field": "Matched ✅", "width": 80},
-        {"field": "Exact Match ✅", "width": 100},
-        {"field": "Partial Match 🔶", "width": 120}
-    ]
-    gb.configure_columns(column_defs)
+    gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     gb.configure_column("Comment", wrapText=True, autoHeight=True)
     gb.configure_column("Source", wrapText=True, autoHeight=True)
     gb.configure_column("Destination", wrapText=True, autoHeight=True)
-    gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     grid_options = gb.build()
 
     AgGrid(
