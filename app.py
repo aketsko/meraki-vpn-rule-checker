@@ -130,6 +130,11 @@ def show_rule_summary(indexes):
             st.warning(f"⚠️ Skipping invalid rule index: {i}")
     if rows:
         st.dataframe(pd.DataFrame(rows), use_container_width=True)
+if "source_raw_input" not in st.session_state:
+    st.session_state["source_raw_input"] = ""
+
+if "destination_raw_input" not in st.session_state:
+    st.session_state["destination_raw_input"] = ""
 
 
 # ------------------ STREAMLIT TABS ------------------
@@ -173,32 +178,24 @@ def custom_search(term: str):
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        source_selected = st_searchbox(
-            search_function=custom_search,
-            key="src_searchbox",
+        source_input = st_searchbox(
+            custom_search,
+            placeholder="Search Source (Object, Group, CIDR, or 'any')",
             label="Source (SRC)",
-            placeholder="Type Object, Group, IP, or 'any'",
-            default=st.session_state["source_raw_input"]
+            key="src_searchbox"
         )
-        source_input = source_selected or st.session_state["source_raw_input"]
-        st.session_state["source_raw_input"] = source_input
-
     with col2:
         source_port_input = st.text_input("Source Port(s)", "any")
-
     with col3:
-        destination_selected = st_searchbox(
-            search_function=custom_search,
-            key="dst_searchbox",
+        destination_input = st_searchbox(
+            custom_search,
+            placeholder="Search Destination (Object, Group, CIDR, or 'any')",
             label="Destination (DST)",
-            placeholder="Type Object, Group, IP, or 'any'",
-            default=st.session_state["destination_raw_input"]
+            key="dst_searchbox"
         )
-        destination_input = destination_selected or st.session_state["destination_raw_input"]
-        st.session_state["destination_raw_input"] = destination_input
-
     with col4:
-        port_input = st.text_input("Destination Port(s)", "any")
+        port_input = st.text_input("Destination Port(s)", "443, 8080")
+    
 
 
     protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
