@@ -155,46 +155,43 @@ def custom_search(term: str):
     term = term.strip()
     results = []
 
-    # ✅ Special case: if user typed "any" exactly
     if term.lower() == "any":
         return [("Any (all traffic)", "any")]
 
-    # 🔍 Search objects
     for obj in objects_data:
         if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
             results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
 
-    # 🔍 Search groups
     for group in groups_data:
         if term.lower() in group["name"].lower():
             results.append((f"{group['name']} (Group)", group["name"]))
 
-    # ✅ Return raw input if no results
     if not results:
         results.append((f"Use: {term}", term))
 
     return results
 
+# 🚨 Now define the columns OUTSIDE of the function!
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    source_input = st_searchbox(
+        custom_search,
+        placeholder="Search Source (Object, Group, CIDR, or 'any')",
+        label="Source (SRC)",
+        key="src_searchbox"
+    )
+with col2:
+    source_port_input = st.text_input("Source Port(s)", "any")
+with col3:
+    destination_input = st_searchbox(
+        custom_search,
+        placeholder="Search Destination (Object, Group, CIDR, or 'any')",
+        label="Destination (DST)",
+        key="dst_searchbox"
+    )
+with col4:
+    port_input = st.text_input("Destination Port(s)", "443, 8080")
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        source_input = st_searchbox(
-            custom_search,
-            placeholder="Search Source (Object, Group, CIDR, or 'any')",
-            label="Source (SRC)",
-            key="src_searchbox"
-        )
-    with col2:
-        source_port_input = st.text_input("Source Port(s)", "any")
-    with col3:
-        destination_input = st_searchbox(
-            custom_search,
-            placeholder="Search Destination (Object, Group, CIDR, or 'any')",
-            label="Destination (DST)",
-            key="dst_searchbox"
-        )
-    with col4:
-        port_input = st.text_input("Destination Port(s)", "443, 8080")
     
 
 
