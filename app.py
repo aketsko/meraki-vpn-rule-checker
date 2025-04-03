@@ -33,14 +33,15 @@ group_map = get_group_map(groups_data)
 
 def search_objects_and_groups(searchterm: str):
     results = []
-    # Search in network objects
-    for obj in network_objects:
-        if searchterm.lower() in obj["name"].lower() or searchterm in obj["cidr"]:
-            results.append((f"{obj['name']} ({obj['cidr']})", obj["cidr"]))
-    # Search in object groups
-    for group in object_groups:
-        if searchterm.lower() in group["name"].lower():
+
+    for obj in objects_data:
+        if searchterm.lower() in obj.get("name", "").lower() or searchterm in obj.get("cidr", ""):
+            results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
+
+    for group in groups_data:
+        if searchterm.lower() in group.get("name", "").lower():
             results.append((f"{group['name']} (Group)", group["name"]))
+
     return results
 
 
@@ -106,6 +107,9 @@ with tab1:
     protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
     filter_toggle = st.checkbox("Show only matching rules", value=False)
 
+    source_input = source_input or "any"
+    destination_input = destination_input or "any"
+    
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
 
