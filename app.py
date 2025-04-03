@@ -57,7 +57,7 @@ green_start, green_end = [0, 128, 0], [144, 238, 144]
 red_start, red_end = [139, 0, 0], [255, 192, 203]
 
 # 🧰 Toolbox inside a collapsible section
-with st.sidebar.expander("🎛️ Toolbox: Rule Highlighting Colors", expanded=True):
+with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
     # Exact ALLOW
