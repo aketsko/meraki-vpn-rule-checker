@@ -184,63 +184,105 @@ function(params) {
 with tab2:
     st.header("🧠 Optimization Insights")
 
-    insights = []
+    def show_rule_summary(indexes):
+        rows = []
+        for i in indexes:
+            r = rules_data[i]
+            rows.append({
+                "Index": i,
+                "Action": r["policy"].upper(),
+                "Protocol": r["protocol"],
+                "Src": r["srcCidr"],
+                "Dst": r["destCidr"],
+                "DPort": r["destPort"],
+                "Comment": r.get("comment", "")
+            })
+        st.dataframe(pd.DataFrame(rows), use_container_width=True)
+
+    def rule_covers(rule_a, rule_b):
+        return (
+            (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
+            (rule_a["destCidr"] == "Any" or rule_a["destCidr"] == rule_b["destCidr"]) and
+            (rule_a["destPort"].lower() == "any" or rule_a["destPort"] == rule_b["destPort"]) and
+            (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
+        )
+
+    insight_rows = []
     seen_rules = set()
 
     for i, rule in enumerate(rules_data):
         sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
         if sig in seen_rules:
-            insights.append(f"🔁 **Duplicate Rule** at index {i}: same action, protocol, source, destination, and port.")
+            insight_rows.append((
+                f"🔁 **Duplicate Rule** at index {i}: same action, protocol, source, destination, and port.",
+                [i]
+            ))
         else:
             seen_rules.add(sig)
+
+        # Broad rule exclusion
+        is_last = i == len(rules_data) - 1
+        is_penultimate = i == len(rules_data) - 2
+        is_allow_any = rule["policy"].lower() == "allow"
+        is_deny_any = rule["policy"].lower() == "deny"
 
         if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
             and rule["destPort"].lower() == "any"
             and rule["protocol"].lower() == "any"):
-            insights.append(f"⚠️ **Broad Rule Risk** at index {i}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.")
+            if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
+                pass  # expected, skip
+            else:
+                insight_rows.append((
+                    f"⚠️ **Broad Rule Risk** at index {i}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
+                    [i]
+                ))
 
-        # Shadowing check: if traffic is already caught
+        # ✅ Shadowed rule detection
         for j in range(i):
-            earlier = rules_data[j]
-            if (earlier["policy"] == rule["policy"] and
-                (earlier["srcCidr"] == rule["srcCidr"] or earlier["srcCidr"] == "Any") and
-                (earlier["destCidr"] == rule["destCidr"] or earlier["destCidr"] == "Any") and
-                (earlier["destPort"] == rule["destPort"] or earlier["destPort"].lower() == "any") and
-                (earlier["protocol"] == rule["protocol"] or earlier["protocol"].lower() == "any")):
-                insights.append(f"🚫 **Shadowed Rule** at index {i}: redundant due to similar rule at index {j}.")
+            if rule_covers(rules_data[j], rule):
+                insight_rows.append((
+                    f"🚫 **Shadowed Rule** at index {i}: unreachable due to broader rule at index {j}.",
+                    [j, i]
+                ))
                 break
 
-        # Merge opportunity with next rule
+        # Merge opportunities
         if i < len(rules_data) - 1:
             next_rule = rules_data[i+1]
             fields_to_compare = ["policy", "srcCidr", "destCidr"]
             if all(rule[f] == next_rule[f] for f in fields_to_compare):
-                # Try port merge
                 if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
-                    insights.append(f"🔄 **Merge Candidate** at index {i} & {i+1}: same action/source/destination, different ports.")
-                # Try protocol merge
+                    insight_rows.append((
+                        f"🔄 **Merge Candidate** at index {i} & {i+1}: same action/source/destination, different ports.",
+                        [i, i+1]
+                    ))
                 elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
-                    insights.append(f"🔄 **Merge Candidate** at index {i} & {i+1}: same action/src/dst/ports, different protocol.")
+                    if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
+                        continue
+                    insight_rows.append((
+                        f"🔄 **Merge Candidate** at index {i} & {i+1}: same action/src/dst/ports, different protocol.",
+                        [i, i+1]
+                    ))
 
-    # Show insights
-    if insights:
-        for tip in insights:
-            st.markdown(tip)
+    if insight_rows:
+        for msg, rule_indexes in insight_rows:
+            st.markdown(msg)
+            show_rule_summary(rule_indexes)
 
-        st.download_button("📥 Download Insights", "\n".join(insights), file_name="optimization_insights.txt")
+        st.download_button("📥 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
     else:
         st.success("✅ No optimization issues detected.")
 
-    # 🧠 Legend
+    # ℹ️ Legend
     st.markdown("---")
-    st.subheader("🧠 Logic Layers Summary (Legend)")
+    st.subheader("ℹ️ Legend")
     st.markdown("""
-| Term               | Description                                                                 | Example                                                                 |
-|--------------------|-----------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| 🔁 **Duplicate Rule** | Rule is identical to a previous one (all fields except comment)           | Rule 1 and Rule 5 both allow `TCP 80` from `192.168.1.0/24` to `10.0.0.0/24`. |
-| 🔄 **Merge Candidate** | Rules could be combined (only one field differs, e.g., port)              | Rule 2 allows `TCP 80`, Rule 3 allows `TCP 443` for the same source/destination. |
-| ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               | Rule 4 allows `ANY` to `ANY` on `ANY`, making specific rules below ineffective. |
-| 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic | Rule 6 is redundant because Rule 2 already matches the same traffic.         |
+| Term               | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| 🔁 **Duplicate Rule** | Rule is identical to a previous one (all fields except comment)           |
+| 🔄 **Merge Candidate** | Rules could be combined (only one field differs, e.g., port)              |
+| ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               |
+| 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic |
 """)
 
 
