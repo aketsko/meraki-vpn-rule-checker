@@ -178,7 +178,7 @@ with tab1:
             key="dst_searchbox"
         )
     with col4:
-        port_input = st.text_input("Destination Port(s)", "443, 8080")
+        port_input = st.text_input("Destination Port(s)", "any")
     
     with col5:
         protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
