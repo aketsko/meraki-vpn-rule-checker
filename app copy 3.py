@@ -113,7 +113,7 @@ with tab1:
         dest_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["destCidr"].split(",")]
 
         rule_rows.append({
-            "Rule Index": idx + 1,
+            "Rule Index": idx,
             "Action": rule["policy"].upper(),
             "Comment": rule.get("comment", ""),
             "Source": ", ".join(source_names),
@@ -189,7 +189,7 @@ with tab2:
         for i in indexes:
             r = rules_data[i]
             rows.append({
-                "Index": i + 1,
+                "Index": i,
                 "Action": r["policy"].upper(),
                 "Protocol": r["protocol"],
                 "Src": r["srcCidr"],
@@ -214,8 +214,8 @@ with tab2:
         sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
         if sig in seen_rules:
             insight_rows.append((
-                f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
-                [i+1]
+                f"🔁 **Duplicate Rule** at index {i}: same action, protocol, source, destination, and port.",
+                [i]
             ))
         else:
             seen_rules.add(sig)
@@ -233,16 +233,16 @@ with tab2:
                 pass  # expected, skip
             else:
                 insight_rows.append((
-                    f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
-                    [i+1]
+                    f"⚠️ **Broad Rule Risk** at index {i}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
+                    [i]
                 ))
 
         # ✅ Shadowed rule detection
         for j in range(i):
             if rule_covers(rules_data[j], rule):
                 insight_rows.append((
-                    f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
-                    [j+1, i+1]
+                    f"🚫 **Shadowed Rule** at index {i}: unreachable due to broader rule at index {j}.",
+                    [j, i]
                 ))
                 break
 
@@ -253,15 +253,15 @@ with tab2:
             if all(rule[f] == next_rule[f] for f in fields_to_compare):
                 if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
                     insight_rows.append((
-                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
+                        f"🔄 **Merge Candidate** at index {i} & {i+1}: same action/source/destination, different ports.",
                         [i, i+1]
                     ))
                 elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
                     if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
                         continue
                     insight_rows.append((
-                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/src/dst/ports, different protocol.",
-                        [i+1, i+2]
+                        f"🔄 **Merge Candidate** at index {i} & {i+1}: same action/src/dst/ports, different protocol.",
+                        [i, i+1]
                     ))
 
     if insight_rows:
