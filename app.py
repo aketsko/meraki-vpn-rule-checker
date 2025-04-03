@@ -120,8 +120,8 @@ with tab1:
 
         full_match = src_match and dst_match and proto_match and port_match
 
-        exact_src = skip_src_check or all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
-        exact_dst = skip_dst_check or all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
+        exact_src = is_exact_subnet_match(source_ip, resolved_src_cidrs) if not skip_src_check else rule["srcCidr"] == "Any"
+        exact_dst = is_exact_subnet_match(destination_ip, resolved_dst_cidrs) if not skip_dst_check else rule["destCidr"] == "Any"
         exact_ports = skip_dport_check or len(matched_ports_list) == len(dports_to_loop)
         is_exact = full_match and exact_src and exact_dst and exact_ports
 
