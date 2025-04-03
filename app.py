@@ -140,7 +140,7 @@ if "destination_raw_input" not in st.session_state:
 # ------------------ STREAMLIT TABS ------------------
 tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
-# ------------------ RULE CHECKER TAB ------------------
+
 # ------------------ RULE CHECKER TAB ------------------
 with tab1:
     st.header("🛡️ Rule Checker")
@@ -192,8 +192,12 @@ def custom_search(term: str):
     with col4:
         port_input = st.text_input("Destination Port(s)", "443, 8080")
 
-    protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
-    filter_toggle = st.checkbox("Show only matching rules", value=False)
+    st.markdown("### Match Criteria")
+    col_proto, col_filter = st.columns([1, 1])
+    with col_proto:
+        protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
+    with col_filter:
+        filter_toggle = st.checkbox("Show only matching rules", value=False)
 
 
     source_input = source_input or "any"
