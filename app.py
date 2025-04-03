@@ -147,15 +147,22 @@ with tab1:
         st.session_state["destination_raw_input"] = "any"
 
     def custom_search(term: str):
-        term = term.strip().lower()
+        term = term.strip()
         results = []
+        # Match objects
         for obj in objects_data:
-            if term in obj["name"].lower() or term in obj.get("cidr", ""):
+            if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
                 results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
+        # Match groups
         for group in groups_data:
-            if term in group["name"].lower():
+            if term.lower() in group["name"].lower():
                 results.append((f"{group['name']} (Group)", group["name"]))
+    
+        # 🔁 If nothing found, return the raw input so it stays visible
+        if not results:
+            results.append((f"Use: {term}", term))
         return results
+
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
