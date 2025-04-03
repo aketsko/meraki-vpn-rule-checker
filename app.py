@@ -51,7 +51,7 @@ def show_rule_summary(indexes):
 
 
 # ------------------ STREAMLIT TABS ------------------
-tab1, tab2, tab4 = st.tabs(["🔍 Rule Checker", "🧠 Optimization Insights", "🔎 Object Search"])
+tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
 # ------------------ RULE CHECKER TAB ------------------
 with tab1:
