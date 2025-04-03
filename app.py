@@ -168,8 +168,9 @@ with tab1:
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
 
-    skip_src_check = source_input.strip().lower() == "any"
-    skip_dst_check = destination_input.strip().lower() == "any"
+    skip_src_check = not source_input or source_input.strip().lower() == "any"
+    skip_dst_check = not destination_input or destination_input.strip().lower() == "any"
+
     skip_proto_check = protocol.strip().lower() == "any"
     skip_dport_check = port_input.strip().lower() == "any"
     skip_sport_check = source_port_input.strip().lower() == "any"
