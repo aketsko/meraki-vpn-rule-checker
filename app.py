@@ -44,34 +44,61 @@ def rgb_to_hex(rgb):
 green_palette = color_gradient([0, 128, 0], [144, 238, 144])
 red_palette = color_gradient([139, 0, 0], [255, 192, 203])
 
-# Toolbox UI
+# ------------------ SIDEBAR TOOLBOX ------------------
+import numpy as np
+from PIL import Image
+import io
+import base64
+
+# Gradient generator
+def get_gradient_image(start_color, end_color, width=300, height=25):
+    gradient = np.linspace(start_color, end_color, width)
+    gradient = np.tile(gradient, (height, 1, 1)).astype(np.uint8)
+    img = Image.fromarray(gradient)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    base64_img = base64.b64encode(buf.getvalue()).decode()
+    return f"<img src='data:image/png;base64,{base64_img}' width='{width}' height='{height}'>"
+
+# RGB to HEX
+def rgb_to_hex(rgb):
+    return '#%02x%02x%02x' % tuple(rgb)
+
+# Define palettes
+green_start, green_end = [0, 128, 0], [144, 238, 144]
+red_start, red_end = [139, 0, 0], [255, 192, 203]
+
+# Header
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎛️ Toolbox: Rule Highlighting Colors")
 
+# Sliders
 green1_val = st.sidebar.slider("Exact Match (ALLOW)", 0, 256, 64)
+st.sidebar.markdown(get_gradient_image(green_start, green_end), unsafe_allow_html=True)
+
 green2_val = st.sidebar.slider("Partial Match (ALLOW)", 0, 256, 192)
+st.sidebar.markdown(get_gradient_image(green_start, green_end), unsafe_allow_html=True)
+
 red1_val = st.sidebar.slider("Exact Match (DENY)", 0, 256, 64)
+st.sidebar.markdown(get_gradient_image(red_start, red_end), unsafe_allow_html=True)
+
 red2_val = st.sidebar.slider("Partial Match (DENY)", 0, 256, 192)
+st.sidebar.markdown(get_gradient_image(red_start, red_end), unsafe_allow_html=True)
 
-# Convert to HEX
-green1 = rgb_to_hex(green_palette[green1_val])
-green2 = rgb_to_hex(green_palette[green2_val])
-red1 = rgb_to_hex(red_palette[red1_val])
-red2 = rgb_to_hex(red_palette[red2_val])
+# Get hex colors
+green1 = rgb_to_hex(np.array(green_start)*(1-green1_val/256) + np.array(green_end)*(green1_val/256))
+green2 = rgb_to_hex(np.array(green_start)*(1-green2_val/256) + np.array(green_end)*(green2_val/256))
+red1 = rgb_to_hex(np.array(red_start)*(1-red1_val/256) + np.array(red_end)*(red1_val/256))
+red2 = rgb_to_hex(np.array(red_start)*(1-red2_val/256) + np.array(red_end)*(red2_val/256))
 
-# Show color boxes
-st.sidebar.markdown(f"**Exact ALLOW:** <div style='background-color:{green1};width:100%;height:25px'></div>", unsafe_allow_html=True)
-st.sidebar.markdown(f"**Partial ALLOW:** <div style='background-color:{green2};width:100%;height:25px'></div>", unsafe_allow_html=True)
-st.sidebar.markdown(f"**Exact DENY:** <div style='background-color:{red1};width:100%;height:25px'></div>", unsafe_allow_html=True)
-st.sidebar.markdown(f"**Partial DENY:** <div style='background-color:{red2};width:100%;height:25px'></div>", unsafe_allow_html=True)
-
-# You can then pass these into AG Grid style logic like:
+# Color mapping
 highlight_colors = {
     "exact_allow": green1,
     "partial_allow": green2,
     "exact_deny": red1,
     "partial_deny": red2,
 }
+
 #______________________________________________________________________
 
 if not all([rules_file, objects_file, groups_file]):
