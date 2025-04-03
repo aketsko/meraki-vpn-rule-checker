@@ -184,12 +184,13 @@ function(params) {
 with tab2:
     st.header("🧠 Optimization Insights")
 
-    def show_rule_summary(indexes):
-        rows = []
-        for i in indexes:
-            r = rules_data[i-1]
+def show_rule_summary(indexes):
+    rows = []
+    for i in indexes:
+        if 1 <= i <= len(rules_data):
+            r = rules_data[i - 1]  # Convert 1-based to 0-based
             rows.append({
-                "Index": i + 1,
+                "Index": i,
                 "Action": r["policy"].upper(),
                 "Protocol": r["protocol"],
                 "Src": r["srcCidr"],
@@ -197,6 +198,9 @@ with tab2:
                 "DPort": r["destPort"],
                 "Comment": r.get("comment", "")
             })
+        else:
+            st.warning(f"⚠️ Skipping invalid rule index: {i}")
+    if rows:
         st.dataframe(pd.DataFrame(rows), use_container_width=True)
 
     def rule_covers(rule_a, rule_b):
