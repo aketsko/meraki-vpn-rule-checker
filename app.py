@@ -171,26 +171,26 @@ def custom_search(term: str):
 
     return results
 
-# 🚨 Now define the columns OUTSIDE of the function!
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    source_input = st_searchbox(
-        custom_search,
-        placeholder="Search Source (Object, Group, CIDR, or 'any')",
-        label="Source (SRC)",
-        key="src_searchbox"
-    )
-with col2:
-    source_port_input = st.text_input("Source Port(s)", "any")
-with col3:
-    destination_input = st_searchbox(
-        custom_search,
-        placeholder="Search Destination (Object, Group, CIDR, or 'any')",
-        label="Destination (DST)",
-        key="dst_searchbox"
-    )
-with col4:
-    port_input = st.text_input("Destination Port(s)", "443, 8080")
+    # 🚨 Now define the columns OUTSIDE of the function!
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        source_input = st_searchbox(
+            custom_search,
+            placeholder="Search Source (Object, Group, CIDR, or 'any')",
+            label="Source (SRC)",
+            key="src_searchbox"
+        )
+    with col2:
+        source_port_input = st.text_input("Source Port(s)", "any")
+    with col3:
+        destination_input = st_searchbox(
+            custom_search,
+            placeholder="Search Destination (Object, Group, CIDR, or 'any')",
+            label="Destination (DST)",
+            key="dst_searchbox"
+        )
+    with col4:
+        port_input = st.text_input("Destination Port(s)", "443, 8080")
 
     
 
