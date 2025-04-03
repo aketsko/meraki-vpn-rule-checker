@@ -170,55 +170,55 @@ def custom_search(term: str):
         results.append((f"Use: {term}", term))
 
     return results
-# 🚨 Now define the columns OUTSIDE of the function!
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    ource_input = st_searchbox(
-     custom_search,
-    placeholder="Search Source (Object, Group, CIDR, or 'any')",
-    label="Source (SRC)",
-    key="src_searchbox"
-    )
-with col2:
-    source_port_input = st.text_input("Source Port(s)", "any")
-with col3:
-    destination_input = st_searchbox(
-    custom_search,
-    placeholder="Search Destination (Object, Group, CIDR, or 'any')",
-    label="Destination (DST)",
-    key="dst_searchbox"
-    )
-with col4:
-    port_input = st.text_input("Destination Port(s)", "443, 8080")
-
-st.markdown("### Match Criteria")
-    col_proto, col_filter = st.columns([1, 1])
-    with col_proto:
-        protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
-    with col_filter:
-        filter_toggle = st.checkbox("Show only matching rules", value=False)
-
-
-    source_input = source_input or "any"
-    destination_input = destination_input or "any"
+    # 🚨 Now define the columns OUTSIDE of the function!
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        ource_input = st_searchbox(
+         custom_search,
+        placeholder="Search Source (Object, Group, CIDR, or 'any')",
+        label="Source (SRC)",
+        key="src_searchbox"
+        )
+    with col2:
+        source_port_input = st.text_input("Source Port(s)", "any")
+    with col3:
+        destination_input = st_searchbox(
+        custom_search,
+        placeholder="Search Destination (Object, Group, CIDR, or 'any')",
+        label="Destination (DST)",
+        key="dst_searchbox"
+        )
+    with col4:
+        port_input = st.text_input("Destination Port(s)", "443, 8080")
     
-    source_cidrs = resolve_search_input(source_input)
-    destination_cidrs = resolve_search_input(destination_input)
-
-    skip_src_check = not source_input or source_input.strip().lower() == "any"
-    skip_dst_check = not destination_input or destination_input.strip().lower() == "any"
-
-    skip_proto_check = protocol.strip().lower() == "any"
-    skip_dport_check = port_input.strip().lower() == "any"
-    skip_sport_check = source_port_input.strip().lower() == "any"
-
-    dports_to_check = [] if skip_dport_check else [p.strip() for p in port_input.split(",") if p.strip().isdigit()]
-    dports_to_loop = ["any"] if skip_dport_check else dports_to_check
-
-    matched_ports = {}
-    rule_match_ports = {}
-    found_partial_match = False
-    first_exact_match_index = None
+    st.markdown("### Match Criteria")
+        col_proto, col_filter = st.columns([1, 1])
+        with col_proto:
+            protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
+        with col_filter:
+            filter_toggle = st.checkbox("Show only matching rules", value=False)
+    
+    
+        source_input = source_input or "any"
+        destination_input = destination_input or "any"
+        
+        source_cidrs = resolve_search_input(source_input)
+        destination_cidrs = resolve_search_input(destination_input)
+    
+        skip_src_check = not source_input or source_input.strip().lower() == "any"
+        skip_dst_check = not destination_input or destination_input.strip().lower() == "any"
+    
+        skip_proto_check = protocol.strip().lower() == "any"
+        skip_dport_check = port_input.strip().lower() == "any"
+        skip_sport_check = source_port_input.strip().lower() == "any"
+    
+        dports_to_check = [] if skip_dport_check else [p.strip() for p in port_input.split(",") if p.strip().isdigit()]
+        dports_to_loop = ["any"] if skip_dport_check else dports_to_check
+    
+        matched_ports = {}
+        rule_match_ports = {}
+        found_partial_match = False
+        first_exact_match_index = None
 
     for idx, rule in enumerate(rules_data):
         rule_protocol = rule["protocol"].lower()
