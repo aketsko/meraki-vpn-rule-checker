@@ -14,6 +14,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+st.markdown(
+    """
+    <style>
+    /* Sidebar text color */
+    section[data-testid="stSidebar"] .css-1v3fvcr, 
+    section[data-testid="stSidebar"] .css-1cpxqw2 {
+        color: black; /* Change to your desired color */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
 # ------------------ SIDEBAR FILE UPLOAD ------------------
 st.sidebar.header("🔧 Upload Configuration Files")
 rules_file = st.sidebar.file_uploader("Upload Rules.json - Get it from /organizations/:organizationId/appliance/vpn/vpnFirewallRules", type="json")
