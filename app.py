@@ -167,6 +167,7 @@ with tab1:
             placeholder="Search Source (Object, Group, CIDR, or 'any')",
             label="Source (SRC)",
             key="src_searchbox"
+            default="any"
         )
     with col2:
         source_port_input = st.text_input("Source Port(s)", "any")
@@ -176,6 +177,7 @@ with tab1:
             placeholder="Search Destination (Object, Group, CIDR, or 'any')",
             label="Destination (DST)",
             key="dst_searchbox"
+            default="any"
         )
     with col4:
         port_input = st.text_input("Destination Port(s)", "any")
