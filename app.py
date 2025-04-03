@@ -18,7 +18,7 @@ st.markdown("""
 /* Force main container to always use full width */
 .css-18e3th9 {
     flex: 1 1 100%;
-    max-width: 100%;
+    max-width: 50%;
 }
 </style>
 """, unsafe_allow_html=True)
