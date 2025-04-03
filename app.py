@@ -63,6 +63,18 @@ def show_rule_summary(indexes):
         st.dataframe(pd.DataFrame(rows), use_container_width=True)
 
 
+def search_objects_and_groups(searchterm: str):
+    results = []
+    # Search in network objects
+    for obj in network_objects:
+        if searchterm.lower() in obj["name"].lower() or searchterm in obj["cidr"]:
+            results.append((f"{obj['name']} ({obj['cidr']})", obj["cidr"]))
+    # Search in object groups
+    for group in object_groups:
+        if searchterm.lower() in group["name"].lower():
+            results.append((f"{group['name']} (Group)", group["name"]))
+    return results
+
 # ------------------ STREAMLIT TABS ------------------
 tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
