@@ -55,7 +55,7 @@ tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 
 
 # ------------------ RULE CHECKER TAB ------------------
 with tab1:
-    st.header("🔍 VPN Rule Checker")
+    st.header("🛡️ Rule Checker")
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -69,6 +69,20 @@ with tab1:
 
     protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
     filter_toggle = st.checkbox("Show only matching rules", value=False)
+    def resolve_search_input(input_str):
+        input_str = input_str.strip()
+        if input_str.lower() == "any":
+            return ["0.0.0.0/0"]
+        for obj in objects_data:
+            if input_str == obj["name"]:
+                return [obj["cidr"]]
+        for group in groups_data:
+            if input_str == group["name"]:
+                return [object_map[obj_id]["cidr"] for obj_id in group["objectIds"] if obj_id in object_map and "cidr" in object_map[obj_id]]
+        return [input_str]
+
+    source_cidrs = resolve_search_input(source_input)
+    destination_cidrs = resolve_search_input(destination_input)
 
     skip_src_check = source_ip.strip().lower() == "any"
     skip_dst_check = destination_ip.strip().lower() == "any"
@@ -94,8 +108,8 @@ with tab1:
         resolved_src_cidrs = resolve_to_cidrs(src_ids, object_map, group_map)
         resolved_dst_cidrs = resolve_to_cidrs(dst_ids, object_map, group_map)
 
-        src_match = True if skip_src_check else match_input_to_rule(resolved_src_cidrs, source_ip)
-        dst_match = True if skip_dst_check else match_input_to_rule(resolved_dst_cidrs, destination_ip)
+        src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
+        dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
         proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
         matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
         matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
@@ -105,8 +119,8 @@ with tab1:
 
         full_match = src_match and dst_match and proto_match and port_match
 
-        exact_src = (skip_src_check and "Any" in rule["srcCidr"]) or (not skip_src_check and is_exact_subnet_match(source_ip, resolved_src_cidrs))
-        exact_dst = (skip_dst_check and "Any" in rule["destCidr"]) or (not skip_dst_check and is_exact_subnet_match(destination_ip, resolved_dst_cidrs))
+        exact_src = skip_src_check or all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
+        exact_dst = skip_dst_check or all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
         exact_ports = skip_dport_check or len(matched_ports_list) == len(dports_to_loop)
         is_exact = full_match and exact_src and exact_dst and exact_ports
 
@@ -129,7 +143,6 @@ with tab1:
         is_partial_match = matched_any and not is_exact_match
 
         source_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["srcCidr"].split(",")]
-
         dest_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["destCidr"].split(",")]
 
         rule_rows.append({

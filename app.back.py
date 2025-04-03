@@ -30,8 +30,28 @@ groups_data = load_json_file(groups_file)
 object_map = get_object_map(objects_data)
 group_map = get_group_map(groups_data)
 
+def show_rule_summary(indexes):
+    rows = []
+    for i in indexes:
+        if 1 <= i <= len(rules_data):
+            r = rules_data[i - 1]  # Convert 1-based to 0-based
+            rows.append({
+                "Index": i,
+                "Action": r["policy"].upper(),
+                "Protocol": r["protocol"],
+                "Src": r["srcCidr"],
+                "Dst": r["destCidr"],
+                "DPort": r["destPort"],
+                "Comment": r.get("comment", "")
+            })
+        else:
+            st.warning(f"⚠️ Skipping invalid rule index: {i}")
+    if rows:
+        st.dataframe(pd.DataFrame(rows), use_container_width=True)
+
+
 # ------------------ STREAMLIT TABS ------------------
-tab1, tab2, tab4 = st.tabs(["🔍 Rule Checker", "🧠 Optimization Insights", "🔎 Object Search"])
+tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
 # ------------------ RULE CHECKER TAB ------------------
 with tab1:
@@ -113,7 +133,7 @@ with tab1:
         dest_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["destCidr"].split(",")]
 
         rule_rows.append({
-            "Rule Index": idx,
+            "Rule Index": idx + 1,
             "Action": rule["policy"].upper(),
             "Comment": rule.get("comment", ""),
             "Source": ", ".join(source_names),
@@ -149,56 +169,34 @@ function(params) {
 }
 """)
 
+
     gb = GridOptionsBuilder.from_dataframe(df_to_show)
-from st_aggrid import JsCode
-row_style_js = JsCode("""
-function(params) {
-    if (params.data["Exact Match ✅"] === true) {
-        return {
-            backgroundColor: params.data.Action === "ALLOW" ? '#00cc44' : '#cc0000',
-            color: 'white',
-            fontWeight: 'bold'
-        };
-    }
-    if (params.data["Partial Match 🔶"] === true) {
-        return {
-            backgroundColor: params.data.Action === "ALLOW" ? '#99e6b3' : '#ff9999',
-            fontWeight: 'bold'
-        };
-    }
-    return {};
-}
-""")
+    column_defs = [
+        {"field": "Rule Index", "width": 70},
+        {"field": "Action", "width": 80},
+        {"field": "Protocol", "width": 80},
+        {"field": "Source", "width": 400},
+        {"field": "Destination", "width": 400},
+        {"field": "Source Port", "width": 80},
+        {"field": "Ports", "width": 80},
+        {"field": "Comment", "width": 500},
+        {"field": "Matched Ports", "width": 80},
+        {"field": "Matched ✅", "width": 80},
+        {"field": "Exact Match ✅", "width": 100},
+        {"field": "Partial Match 🔶", "width": 120}
+    ]
+    gb.configure_columns(column_defs)
+    gb.configure_column("Comment", wrapText=True, autoHeight=True)
+    gb.configure_column("Source", wrapText=True, autoHeight=True)
+    gb.configure_column("Destination", wrapText=True, autoHeight=True)
+    gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
+    grid_options = gb.build()
 
-gb.configure_default_column(filter=True, sortable=True, resizable=True)
-
-column_defs = [
-    {"field": "Rule Index", "width": 70},
-    {"field": "Action", "width": 80},
-    {"field": "Protocol", "width": 80},
-    {"field": "Source", "width": 400},
-    {"field": "Destination", "width": 400},
-    {"field": "Source Port", "width": 80},
-    {"field": "Ports", "width": 80},
-    {"field": "Comment", "width": 500},
-    {"field": "Matched Ports", "width": 80},
-    {"field": "Matched ✅", "width": 80},
-    {"field": "Exact Match ✅", "width": 100},
-    {"field": "Partial Match 🔶", "width": 120}
-]
-gb.configure_columns(column_defs)
-gb.configure_column("Comment", wrapText=True, autoHeight=True)
-gb.configure_column("Source", wrapText=True, autoHeight=True)
-gb.configure_column("Destination", wrapText=True, autoHeight=True)
-gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
-grid_options = gb.build()
-
-AgGrid(
-    df_to_show,
-    gridOptions=grid_options,
+    AgGrid(
+        df_to_show,
+        gridOptions=grid_options,
         enable_enterprise_modules=False,
         fit_columns_on_grid_load=True,
-        
         use_container_width=True,
         allow_unsafe_jscode=True
     )
@@ -206,33 +204,103 @@ AgGrid(
 with tab2:
     st.header("🧠 Optimization Insights")
 
-    insights = []
-    seen = set()
+    def rule_covers(rule_a, rule_b):
+        return (
+            (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
+            (rule_a["destCidr"] == "Any" or rule_a["destCidr"] == rule_b["destCidr"]) and
+            (rule_a["destPort"].lower() == "any" or rule_a["destPort"] == rule_b["destPort"]) and
+            (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
+        )
+
+    insight_rows = []
+    seen_rules = set()
+
     for i, rule in enumerate(rules_data):
         sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
-        if sig in seen:
-            insights.append(f"🔁 Redundant rule at index {i}: {rule.get('comment', '')}")
+        if sig in seen_rules:
+            insight_rows.append((
+                f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
+                [i+1]
+            ))
         else:
-            seen.add(sig)
+            seen_rules.add(sig)
 
-        if rule["srcCidr"] == "Any" and rule["destCidr"] == "Any" and rule["destPort"].lower() == "any":
-            insights.append(f"⚠️ Broad rule at index {i} allows/denies all traffic: {rule.get('comment', '')}")
+        # Broad rule exclusion
+        is_last = i == len(rules_data) - 1
+        is_penultimate = i == len(rules_data) - 2
+        is_allow_any = rule["policy"].lower() == "allow"
+        is_deny_any = rule["policy"].lower() == "deny"
 
-    if insights:
-        for tip in insights:
-            st.write(tip)
-        st.download_button("📥 Download Insights", "\n".join(insights), file_name="optimization_insights.txt")
-#".join(insights), file_name="optimization_insights.txt")
+        if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
+            and rule["destPort"].lower() == "any"
+            and rule["protocol"].lower() == "any"):
+            if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
+                pass  # expected, skip
+            else:
+                insight_rows.append((
+                    f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
+                    [i+1]
+                ))
+
+        # ✅ Shadowed rule detection
+        for j in range(i):
+            if rule_covers(rules_data[j], rule):
+                insight_rows.append((
+                    f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
+                    [j+1, i+1]
+                ))
+                break
+
+        # Merge opportunities
+        if i < len(rules_data) - 1:
+            next_rule = rules_data[i+1]
+            fields_to_compare = ["policy", "srcCidr", "destCidr"]
+            if all(rule[f] == next_rule[f] for f in fields_to_compare):
+                if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
+                    insight_rows.append((
+                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
+                        [i+1, i+2]
+                    ))
+                elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
+                    if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
+                        continue
+                    insight_rows.append((
+                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/src/dst/ports, different protocol.",
+                        [i+1, i+2]
+                    ))
+
+    if insight_rows:
+        for msg, rule_indexes in insight_rows:
+            st.markdown(msg)
+            show_rule_summary(rule_indexes)
+
+        st.download_button("📥 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
     else:
         st.success("✅ No optimization issues detected.")
+
+    # ℹ️ Legend
+    st.markdown("---")
+    st.subheader("ℹ️ Legend")
+    st.markdown("""
+| Term               | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| 🔁 **Duplicate Rule** | Rule is identical to a previous one (all fields except comment)           |
+| 🔄 **Merge Candidate** | Rules could be combined (only one field differs, e.g., port)              |
+| ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               |
+| 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic |
+""")
+
 
 # ------------------ TAB 4: Object Search ------------------
 with tab4:
     st.header("🔎 Object & Group Search")
 
-    search_term = st.text_input("Search by name:", "")
+    search_term = st.text_input("Search by name or CIDR:", "").lower()
 
-    filtered_objs = [o for o in objects_data if search_term.lower() in o["name"].lower()] if search_term else objects_data
+    def match_object(obj, term):
+        return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
+
+    filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
     filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
 
     st.subheader("🔹 Matching Network Objects")

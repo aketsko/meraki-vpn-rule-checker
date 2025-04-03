@@ -30,12 +30,32 @@ groups_data = load_json_file(groups_file)
 object_map = get_object_map(objects_data)
 group_map = get_group_map(groups_data)
 
+def show_rule_summary(indexes):
+    rows = []
+    for i in indexes:
+        if 1 <= i <= len(rules_data):
+            r = rules_data[i - 1]  # Convert 1-based to 0-based
+            rows.append({
+                "Index": i,
+                "Action": r["policy"].upper(),
+                "Protocol": r["protocol"],
+                "Src": r["srcCidr"],
+                "Dst": r["destCidr"],
+                "DPort": r["destPort"],
+                "Comment": r.get("comment", "")
+            })
+        else:
+            st.warning(f"⚠️ Skipping invalid rule index: {i}")
+    if rows:
+        st.dataframe(pd.DataFrame(rows), use_container_width=True)
+
+
 # ------------------ STREAMLIT TABS ------------------
-tab1, tab2, tab4 = st.tabs(["🔍 Rule Checker", "🧠 Optimization Insights", "🔎 Object Search"])
+tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
 # ------------------ RULE CHECKER TAB ------------------
 with tab1:
-    st.header("🔍 VPN Rule Checker")
+    st.header("🛡️ Rule Checker")
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -49,6 +69,20 @@ with tab1:
 
     protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
     filter_toggle = st.checkbox("Show only matching rules", value=False)
+    def resolve_search_input(input_str):
+        input_str = input_str.strip()
+        if input_str.lower() == "any":
+            return ["0.0.0.0/0"]
+        for obj in objects_data:
+            if input_str == obj["name"]:
+                return [obj["cidr"]]
+        for group in groups_data:
+            if input_str == group["name"]:
+                return [object_map[obj_id]["cidr"] for obj_id in group["objectIds"] if obj_id in object_map and "cidr" in object_map[obj_id]]
+        return [input_str]
+
+    source_cidrs = resolve_search_input(source_input)
+    destination_cidrs = resolve_search_input(destination_input)
 
     skip_src_check = source_ip.strip().lower() == "any"
     skip_dst_check = destination_ip.strip().lower() == "any"
@@ -74,8 +108,8 @@ with tab1:
         resolved_src_cidrs = resolve_to_cidrs(src_ids, object_map, group_map)
         resolved_dst_cidrs = resolve_to_cidrs(dst_ids, object_map, group_map)
 
-        src_match = True if skip_src_check else match_input_to_rule(resolved_src_cidrs, source_ip)
-        dst_match = True if skip_dst_check else match_input_to_rule(resolved_dst_cidrs, destination_ip)
+        src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
+        dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
         proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
         matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
         matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
@@ -85,8 +119,8 @@ with tab1:
 
         full_match = src_match and dst_match and proto_match and port_match
 
-        exact_src = (skip_src_check and "Any" in rule["srcCidr"]) or (not skip_src_check and is_exact_subnet_match(source_ip, resolved_src_cidrs))
-        exact_dst = (skip_dst_check and "Any" in rule["destCidr"]) or (not skip_dst_check and is_exact_subnet_match(destination_ip, resolved_dst_cidrs))
+        exact_src = skip_src_check or all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
+        exact_dst = skip_dst_check or all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
         exact_ports = skip_dport_check or len(matched_ports_list) == len(dports_to_loop)
         is_exact = full_match and exact_src and exact_dst and exact_ports
 
@@ -109,11 +143,10 @@ with tab1:
         is_partial_match = matched_any and not is_exact_match
 
         source_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["srcCidr"].split(",")]
-
         dest_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["destCidr"].split(",")]
 
         rule_rows.append({
-            "Rule Index": idx,
+            "Rule Index": idx + 1,
             "Action": rule["policy"].upper(),
             "Comment": rule.get("comment", ""),
             "Source": ", ".join(source_names),
@@ -184,21 +217,6 @@ function(params) {
 with tab2:
     st.header("🧠 Optimization Insights")
 
-    def show_rule_summary(indexes):
-        rows = []
-        for i in indexes:
-            r = rules_data[i]
-            rows.append({
-                "Index": i,
-                "Action": r["policy"].upper(),
-                "Protocol": r["protocol"],
-                "Src": r["srcCidr"],
-                "Dst": r["destCidr"],
-                "DPort": r["destPort"],
-                "Comment": r.get("comment", "")
-            })
-        st.dataframe(pd.DataFrame(rows), use_container_width=True)
-
     def rule_covers(rule_a, rule_b):
         return (
             (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
@@ -214,8 +232,8 @@ with tab2:
         sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
         if sig in seen_rules:
             insight_rows.append((
-                f"🔁 **Duplicate Rule** at index {i}: same action, protocol, source, destination, and port.",
-                [i]
+                f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
+                [i+1]
             ))
         else:
             seen_rules.add(sig)
@@ -233,16 +251,16 @@ with tab2:
                 pass  # expected, skip
             else:
                 insight_rows.append((
-                    f"⚠️ **Broad Rule Risk** at index {i}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
-                    [i]
+                    f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
+                    [i+1]
                 ))
 
         # ✅ Shadowed rule detection
         for j in range(i):
             if rule_covers(rules_data[j], rule):
                 insight_rows.append((
-                    f"🚫 **Shadowed Rule** at index {i}: unreachable due to broader rule at index {j}.",
-                    [j, i]
+                    f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
+                    [j+1, i+1]
                 ))
                 break
 
@@ -253,15 +271,15 @@ with tab2:
             if all(rule[f] == next_rule[f] for f in fields_to_compare):
                 if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
                     insight_rows.append((
-                        f"🔄 **Merge Candidate** at index {i} & {i+1}: same action/source/destination, different ports.",
-                        [i, i+1]
+                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
+                        [i+1, i+2]
                     ))
                 elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
                     if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
                         continue
                     insight_rows.append((
-                        f"🔄 **Merge Candidate** at index {i} & {i+1}: same action/src/dst/ports, different protocol.",
-                        [i, i+1]
+                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/src/dst/ports, different protocol.",
+                        [i+1, i+2]
                     ))
 
     if insight_rows:
@@ -290,9 +308,12 @@ with tab2:
 with tab4:
     st.header("🔎 Object & Group Search")
 
-    search_term = st.text_input("Search by name:", "")
+    search_term = st.text_input("Search by name or CIDR:", "").lower()
 
-    filtered_objs = [o for o in objects_data if search_term.lower() in o["name"].lower()] if search_term else objects_data
+    def match_object(obj, term):
+        return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
+
+    filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
     filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
 
     st.subheader("🔹 Matching Network Objects")
