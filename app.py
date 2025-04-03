@@ -100,9 +100,9 @@ def search_objects_and_groups(searchterm: str):
 
 
 def resolve_search_input(input_str):
-    input_str = input_str.strip()
-    if input_str.lower() == "any":
+    if not input_str or str(input_str).strip().lower() == "any":
         return ["0.0.0.0/0"]
+    input_str = input_str.strip()
     for obj in objects_data:
         if input_str == obj["name"]:
             return [obj["cidr"]]
@@ -110,6 +110,7 @@ def resolve_search_input(input_str):
         if input_str == group["name"]:
             return [object_map[obj_id]["cidr"] for obj_id in group["objectIds"] if obj_id in object_map and "cidr" in object_map[obj_id]]
     return [input_str]
+
 
 def show_rule_summary(indexes):
     rows = []
