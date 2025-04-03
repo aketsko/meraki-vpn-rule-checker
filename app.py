@@ -89,7 +89,8 @@ highlight_colors = {
 }
 
 if st.sidebar.button("🔄 Resize Table"):
-    st.experimental_rerun()
+    st.rerun()
+
 
 #______________________________________________________________________
 
