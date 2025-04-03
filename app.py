@@ -13,6 +13,15 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
+st.markdown("""
+<style>
+/* Force main container to always use full width */
+.css-18e3th9 {
+    flex: 1 1 100%;
+    max-width: 100%;
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown("""
     <style>
@@ -87,9 +96,6 @@ highlight_colors = {
     "exact_deny": red1,
     "partial_deny": red2,
 }
-
-if st.sidebar.button("🔄 Resize Table"):
-    st.rerun()
 
 
 #______________________________________________________________________
@@ -326,9 +332,9 @@ function(params) {{
 
     gb = GridOptionsBuilder.from_dataframe(df_to_show)
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
-    gb.configure_column("Comment", wrapText=True, autoHeight=True)
-    gb.configure_column("Source", wrapText=True, autoHeight=True)
-    gb.configure_column("Destination", wrapText=True, autoHeight=True)
+    gb.configure_column("Comment",resizable=True, wrapText=True, autoHeight=True)
+    gb.configure_column("Source",resizable=True, wrapText=True, autoHeight=True)
+    gb.configure_column("Destination",resizable=True, wrapText=True, autoHeight=True)
     grid_options = gb.build()
 
     AgGrid(
