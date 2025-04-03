@@ -30,6 +30,18 @@ groups_data = load_json_file(groups_file)
 object_map = get_object_map(objects_data)
 group_map = get_group_map(groups_data)
 
+def resolve_search_input(input_str):
+    input_str = input_str.strip()
+    if input_str.lower() == "any":
+        return ["0.0.0.0/0"]
+    for obj in objects_data:
+        if input_str == obj["name"]:
+            return [obj["cidr"]]
+    for group in groups_data:
+        if input_str == group["name"]:
+            return [object_map[obj_id]["cidr"] for obj_id in group["objectIds"] if obj_id in object_map and "cidr" in object_map[obj_id]]
+    return [input_str]
+
 def show_rule_summary(indexes):
     rows = []
     for i in indexes:
@@ -69,17 +81,6 @@ with tab1:
 
     protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
     filter_toggle = st.checkbox("Show only matching rules", value=False)
-    def resolve_search_input(input_str):
-        input_str = input_str.strip()
-        if input_str.lower() == "any":
-            return ["0.0.0.0/0"]
-        for obj in objects_data:
-            if input_str == obj["name"]:
-                return [obj["cidr"]]
-        for group in groups_data:
-            if input_str == group["name"]:
-                return [object_map[obj_id]["cidr"] for obj_id in group["objectIds"] if obj_id in object_map and "cidr" in object_map[obj_id]]
-        return [input_str]
 
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
