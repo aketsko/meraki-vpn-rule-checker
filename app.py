@@ -199,7 +199,10 @@ AgGrid(
         fit_columns_on_grid_load=True,
         
         use_container_width=True,
-        allow_unsafe_jscode=with tab2:
+        allow_unsafe_jscode=True
+    )
+
+with tab2:
     st.header("🧠 Optimization Insights")
 
     insights = []
