@@ -192,9 +192,9 @@ def custom_search(term: str):
     with col4:
         port_input = st.text_input("Destination Port(s)", "443, 8080")
 
-    # 🚨 Break out of columns – now full-width again
     protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
     filter_toggle = st.checkbox("Show only matching rules", value=False)
+
 
     source_input = source_input or "any"
     destination_input = destination_input or "any"
