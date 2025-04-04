@@ -223,21 +223,38 @@ group_map = st.session_state.get("group_map", {})
 with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
-    def color_slider(label, key, default_hex):
+    def color_slider(label, key, default_hex, help_text=""):
+        if help_text:
+            st.markdown(f"<small style='color:gray'>{help_text}</small>", unsafe_allow_html=True)
         return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
 
-    color_slider("Described traffic is fully ALLOWED", key="exact_allow", default_hex="#09BC8A")
-    color_slider("Described traffic is fully DENIED", key="exact_deny", default_hex="#DA2C38")
-    color_slider("Described traffic is partially ALLOWED", key="partial_allow", default_hex="#99E2B4")
-    color_slider("Described traffic is partially DENIED", key="partial_deny", default_hex="#F7EF81")
+    color_slider(
+        "Described traffic is fully ALLOWED", 
+        key="exact_allow", 
+        default_hex="#09BC8A",
+        help_text="No rule after this one will affect the traffic."
+    )
 
-# Reconstruct highlight_colors from session state
-highlight_colors = {
-    "exact_allow": st.session_state.get("exact_allow", "#09BC8A"),
-    "exact_deny": st.session_state.get("exact_deny", "#DA2C38"),
-    "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
-    "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
-}
+    color_slider(
+        "Described traffic is fully DENIED", 
+        key="exact_deny", 
+        default_hex="#DA2C38",
+        help_text="No rule after this one will affect the traffic."
+    )
+
+    color_slider(
+        "Described traffic is partially ALLOWED", 
+        key="partial_allow", 
+        default_hex="#99E2B4",
+        help_text="This rule can affect the traffic. To investigate further, make the search more specific."
+    )
+
+    color_slider(
+        "Described traffic is partially DENIED", 
+        key="partial_deny", 
+        default_hex="#F7EF81",
+        help_text="This rule can affect the traffic. To investigate further, make the search more specific."
+    )
 
 
 # ------------------ STREAMLIT TABS ------------------
