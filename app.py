@@ -239,7 +239,8 @@ highlight_colors = {
 }
 
 
-# ------------------ STREAMLIT TABS ------------------with tab1:
+# ------------------ STREAMLIT TABS ------------------
+with tab1:
     st.header("🛡️ Rule Checker")
 
     def custom_search(term: str):
