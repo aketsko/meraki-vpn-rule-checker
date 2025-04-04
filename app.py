@@ -164,7 +164,13 @@ if not all([rules_file, objects_file, groups_file]):
     st.warning("Please upload all three JSON files to proceed.")
     st.stop()
 
-rules_data = load_json_file(rules_file)["rules"]
+if rules_file:
+    try:
+        rules_data = load_json_file(rules_file).get("rules", [])
+        st.session_state["rules_data"] = rules_data
+    except Exception as e:
+        st.error(f"❌ Failed to load Rules.json: {e}")
+        st.stop()
 objects_data = load_json_file(objects_file)
 groups_data = load_json_file(groups_file)
 
