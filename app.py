@@ -49,7 +49,7 @@ with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
     def color_slider(label, default_hex):
-        return st.sidebar.color_picker(label, value=default_hex)
+        return st.color_picker(label, value=default_hex)
 
     highlight_colors = {
         "exact_allow": color_slider("Exact ALLOW", "#00cc44"),
@@ -58,9 +58,9 @@ with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
         "partial_deny": color_slider("Partial DENY", "#ff9999")
     }
 
-# Save colors in session state for access elsewhere
-for key, color in highlight_colors.items():
-    st.session_state[key] = color
+    # Save colors in session state for access elsewhere
+    for key, color in highlight_colors.items():
+        st.session_state[key] = color
 
 
 #______________________________________________________________________
