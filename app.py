@@ -344,9 +344,9 @@ elif selected_tab == "🛡️ Rule Checker":
 
     # --- Manual Search Mode ---
     manual_mode = st.checkbox("🛠️ Dynymic update", value=False)
-    run_check = False
-    if not manual_mode:
-        run_check = True    
+#    run_check = False
+ #   if not manual_mode:
+ #       run_check = True    
     
     def custom_search(term: str):
         term = term.strip()
@@ -434,8 +434,8 @@ elif selected_tab == "🛡️ Rule Checker":
     with col_left:
         filter_toggle = st.checkbox("Show only matching rules", value=False)
 
-    if not run_check:
-        st.info("Dynamic update is disabled. Click 'Run Rule Check' to evaluate.")
+    if manual_mode:
+        st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
         st.stop()
 
     
