@@ -343,8 +343,8 @@ elif selected_tab == "🛡️ Rule Checker":
     # Your RULE CHECKER code here
 
     # --- Manual Search Mode ---
-    manual_mode = st.checkbox("🛠️ Manual Search Mode", value=False)
-    run_check = True
+    manual_mode = st.checkbox("🛠️ Dynymic update", value=False)
+    run_check = False
     if manual_mode:
         run_check = st.button("Run Rule Check")    
     
@@ -435,7 +435,7 @@ elif selected_tab == "🛡️ Rule Checker":
         filter_toggle = st.checkbox("Show only matching rules", value=False)
 
     if not run_check:
-        st.info("Manual Search Mode is ON. Click 'Run Rule Check' to evaluate.")
+        st.info("Dynamic update is disabled. Click 'Run Rule Check' to evaluate.")
         st.stop()
 
     
