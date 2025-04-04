@@ -121,13 +121,15 @@ else:
     groups_file = st.sidebar.file_uploader("Upload Object Groups.json", type="json")
 
     if all([rules_file, objects_file, groups_file]):
-        rules_file.seek(0)
-        objects_file.seek(0)
-        groups_file.seek(0)
         try:
+            rules_file.seek(0)
+            objects_file.seek(0)
+            groups_file.seek(0)
+
             st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
             objects_data = load_json_file(objects_file)
             groups_data = load_json_file(groups_file)
+
             st.session_state["objects_data"] = objects_data
             st.session_state["groups_data"] = groups_data
             st.session_state["object_map"] = get_object_map(objects_data)
@@ -148,8 +150,8 @@ if st.sidebar.button("🔄 Refresh API Data"):
     else:
         st.session_state["fetched_from_api"] = False
         st.error("❌ Failed to refresh data from API.")
-# ------------------ SIDEBAR TOOLBOX ------------------
 
+# ------------------ SIDEBAR TOOLBOX ------------------
 
 # 🧰 Toolbox inside a collapsible section
 with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
@@ -168,78 +170,6 @@ with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     # Save colors in session state for access elsewhere
     for key, color in highlight_colors.items():
         st.session_state[key] = color
-
-
-#______________________________________________________________________
-
-if not all([rules_file, objects_file, groups_file]):
-    st.warning("Please upload all three JSON files to proceed.")
-    st.stop()
-
-if rules_file:
-    try:
-        rules_data = load_json_file(rules_file).get("rules", [])
-        st.session_state["rules_data"] = rules_data
-    except Exception as e:
-        st.error(f"❌ Failed to load Rules.json: {e}")
-        st.stop()
-objects_data = load_json_file(objects_file)
-groups_data = load_json_file(groups_file)
-
-object_map = get_object_map(objects_data)
-group_map = get_group_map(groups_data)
-
-def search_objects_and_groups(searchterm: str):
-    results = []
-
-    for obj in objects_data:
-        if searchterm.lower() in obj.get("name", "").lower() or searchterm in obj.get("cidr", ""):
-            results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
-
-    for group in groups_data:
-        if searchterm.lower() in group.get("name", "").lower():
-            results.append((f"{group['name']} (Group)", group["name"]))
-
-    return results
-
-
-def resolve_search_input(input_str):
-    if not input_str or str(input_str).strip().lower() == "any":
-        return ["0.0.0.0/0"]
-    input_str = input_str.strip()
-    for obj in objects_data:
-        if input_str == obj["name"]:
-            return [obj["cidr"]]
-    for group in groups_data:
-        if input_str == group["name"]:
-            return [object_map[obj_id]["cidr"] for obj_id in group["objectIds"] if obj_id in object_map and "cidr" in object_map[obj_id]]
-    return [input_str]
-
-
-def show_rule_summary(indexes):
-    rows = []
-    for i in indexes:
-        if 1 <= i <= len(rules_data):
-            r = rules_data[i - 1]  # Convert 1-based to 0-based
-            rows.append({
-                "Index": i,
-                "Action": r["policy"].upper(),
-                "Protocol": r["protocol"],
-                "Src": r["srcCidr"],
-                "Dst": r["destCidr"],
-                "DPort": r["destPort"],
-                "Comment": r.get("comment", "")
-            })
-        else:
-            st.warning(f"⚠️ Skipping invalid rule index: {i}")
-    if rows:
-        st.dataframe(pd.DataFrame(rows), use_container_width=True)
-if "source_raw_input" not in st.session_state:
-    st.session_state["source_raw_input"] = ""
-
-if "destination_raw_input" not in st.session_state:
-    st.session_state["destination_raw_input"] = ""
-
 
 # ------------------ STREAMLIT TABS ------------------
 tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
