@@ -94,14 +94,21 @@ else:
     objects_file = st.sidebar.file_uploader("Upload Objects.json - Get it from /organizations/:organizationId/policyObjects", type="json")
     groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
 
-    if all([rules_file, objects_file, groups_file]):
-        st.session_state["rules_data"] = load_json_file(rules_file)["rules"]
+   if all([rules_file, objects_file, groups_file]):
+    try:
+        rules_data = load_json_file(rules_file).get("rules", [])
         objects_data = load_json_file(objects_file)
         groups_data = load_json_file(groups_file)
+
+        st.session_state["rules_data"] = rules_data
         st.session_state["objects_data"] = objects_data
         st.session_state["groups_data"] = groups_data
         st.session_state["object_map"] = get_object_map(objects_data)
         st.session_state["group_map"] = get_group_map(groups_data)
+    except Exception as e:
+        st.error(f"❌ Failed to load uploaded files: {e}")
+        st.stop()
+
 
 # Optional Refresh Button
 if st.sidebar.button("🔄 Refresh API Data"):
