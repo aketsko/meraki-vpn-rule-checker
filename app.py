@@ -44,6 +44,28 @@ def fetch_meraki_data():
         st.warning(f"API fetch error: {e}")
         return [], [], [], False
 
+def load_json_file(uploaded_file):
+    try:
+        if uploaded_file is None:
+            raise ValueError("No file provided")
+
+        content = uploaded_file.read()
+        if not content:
+            raise ValueError("Uploaded file is empty")
+
+        if isinstance(content, bytes):
+            content = content.decode("utf-8")
+
+        content = content.strip()
+        if not content:
+            raise ValueError("Uploaded file contains no data")
+
+        return json.loads(content)
+
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON: {e}")
+    except Exception as e:
+        raise ValueError(f"Error reading uploaded file: {e}")
 
 
 st.markdown("""
@@ -70,7 +92,6 @@ st.markdown("""
 # ------------------ SIDEBAR FILE UPLOAD ------------------
 st.sidebar.header("🔧 Upload Configuration Files")
 
-# Try to fetch data from API on app start
 if "rules_data" not in st.session_state or "object_map" not in st.session_state or "group_map" not in st.session_state:
     rules_data, objects_data, groups_data, fetched = fetch_meraki_data()
     if fetched:
@@ -84,11 +105,14 @@ if "rules_data" not in st.session_state or "object_map" not in st.session_state 
         st.warning("⚠️ Failed to load from API. Please upload all files manually.")
         st.session_state["fetched_from_api"] = False
 
-# Show file upload options based on API fetch result
 if st.session_state.get("fetched_from_api", False):
     uploaded_rules_file = st.sidebar.file_uploader("📄 Upload Rules.json (override)", type="json", key="rules_upload")
     if uploaded_rules_file:
-        st.session_state["rules_data"] = load_json_file(uploaded_rules_file).get("rules", [])
+        try:
+            rules_json = load_json_file(uploaded_rules_file)
+            st.session_state["rules_data"] = rules_json.get("rules", [])
+        except Exception as e:
+            st.error(f"❌ Failed to load Rules.json: {e}")
 else:
     rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
     objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
@@ -96,22 +120,16 @@ else:
 
     if all([rules_file, objects_file, groups_file]):
         try:
-            rules_data = load_json_file(rules_file).get("rules", [])
+            st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
             objects_data = load_json_file(objects_file)
             groups_data = load_json_file(groups_file)
-
-            st.session_state["rules_data"] = rules_data
             st.session_state["objects_data"] = objects_data
             st.session_state["groups_data"] = groups_data
             st.session_state["object_map"] = get_object_map(objects_data)
             st.session_state["group_map"] = get_group_map(groups_data)
         except Exception as e:
-            st.error(f"❌ Failed to load uploaded files: {e}")
-            st.stop()
+            st.error(f"❌ Failed to load one or more files: {e}")
 
-
-
-# Optional Refresh Button
 if st.sidebar.button("🔄 Refresh API Data"):
     rules_data, objects_data, groups_data, fetched = fetch_meraki_data()
     if fetched:
@@ -125,17 +143,6 @@ if st.sidebar.button("🔄 Refresh API Data"):
     else:
         st.session_state["fetched_from_api"] = False
         st.error("❌ Failed to refresh data from API.")
-
-#______________________________________________________________________
-
-# Aliases
-rules_data = st.session_state.get("rules_data", [])
-objects_data = st.session_state.get("objects_data", [])
-groups_data = st.session_state.get("groups_data", [])
-object_map = st.session_state.get("object_map", {})
-group_map = st.session_state.get("group_map", {})
-
-
 # ------------------ SIDEBAR TOOLBOX ------------------
 
 
