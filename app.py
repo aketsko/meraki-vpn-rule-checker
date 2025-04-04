@@ -143,7 +143,10 @@ st.sidebar.header("🔧 Upload Configuration Files")
 api_key = st.sidebar.text_input("🔑 Enter your Meraki API Key", type="password")
 org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help="Usually a 10-digit number")
 
-if st.sidebar.button("🔄 Refresh API Data") and api_key and org_id:
+# Single Refresh button, always available
+refresh_clicked = st.sidebar.button("🔄 Refresh API Data")
+
+if refresh_clicked and api_key and org_id:
     rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
     if fetched:
         st.session_state["rules_data"] = rules_data
@@ -157,6 +160,9 @@ if st.sidebar.button("🔄 Refresh API Data") and api_key and org_id:
         st.session_state["fetched_from_api"] = False
         st.error("❌ Failed to refresh data from API.")
 
+# Initial load if not already in session
+if "rules_data" not in st.session_state or "object_map" not in st.session_state or "group_map" not in st.session_state:
+    st.session_state["fetched_from_api"] = False
 
 # File override only for rules if API was used
 if st.session_state.get("fetched_from_api", False):
@@ -169,7 +175,8 @@ if st.session_state.get("fetched_from_api", False):
         except Exception as e:
             st.error(f"❌ Failed to load Rules.json: {e}")
 
-else:
+# Full manual upload fallback
+if not st.session_state.get("fetched_from_api", False):
     rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
     objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
     groups_file = st.sidebar.file_uploader("Upload Object Groups.json", type="json")
@@ -188,26 +195,6 @@ else:
         except Exception as e:
             st.error(f"❌ Failed to load one or more files: {e}")
 
-if st.sidebar.button("🔄 Refresh API Data"):
-    rules_data, objects_data, groups_data, fetched = fetch_meraki_data()
-    if fetched:
-        st.session_state["rules_data"] = rules_data
-        st.session_state["objects_data"] = objects_data
-        st.session_state["groups_data"] = groups_data
-        st.session_state["object_map"] = get_object_map(objects_data)
-        st.session_state["group_map"] = get_group_map(groups_data)
-        st.session_state["fetched_from_api"] = True
-        st.success("✅ Data refreshed from Meraki API.")
-    else:
-        st.session_state["fetched_from_api"] = False
-        st.error("❌ Failed to refresh data from API.")
-
-# Always assign these before tabs so downstream functions don't fail
-rules_data = st.session_state.get("rules_data", [])
-objects_data = st.session_state.get("objects_data", [])
-groups_data = st.session_state.get("groups_data", [])
-object_map = st.session_state.get("object_map", {})
-group_map = st.session_state.get("group_map", {})
 
 # ------------------ SIDEBAR TOOLBOX ------------------
 
