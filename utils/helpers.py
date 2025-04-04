@@ -1,25 +1,56 @@
-import pandas as pd
+# ------------------ HELPER FUNCTIONS ------------------
 
-def safe_dataframe(data):
-    df = pd.DataFrame(data)
-    for col in df.columns:
-        df[col] = df[col].apply(lambda x: ", ".join(map(str, x)) if isinstance(x, list) else str(x) if x is not None else "")
-    return df
+def search_objects_and_groups(searchterm: str):
+    results = []
 
-def get_object_map(objects_data):
-    return {obj["id"]: obj for obj in objects_data}
+    for obj in objects_data:
+        if searchterm.lower() in obj.get("name", "").lower() or searchterm in obj.get("cidr", ""):
+            results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
 
-def get_group_map(groups_data):
-    return {grp["id"]: grp for grp in groups_data}
+    for group in groups_data:
+        if searchterm.lower() in group.get("name", "").lower():
+            results.append((f"{group['name']} (Group)", group["name"]))
 
-def id_to_name(entry, object_map, group_map):
-    entry = entry.strip()
-    if entry.startswith("OBJ(") and entry.endswith(")"):
-        obj = object_map.get(entry[4:-1])
-        return obj.get("name", entry) if obj else entry
-    elif entry.startswith("GRP(") and entry.endswith(")"):
-        grp = group_map.get(entry[4:-1])
-        return grp.get("name", entry) if grp else entry
-    elif entry.lower() == "any":
-        return "Any"
-    return entry
+    return results
+
+
+def resolve_search_input(input_str):
+    if not input_str or str(input_str).strip().lower() == "any":
+        return ["0.0.0.0/0"]
+    input_str = input_str.strip()
+    for obj in objects_data:
+        if input_str == obj["name"]:
+            return [obj["cidr"]]
+    for group in groups_data:
+        if input_str == group["name"]:
+            return [object_map[obj_id]["cidr"] for obj_id in group["objectIds"]
+                    if obj_id in object_map and "cidr" in object_map[obj_id]]
+    return [input_str]
+
+
+def show_rule_summary(indexes):
+    rows = []
+    for i in indexes:
+        if 1 <= i <= len(rules_data):
+            r = rules_data[i - 1]  # Convert 1-based to 0-based
+            rows.append({
+                "Index": i,
+                "Action": r["policy"].upper(),
+                "Protocol": r["protocol"],
+                "Src": r["srcCidr"],
+                "Dst": r["destCidr"],
+                "DPort": r["destPort"],
+                "Comment": r.get("comment", "")
+            })
+        else:
+            st.warning(f"⚠️ Skipping invalid rule index: {i}")
+    if rows:
+        st.dataframe(pd.DataFrame(rows), use_container_width=True)
+
+
+# Session state for preserving raw searchbox inputs
+if "source_raw_input" not in st.session_state:
+    st.session_state["source_raw_input"] = ""
+
+if "destination_raw_input" not in st.session_state:
+    st.session_state["destination_raw_input"] = ""
