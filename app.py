@@ -40,18 +40,6 @@ rules_file = st.sidebar.file_uploader("Upload Rules.json - Get it from /organiza
 objects_file = st.sidebar.file_uploader("Upload Objects.json - Get it from /organizations/:organizationId/policyObjects", type="json")
 groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
 #______________________________________________________________________
-import numpy as np
-
-# Color helper
-def color_gradient(start_color, end_color, n=256):
-    return [(np.array(start_color)*(1-i/n) + np.array(end_color)*(i/n)).astype(int) for i in range(n+1)]
-
-def rgb_to_hex(rgb):
-    return '#%02x%02x%02x' % tuple(rgb)
-
-# Build palettes
-green_palette = color_gradient([0, 128, 0], [144, 238, 144])
-red_palette = color_gradient([139, 0, 0], [255, 192, 203])
 
 # ------------------ SIDEBAR TOOLBOX ------------------
 
