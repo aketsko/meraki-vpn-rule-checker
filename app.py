@@ -145,7 +145,9 @@ org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help
 
 
 if "rules_data" not in st.session_state or "object_map" not in st.session_state or "group_map" not in st.session_state:
-    rules_data, objects_data, groups_data, fetched = fetch_meraki_data()
+    if st.sidebar.button("🔄 Refresh API Data"):
+        rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
+
     if fetched:
         st.session_state["rules_data"] = rules_data
         st.session_state["objects_data"] = objects_data
