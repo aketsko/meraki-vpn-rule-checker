@@ -109,6 +109,7 @@ if "rules_data" not in st.session_state or "object_map" not in st.session_state 
 if st.session_state.get("fetched_from_api", False):
     uploaded_rules_file = st.sidebar.file_uploader("📄 Upload Rules.json (override)", type="json", key="rules_upload")
     if uploaded_rules_file:
+        uploaded_rules_file.seek(0)
         try:
             rules_json = load_json_file(uploaded_rules_file)
             st.session_state["rules_data"] = rules_json.get("rules", [])
@@ -120,6 +121,9 @@ else:
     groups_file = st.sidebar.file_uploader("Upload Object Groups.json", type="json")
 
     if all([rules_file, objects_file, groups_file]):
+        rules_file.seek(0)
+        objects_file.seek(0)
+        groups_file.seek(0)
         try:
             st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
             objects_data = load_json_file(objects_file)
