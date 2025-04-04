@@ -374,6 +374,7 @@ with tab1:
             "Source Port": rule.get("srcPort", ""),
             "Destination": ", ".join(dest_names),
             "Ports": rule["destPort"],
+            "Protocol": rule["protocol"],
             "Matched Ports": ", ".join(matched_ports_for_rule),
             "Matched ✅": matched_any,
             "Exact Match ✅": is_exact_match,
@@ -407,6 +408,7 @@ function(params) {{
     gb.configure_column("Comment", wrapText=True, autoHeight=True)
     gb.configure_column("Source", wrapText=True, autoHeight=True)
     gb.configure_column("Destination", wrapText=True, autoHeight=True)
+    gb.configure_column("Protocol", wrapText=True, autoHeight=True)
     grid_options = gb.build()
 
     AgGrid(
