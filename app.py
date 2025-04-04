@@ -274,52 +274,52 @@ def passthrough_port(term: str):
     return [(f"Use: {term}", term)]
 
 # --- Search boxes ---
-col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
-with col1:
-    source_input = st_searchbox(
-        custom_search,
-        placeholder="Source (Object, Group, CIDR, or 'any')",
-        label="Source (SRC)",
-        key="src_searchbox",
-        default="any"
-    )
+    with col1:
+        source_input = st_searchbox(
+            custom_search,
+            placeholder="Source (Object, Group, CIDR, or 'any')",
+            label="Source (SRC)",
+            key="src_searchbox",
+            default="any"
+        )
 
-with col2:
-    source_port_input = st_searchbox(
-        passthrough_port,
-        placeholder="e.g. 80,443 or any",
-        label="Source Port(s)",
-        key="srcport_searchbox",
-        default="any"
-    )
+    with col2:
+        source_port_input = st_searchbox(
+            passthrough_port,
+            placeholder="e.g. 80,443 or any",
+            label="Source Port(s)",
+            key="srcport_searchbox",
+            default="any"
+        )
 
-with col3:
-    destination_input = st_searchbox(
-        custom_search,
-        placeholder="Destination (Object, Group, CIDR, or 'any')",
-        label="Destination (DST)",
-        key="dst_searchbox",
-        default="any"
-    )
+    with col3:
+        destination_input = st_searchbox(
+            custom_search,
+            placeholder="Destination (Object, Group, CIDR, or 'any')",
+            label="Destination (DST)",
+            key="dst_searchbox",
+            default="any"
+        )
 
-with col4:
-    port_input = st_searchbox(
-        passthrough_port,
-        placeholder="e.g. 1000-2000,443",
-        label="Destination Port(s)",
-        key="dstport_searchbox",
-        default="any"
-    )
+    with col4:
+        port_input = st_searchbox(
+            passthrough_port,
+            placeholder="e.g. 1000-2000,443",
+            label="Destination Port(s)",
+            key="dstport_searchbox",
+            default="any"
+        )
 
-with col5:
-    protocol = st_searchbox(
-        search_protocol,
-        placeholder="Protocol",
-        label="Protocol",
-        key="protocol_searchbox",
-        default="any"
-    )
+    with col5:
+        protocol = st_searchbox(
+            search_protocol,
+            placeholder="Protocol",
+            label="Protocol",
+            key="protocol_searchbox",
+            default="any"
+        )
 
     
     col_left, col_right = st.columns(2)  
