@@ -90,9 +90,9 @@ if st.session_state.get("fetched_from_api", False):
     if uploaded_rules_file:
         st.session_state["rules_data"] = load_json_file(uploaded_rules_file).get("rules", [])
 else:
-    rules_file = st.sidebar.file_uploader("Upload Rules.json - From /appliance/vpn/vpnFirewallRules", type="json")
-    objects_file = st.sidebar.file_uploader("Upload Objects.json - From /policyObjects", type="json")
-    groups_file = st.sidebar.file_uploader("Upload Object Groups.json - From /policyObjects/groups", type="json")
+    rules_file = st.sidebar.file_uploader("Upload Rules.json - Get it from /organizations/:organizationId/appliance/vpn/vpnFirewallRules", type="json")
+    objects_file = st.sidebar.file_uploader("Upload Objects.json - Get it from /organizations/:organizationId/policyObjects", type="json")
+    groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
 
     if all([rules_file, objects_file, groups_file]):
         st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
