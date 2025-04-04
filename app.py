@@ -27,9 +27,12 @@ if "destination_raw_input" not in st.session_state:
 import pandas as pd
 import requests
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
-from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name, load_json_file
-from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match
 from streamlit_searchbox import st_searchbox
+
+from utils.file_loader import load_json_file
+from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
+from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match
+from utils.API import fetch_meraki_data
 
 # ------------------ PAGE SETUP ------------------
 st.set_page_config(
