@@ -243,7 +243,6 @@ highlight_colors = {
 tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
 
-# ------------------ RULE CHECKER TAB ------------------
 with tab1:
     st.header("🛡️ Rule Checker")
 
@@ -283,19 +282,14 @@ with tab1:
         )
     with col4:
         port_input = st.text_input("Destination Port(s)", "any")
-    
     with col5:
         protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
-    
-    col_left, col_right = st.columns(2)  
 
-    with col_left:
-        filter_toggle = st.checkbox("Show only matching rules", value=False)
+    filter_toggle = st.checkbox("Show only matching rules", value=False)
 
-
+    # Resolution of inputs
     source_input = source_input or "any"
     destination_input = destination_input or "any"
-
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
 
@@ -305,7 +299,7 @@ with tab1:
     skip_dport_check = port_input.strip().lower() == "any"
     skip_sport_check = source_port_input.strip().lower() == "any"
 
-    dports_to_check = [] if skip_dport_check else [p.strip() for p in port_input.split(",") if p.strip().isdigit()]
+    dports_to_check = [] if skip_dport_check else [p.strip() for p in port_input.split(",") if p.strip()]
     dports_to_loop = ["any"] if skip_dport_check else dports_to_check
 
     matched_ports = {}
@@ -326,27 +320,28 @@ with tab1:
         src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
         dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
         proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
+
         matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
         matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
-        matched_sports_list = [p.strip() for p in matched_sports_list if p.strip() in rule_sports or "any" in rule_sports]
+        matched_sports_list = [p.strip() for p in matched_sports_list if p in rule_sports or "any" in rule_sports]
+
         sport_match = len(matched_sports_list) > 0
         port_match = len(matched_ports_list) > 0 and sport_match
 
         full_match = src_match and dst_match and proto_match and port_match
 
-        exact_src = ("Any" in rule["srcCidr"]) if skip_src_check else all(
+        # --------- Updated Exact Matching Logic ---------
+        exact_src = skip_src_check or all(
             any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_src_cidrs)
             for cidr in source_cidrs
         )
-
-        exact_dst = ("Any" in rule["destCidr"]) if skip_dst_check else all(
+        exact_dst = skip_dst_check or all(
             any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_dst_cidrs)
             for cidr in destination_cidrs
         )
+        exact_ports = skip_dport_check or set(matched_ports_list) == set(dports_to_loop)
+        exact_proto = skip_proto_check or rule_protocol == protocol.lower()
 
-        exact_ports = skip_dport_check and rule["destPort"].lower() == "any" and rule.get("srcPort", "").lower() == "any"
-        exact_proto = skip_proto_check and rule["protocol"].lower() == "any"
-        
         is_exact = full_match and exact_src and exact_dst and exact_ports and exact_proto
 
         if full_match:
@@ -360,6 +355,7 @@ with tab1:
             elif not is_exact:
                 found_partial_match = True
 
+    # ------------------ Render AG Grid ------------------
     rule_rows = []
     for idx, rule in enumerate(rules_data):
         matched_ports_for_rule = rule_match_ports.get(idx, [])
@@ -408,9 +404,9 @@ function(params) {{
 
     gb = GridOptionsBuilder.from_dataframe(df_to_show)
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
-    gb.configure_column("Comment",resizable=True, wrapText=True, autoHeight=True)
-    gb.configure_column("Source",resizable=True, wrapText=True, autoHeight=True)
-    gb.configure_column("Destination",resizable=True, wrapText=True, autoHeight=True)
+    gb.configure_column("Comment", wrapText=True, autoHeight=True)
+    gb.configure_column("Source", wrapText=True, autoHeight=True)
+    gb.configure_column("Destination", wrapText=True, autoHeight=True)
     grid_options = gb.build()
 
     AgGrid(
@@ -421,6 +417,7 @@ function(params) {{
         use_container_width=True,
         allow_unsafe_jscode=True
     )
+
 
 with tab2:
     st.header("🧠 Optimization Insights")
