@@ -69,33 +69,19 @@ red_start, red_end = [139, 0, 0], [255, 192, 203]
 with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
-    # Exact ALLOW
-    green1_val = st.slider("Exact Match (ALLOW)", 0, 256, 238)
-    green1 = rgb_to_hex((np.array(green_start)*(1-green1_val/256) + np.array(green_end)*(green1_val/256)).astype(int))
-    st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(green_start)}, {rgb_to_hex(green_end)}); height: 25px;'></div>", unsafe_allow_html=True)
+def color_slider(label, default_hex):
+    return st.sidebar.color_picker(label, value=default_hex)
 
-    # Partial ALLOW
-    green2_val = st.slider("Partial Match (ALLOW)", 0, 256, 75)
-    green2 = rgb_to_hex((np.array(green_start)*(1-green2_val/256) + np.array(green_end)*(green2_val/256)).astype(int))
-    st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(green_start)}, {rgb_to_hex(green_end)}); height: 25px;'></div>", unsafe_allow_html=True)
-
-    # Exact DENY
-    red1_val = st.slider("Exact Match (DENY)", 0, 256, 243)
-    red1 = rgb_to_hex((np.array(red_start)*(1-red1_val/256) + np.array(red_end)*(red1_val/256)).astype(int))
-    st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(red_start)}, {rgb_to_hex(red_end)}); height: 25px;'></div>", unsafe_allow_html=True)
-
-    # Partial DENY
-    red2_val = st.slider("Partial Match (DENY)", 0, 256, 123)
-    red2 = rgb_to_hex((np.array(red_start)*(1-red2_val/256) + np.array(red_end)*(red2_val/256)).astype(int))
-    st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(red_start)}, {rgb_to_hex(red_end)}); height: 25px;'></div>", unsafe_allow_html=True)
-
-# Export selected colors
 highlight_colors = {
-    "exact_allow": green1,
-    "partial_allow": green2,
-    "exact_deny": red1,
-    "partial_deny": red2,
+    "allow_exact": color_slider("Exact ALLOW", "#00cc44"),
+    "deny_exact": color_slider("Exact DENY", "#cc0000"),
+    "allow_partial": color_slider("Partial ALLOW", "#99e6b3"),
+    "deny_partial": color_slider("Partial DENY", "#ff9999")
 }
+
+# Save colors in session state for access elsewhere
+for key, color in highlight_colors.items():
+    st.session_state[key] = color
 
 
 #______________________________________________________________________
