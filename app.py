@@ -260,20 +260,20 @@ with tab1:
             results.append((f"Use: {term}", term))
         return results
 
-    # --- Searchable values for protocol ---
-def search_protocol(term: str):
-    options = ["any", "tcp", "udp", "icmpv4", "icmpv6"]
-    term = term.strip().lower()
-    return [(proto.upper(), proto) for proto in options if term in proto]
+        # --- Searchable values for protocol ---
+    def search_protocol(term: str):
+        options = ["any", "tcp", "udp", "icmpv4", "icmpv6"]
+        term = term.strip().lower()
+        return [(proto.upper(), proto) for proto in options if term in proto]
 
-# --- For ports: allow flexible typing, no autocomplete ---
-def passthrough_port(term: str):
-    term = term.strip()
-    if not term:
-        return []
-    return [(f"Use: {term}", term)]
+    # --- For ports: allow flexible typing, no autocomplete ---
+    def passthrough_port(term: str):
+        term = term.strip()
+        if not term:
+            return []
+        return [(f"Use: {term}", term)]
 
-# --- Search boxes ---
+    # --- Search boxes ---
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
