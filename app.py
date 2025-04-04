@@ -69,8 +69,8 @@ red_start, red_end = [139, 0, 0], [255, 192, 203]
 with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
-def color_slider(label, default_hex):
-    return st.sidebar.color_picker(label, value=default_hex)
+    def color_slider(label, default_hex):
+        return st.sidebar.color_picker(label, value=default_hex)
 
 highlight_colors = {
     "exact_allow": color_slider("Exact ALLOW", "#00cc44"),
