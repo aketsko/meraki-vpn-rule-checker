@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
+import requests
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
 from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match
 from streamlit_searchbox import st_searchbox
+from API_Calls import fetch_meraki_data
 
 # ------------------ PAGE SETUP ------------------
 st.set_page_config(
@@ -13,6 +15,51 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
+
+# ------------------ GLOBAL STATE INIT ------------------
+if "rules_data" not in st.session_state:
+    st.session_state["rules_data"] = None
+if "objects_data" not in st.session_state:
+    st.session_state["objects_data"] = None
+if "groups_data" not in st.session_state:
+    st.session_state["groups_data"] = None
+if "source_raw_input" not in st.session_state:
+    st.session_state["source_raw_input"] = ""
+if "destination_raw_input" not in st.session_state:
+    st.session_state["destination_raw_input"] = ""
+
+# ------------------ API CONFIG ------------------
+API_HEADERS = {
+    "X-Cisco-Meraki-API-Key": st.secrets.get("API_KEY", ""),
+    "Content-Type": "application/json",
+    "X-Cisco-Meraki-Organization-ID": st.secrets.get("ORG_ID", "")
+}
+RULES_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/appliance/vpn/vpnFirewallRules"
+OBJECTS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects"
+GROUPS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects/groups"
+
+def fetch_meraki_data():
+    try:
+        rules_resp = requests.get(RULES_URL, headers=API_HEADERS)
+        objects_resp = requests.get(OBJECTS_URL, headers=API_HEADERS)
+        groups_resp = requests.get(GROUPS_URL, headers=API_HEADERS)
+
+        if rules_resp.ok and objects_resp.ok and groups_resp.ok:
+            return (
+                rules_resp.json().get("rules", []),
+                objects_resp.json(),
+                groups_resp.json(),
+                True
+            )
+        else:
+            return [], [], [], False
+    except Exception as e:
+        st.warning(f"API fetch error: {e}")
+        return [], [], [], False
+
+
+
+
 st.markdown("""
 <style>
 /* Force main container to always use full width */
