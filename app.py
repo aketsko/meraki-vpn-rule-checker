@@ -70,22 +70,22 @@ with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
     # Exact ALLOW
-    green1_val = st.slider("Exact Match (ALLOW)", 0, 256, 27)
+    green1_val = st.slider("Exact Match (ALLOW)", 0, 256, 238)
     green1 = rgb_to_hex((np.array(green_start)*(1-green1_val/256) + np.array(green_end)*(green1_val/256)).astype(int))
     st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(green_start)}, {rgb_to_hex(green_end)}); height: 25px;'></div>", unsafe_allow_html=True)
 
     # Partial ALLOW
-    green2_val = st.slider("Partial Match (ALLOW)", 0, 256, 244)
+    green2_val = st.slider("Partial Match (ALLOW)", 0, 256, 75)
     green2 = rgb_to_hex((np.array(green_start)*(1-green2_val/256) + np.array(green_end)*(green2_val/256)).astype(int))
     st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(green_start)}, {rgb_to_hex(green_end)}); height: 25px;'></div>", unsafe_allow_html=True)
 
     # Exact DENY
-    red1_val = st.slider("Exact Match (DENY)", 0, 256, 20)
+    red1_val = st.slider("Exact Match (DENY)", 0, 256, 243)
     red1 = rgb_to_hex((np.array(red_start)*(1-red1_val/256) + np.array(red_end)*(red1_val/256)).astype(int))
     st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(red_start)}, {rgb_to_hex(red_end)}); height: 25px;'></div>", unsafe_allow_html=True)
 
     # Partial DENY
-    red2_val = st.slider("Partial Match (DENY)", 0, 256, 241)
+    red2_val = st.slider("Partial Match (DENY)", 0, 256, 123)
     red2 = rgb_to_hex((np.array(red_start)*(1-red2_val/256) + np.array(red_end)*(red2_val/256)).astype(int))
     st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(red_start)}, {rgb_to_hex(red_end)}); height: 25px;'></div>", unsafe_allow_html=True)
 
@@ -190,20 +190,20 @@ with tab1:
     with col1:
         source_input = st_searchbox(
             custom_search,
-            placeholder="Search Source (Object, Group, CIDR, or 'any')",
+            placeholder="Source (Object, Group, CIDR, or 'any')",
             label="Source (SRC)",
             key="src_searchbox",
-            default=""
+            default="any"
         )
     with col2:
         source_port_input = st.text_input("Source Port(s)", "any")
     with col3:
         destination_input = st_searchbox(
             custom_search,
-            placeholder="Search Destination (Object, Group, CIDR, or 'any')",
+            placeholder="Destination (Object, Group, CIDR, or 'any')",
             label="Destination (DST)",
             key="dst_searchbox",
-            default=""
+            default="any"
         )
     with col4:
         port_input = st.text_input("Destination Port(s)", "any")
