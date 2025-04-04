@@ -240,6 +240,7 @@ highlight_colors = {
 
 
 # ------------------ STREAMLIT TABS ------------------
+tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
 with tab1:
     st.header("🛡️ Rule Checker")
