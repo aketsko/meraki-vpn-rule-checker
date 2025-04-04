@@ -240,6 +240,7 @@ highlight_colors = {
 
 
 # ------------------ STREAMLIT TABS ------------------
+
 with tab1:
     st.header("🛡️ Rule Checker")
 
@@ -394,7 +395,7 @@ function(params) {{
         use_container_width=True,
         allow_unsafe_jscode=True
     )
-
+#----------------Tab 2: Optimization Insights------------------
 with tab2:
     st.header("🧠 Optimization Insights")
 
