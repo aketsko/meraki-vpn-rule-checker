@@ -113,7 +113,7 @@ st.sidebar.header("🔧 Upload Configuration Files")
 api_key = st.sidebar.text_input("🔑 Enter your Meraki API Key", type="password")
 org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help="Usually a 10-digit number")
 
-<<<<<<< HEAD
+
 # ------------------ API CONFIG ------------------
 def get_api_headers(api_key):
     return {
@@ -182,7 +182,7 @@ if st.sidebar.button("🔄 Refresh API Data"):
             st.error("❌ Failed to refresh data from API.")
     else:
         st.error("❌ Please enter both API key and Org ID.")
-        
+
 # File override only for rules if API was used
 if st.session_state.get("fetched_from_api", False):
     uploaded_rules_file = st.sidebar.file_uploader("📄 Upload Rules.json (override)", type="json", key="rules_upload")
