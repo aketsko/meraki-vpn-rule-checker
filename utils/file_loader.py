@@ -1,6 +1,9 @@
 import json
 
 def load_json_file(uploaded_file):
-    if uploaded_file:
-        return json.load(uploaded_file)
-    return None
+    if uploaded_file is None:
+        return {}
+    content = uploaded_file.read()
+    if isinstance(content, bytes):
+        content = content.decode("utf-8")
+    return json.loads(content)
