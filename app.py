@@ -260,19 +260,35 @@ with tab1:
             results.append((f"Use: {term}", term))
         return results
 
-    col1, col2, col3, col4, col5 = st.columns(5)
+col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        source_input = st_searchbox(custom_search, "Source (SRC)", key="src_searchbox", default="any")
+        source_input = st_searchbox(
+            custom_search,
+            placeholder="Source (Object, Group, CIDR, or 'any')",
+            label="Source (SRC)",
+            key="src_searchbox",
+            default="any"
+        )
     with col2:
         source_port_input = st.text_input("Source Port(s)", "any")
     with col3:
-        destination_input = st_searchbox(custom_search, "Destination (DST)", key="dst_searchbox", default="any")
+        destination_input = st_searchbox(
+            custom_search,
+            placeholder="Destination (Object, Group, CIDR, or 'any')",
+            label="Destination (DST)",
+            key="dst_searchbox",
+            default="any"
+        )
     with col4:
         port_input = st.text_input("Destination Port(s)", "any")
+    
     with col5:
         protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
+    
+    col_left, col_right = st.columns(2)  
 
-    filter_toggle = st.checkbox("Show only matching rules", value=False)
+    with col_left:
+        filter_toggle = st.checkbox("Show only matching rules", value=False)
 
     source_input = source_input or "any"
     destination_input = destination_input or "any"
