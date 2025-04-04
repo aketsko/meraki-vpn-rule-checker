@@ -240,7 +240,32 @@ highlight_colors = {
 
 
 # ------------------ STREAMLIT TABS ------------------
-tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
+# ---- Tab controller ----
+tab_names = ["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = tab_names[1]  # Default to Rule Checker
+
+selected_tab = st.selectbox("🔀 Choose tab", tab_names, index=tab_names.index(st.session_state.active_tab), label_visibility="collapsed")
+st.session_state.active_tab = selected_tab
+
+# ---- Manual tab rendering based on selection ----
+if selected_tab == tab_names[0]:
+    tab4 = st.container()
+    with tab4:
+        # Your Object Search content here
+        st.header("🔎 Object & Group Search")
+        # ...
+elif selected_tab == tab_names[1]:
+    tab1 = st.container()
+    with tab1:
+        st.header("🛡️ Rule Checker")
+        # ...
+elif selected_tab == tab_names[2]:
+    tab2 = st.container()
+    with tab2:
+        st.header("🧠 Optimization Insights")
+        # ...
+
 
 with tab1:
     st.header("🛡️ Rule Checker")
