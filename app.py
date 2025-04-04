@@ -240,36 +240,108 @@ highlight_colors = {
 
 
 # ------------------ STREAMLIT TABS ------------------
-# ---- Tab controller ----
+# -------------- MANUAL TAB HANDLING ----------------
 tab_names = ["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
+
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = tab_names[1]  # Default to Rule Checker
 
-selected_tab = st.selectbox("🔀 Choose tab", tab_names, index=tab_names.index(st.session_state.active_tab), label_visibility="collapsed")
+selected_tab = st.selectbox("Select Tab", tab_names, index=tab_names.index(st.session_state.active_tab), label_visibility="collapsed")
 st.session_state.active_tab = selected_tab
 
-# ---- Manual tab rendering based on selection ----
-if selected_tab == tab_names[0]:
-    tab4 = st.container()
-    with tab4:
-        # Your Object Search content here
-        st.header("🔎 Object & Group Search")
-        # ...
-elif selected_tab == tab_names[1]:
-    tab1 = st.container()
-    with tab1:
-        st.header("🛡️ Rule Checker")
-        # ...
-elif selected_tab == tab_names[2]:
-    tab2 = st.container()
-    with tab2:
-        st.header("🧠 Optimization Insights")
-        # ...
+# -------- Render based on selected_tab ----------
+if selected_tab == "🔎 Object Search":
+    # Your OBJECT SEARCH code here
+    st.header("🔎 Object & Group Search")
+    def rule_covers(rule_a, rule_b):
+        return (
+            (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
+            (rule_a["destCidr"] == "Any" or rule_a["destCidr"] == rule_b["destCidr"]) and
+            (rule_a["destPort"].lower() == "any" or rule_a["destPort"] == rule_b["destPort"]) and
+            (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
+        )
 
+    insight_rows = []
+    seen_rules = set()
 
-with tab1:
+    for i, rule in enumerate(rules_data):
+        sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
+        if sig in seen_rules:
+            insight_rows.append((
+                f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
+                [i+1]
+            ))
+        else:
+            seen_rules.add(sig)
+
+        # Broad rule exclusion
+        is_last = i == len(rules_data) - 1
+        is_penultimate = i == len(rules_data) - 2
+        is_allow_any = rule["policy"].lower() == "allow"
+        is_deny_any = rule["policy"].lower() == "deny"
+
+        if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
+            and rule["destPort"].lower() == "any"
+            and rule["protocol"].lower() == "any"):
+            if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
+                pass  # expected, skip
+            else:
+                insight_rows.append((
+                    f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
+                    [i+1]
+                ))
+
+        # ✅ Shadowed rule detection
+        for j in range(i):
+            if rule_covers(rules_data[j], rule):
+                insight_rows.append((
+                    f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
+                    [j+1, i+1]
+                ))
+                break
+
+        # Merge opportunities
+        if i < len(rules_data) - 1:
+            next_rule = rules_data[i+1]
+            fields_to_compare = ["policy", "srcCidr", "destCidr"]
+            if all(rule[f] == next_rule[f] for f in fields_to_compare):
+                if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
+                    insight_rows.append((
+                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
+                        [i+1, i+2]
+                    ))
+                elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
+                    if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
+                        continue
+                    insight_rows.append((
+                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/src/dst/ports, different protocol.",
+                        [i+1, i+2]
+                    ))
+
+    if insight_rows:
+        for msg, rule_indexes in insight_rows:
+            st.markdown(msg)
+            show_rule_summary(rule_indexes)
+
+        st.download_button("📥 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
+    else:
+        st.success("✅ No optimization issues detected.")
+
+    # ℹ️ Legend
+    st.markdown("---")
+    st.subheader("ℹ️ Legend")
+    st.markdown("""
+| Term               | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| 🔁 **Duplicate Rule** | Rule is identical to a previous one (all fields except comment)           |
+| 🔄 **Merge Candidate** | Rules could be combined (only one field differs, e.g., port)              |
+| ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               |
+| 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic |
+""")
+
+elif selected_tab == "🛡️ Rule Checker":
+    # Your RULE CHECKER code here
     st.header("🛡️ Rule Checker")
-
     def custom_search(term: str):
         term = term.strip()
         results = []
@@ -489,100 +561,10 @@ function(params) {{
         use_container_width=True,
         allow_unsafe_jscode=True
     )
-#----------------Tab 2: Optimization Insights------------------
-with tab2:
+
+elif selected_tab == "🧠 Optimization Insights":
+    # Your OPTIMIZATION INSIGHTS code here
     st.header("🧠 Optimization Insights")
-
-    def rule_covers(rule_a, rule_b):
-        return (
-            (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
-            (rule_a["destCidr"] == "Any" or rule_a["destCidr"] == rule_b["destCidr"]) and
-            (rule_a["destPort"].lower() == "any" or rule_a["destPort"] == rule_b["destPort"]) and
-            (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
-        )
-
-    insight_rows = []
-    seen_rules = set()
-
-    for i, rule in enumerate(rules_data):
-        sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
-        if sig in seen_rules:
-            insight_rows.append((
-                f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
-                [i+1]
-            ))
-        else:
-            seen_rules.add(sig)
-
-        # Broad rule exclusion
-        is_last = i == len(rules_data) - 1
-        is_penultimate = i == len(rules_data) - 2
-        is_allow_any = rule["policy"].lower() == "allow"
-        is_deny_any = rule["policy"].lower() == "deny"
-
-        if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
-            and rule["destPort"].lower() == "any"
-            and rule["protocol"].lower() == "any"):
-            if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
-                pass  # expected, skip
-            else:
-                insight_rows.append((
-                    f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
-                    [i+1]
-                ))
-
-        # ✅ Shadowed rule detection
-        for j in range(i):
-            if rule_covers(rules_data[j], rule):
-                insight_rows.append((
-                    f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
-                    [j+1, i+1]
-                ))
-                break
-
-        # Merge opportunities
-        if i < len(rules_data) - 1:
-            next_rule = rules_data[i+1]
-            fields_to_compare = ["policy", "srcCidr", "destCidr"]
-            if all(rule[f] == next_rule[f] for f in fields_to_compare):
-                if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
-                    insight_rows.append((
-                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
-                        [i+1, i+2]
-                    ))
-                elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
-                    if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
-                        continue
-                    insight_rows.append((
-                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/src/dst/ports, different protocol.",
-                        [i+1, i+2]
-                    ))
-
-    if insight_rows:
-        for msg, rule_indexes in insight_rows:
-            st.markdown(msg)
-            show_rule_summary(rule_indexes)
-
-        st.download_button("📥 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
-    else:
-        st.success("✅ No optimization issues detected.")
-
-    # ℹ️ Legend
-    st.markdown("---")
-    st.subheader("ℹ️ Legend")
-    st.markdown("""
-| Term               | Description                                                                 |
-|--------------------|-----------------------------------------------------------------------------|
-| 🔁 **Duplicate Rule** | Rule is identical to a previous one (all fields except comment)           |
-| 🔄 **Merge Candidate** | Rules could be combined (only one field differs, e.g., port)              |
-| ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               |
-| 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic |
-""")
-
-
-# ------------------ TAB 4: Object Search ------------------
-with tab4:
-    st.header("🔎 Object & Group Search")
 
     search_term = st.text_input("Search by name or CIDR:", "").lower()
 
