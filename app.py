@@ -99,6 +99,13 @@ if st.sidebar.button("🔄 Refresh API Data"):
     else:
         st.error("❌ Failed to refresh data from API.")
 
+
+rules_file = st.sidebar.file_uploader("Upload Rules.json - Get it from /organizations/:organizationId/appliance/vpn/vpnFirewallRules", type="json")
+objects_file = st.sidebar.file_uploader("Upload Objects.json - Get it from /organizations/:organizationId/policyObjects", type="json")
+groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
+
+#______________________________________________________________________
+
 # Aliases
 rules_data = st.session_state.get("rules_data", [])
 objects_data = st.session_state.get("objects_data", [])
@@ -106,11 +113,6 @@ groups_data = st.session_state.get("groups_data", [])
 object_map = st.session_state.get("object_map", {})
 group_map = st.session_state.get("group_map", {})
 
-rules_file = st.sidebar.file_uploader("Upload Rules.json - Get it from /organizations/:organizationId/appliance/vpn/vpnFirewallRules", type="json")
-objects_file = st.sidebar.file_uploader("Upload Objects.json - Get it from /organizations/:organizationId/policyObjects", type="json")
-groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
-
-#______________________________________________________________________
 
 # ------------------ SIDEBAR TOOLBOX ------------------
 
