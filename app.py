@@ -107,7 +107,7 @@ st.markdown("""
 
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
-st.sidebar.header("🔧 Athenticate to your Meraki Dashboard")
+st.sidebar.header("🔑 Athenticate to your Meraki Dashboard")
 
 api_key = st.sidebar.text_input("🔑 Enter your Meraki API Key", type="password")
 org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help="Usually a 10-digit number")
@@ -190,7 +190,7 @@ if st.session_state.get("fetched_from_api", False):
             st.error(f"❌ Failed to load Rules.json: {e}")
 
 # Full manual upload fallback
-st.sidebar.header("🔧 Upload Configuration Files")
+st.sidebar.header("💾 Upload Configuration Files")
 if not st.session_state.get("fetched_from_api", False):
     rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
     objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
@@ -226,6 +226,7 @@ with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     def color_slider(label, key, default_hex):
         return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
 
+    
     color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
     color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
     color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
@@ -243,7 +244,7 @@ highlight_colors = {
 # ------------------ STREAMLIT TABS ------------------
 # -------------- MANUAL TAB HANDLING ----------------
 tab_names = ["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
-
+st.header("🔎-🛡️-🧠 Choose the module:")
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = tab_names[0]  
 selected_tab = st.selectbox("Select Tab", tab_names, index=tab_names.index(st.session_state.active_tab), label_visibility="collapsed")
