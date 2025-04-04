@@ -348,7 +348,7 @@ elif selected_tab == "🛡️ Rule Checker":
 
         if not objects_data or not groups_data:
             return [("Data not loaded yet", "any")]
-
+        
         if term.lower() == "any":
             return [("Any (all traffic)", "any")]
         for obj in objects_data:
@@ -361,163 +361,207 @@ elif selected_tab == "🛡️ Rule Checker":
             results.append((f"Use: {term}", term))
         return results
 
+        # --- Searchable values for protocol ---
     def search_protocol(term: str):
         options = ["any", "tcp", "udp", "icmpv4", "icmpv6"]
         term = term.strip().lower()
         return [(proto.upper(), proto) for proto in options if term in proto]
 
+    # --- For ports: allow flexible typing, no autocomplete ---
     def passthrough_port(term: str):
         term = term.strip()
         if not term:
             return []
         return [(f"Use: {term}", term)]
 
-    # --- UI ---
+    # --- Search boxes ---
     col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        source_input = st_searchbox(custom_search, placeholder="Source", label="Source (SRC)", key="src_searchbox", default="any")
-    with col2:
-        source_port_input = st_searchbox(passthrough_port, placeholder="e.g. 80,443", label="Source Port(s)", key="srcport_searchbox", default="any")
-    with col3:
-        destination_input = st_searchbox(custom_search, placeholder="Destination", label="Destination (DST)", key="dst_searchbox", default="any")
-    with col4:
-        port_input = st_searchbox(passthrough_port, placeholder="e.g. 1000-2000,443", label="Destination Port(s)", key="dstport_searchbox", default="any")
-    with col5:
-        protocol = st_searchbox(search_protocol, placeholder="Protocol", label="Protocol", key="protocol_searchbox", default="any")
 
-    col_left, col_right = st.columns(2)
+    with col1:
+        source_input = st_searchbox(
+            custom_search,
+            placeholder="Source (Object, Group, CIDR, or 'any')",
+            label="Source (SRC)",
+            key="src_searchbox",
+            default="any"
+        )
+
+    with col2:
+        source_port_input = st_searchbox(
+            passthrough_port,
+            placeholder="e.g. 80,443 or any",
+            label="Source Port(s)",
+            key="srcport_searchbox",
+            default="any"
+        )
+
+    with col3:
+        destination_input = st_searchbox(
+            custom_search,
+            placeholder="Destination (Object, Group, CIDR, or 'any')",
+            label="Destination (DST)",
+            key="dst_searchbox",
+            default="any"
+        )
+
+    with col4:
+        port_input = st_searchbox(
+            passthrough_port,
+            placeholder="e.g. 1000-2000,443",
+            label="Destination Port(s)",
+            key="dstport_searchbox",
+            default="any"
+        )
+
+    with col5:
+        protocol = st_searchbox(
+            search_protocol,
+            placeholder="Protocol",
+            label="Protocol",
+            key="protocol_searchbox",
+            default="any"
+        )
+
+    
+    col_left, col_right = st.columns(2)  
+
     with col_left:
         filter_toggle = st.checkbox("Show only matching rules", value=False)
-    with col_right:
-        manual_trigger = st.checkbox("Manual Search Mode", value=False)
 
-    trigger_search = True
-    if manual_trigger:
-        trigger_search = st.button("🔍 Run Rule Check")
+    source_input = source_input or "any"
+    destination_input = destination_input or "any"
+    source_cidrs = resolve_search_input(source_input)
+    destination_cidrs = resolve_search_input(destination_input)
 
-    if trigger_search:
-        source_input = source_input or "any"
-        destination_input = destination_input or "any"
-        source_cidrs = resolve_search_input(source_input)
-        destination_cidrs = resolve_search_input(destination_input)
+    skip_src_check = source_input.strip().lower() == "any"
+    skip_dst_check = destination_input.strip().lower() == "any"
+    skip_proto_check = protocol.strip().lower() == "any"
+    skip_dport_check = port_input.strip().lower() == "any"
+    skip_sport_check = source_port_input.strip().lower() == "any"
 
-        skip_src_check = source_input.strip().lower() == "any"
-        skip_dst_check = destination_input.strip().lower() == "any"
-        skip_proto_check = protocol.strip().lower() == "any"
-        skip_dport_check = port_input.strip().lower() == "any"
-        skip_sport_check = source_port_input.strip().lower() == "any"
+    dports_to_check = [] if skip_dport_check else [p.strip() for p in port_input.split(",") if p.strip()]
+    dports_to_loop = ["any"] if skip_dport_check else dports_to_check
 
-        dports_to_check = [] if skip_dport_check else [p.strip() for p in port_input.split(",") if p.strip()]
-        dports_to_loop = ["any"] if skip_dport_check else dports_to_check
+    matched_ports = {}
+    rule_match_ports = {}
+    found_partial_match = False
+    first_exact_match_index = None
 
-        matched_ports = {}
-        rule_match_ports = {}
-        found_partial_match = False
-        first_exact_match_index = None
+    for idx, rule in enumerate(rules_data):
+        rule_protocol = rule["protocol"].lower()
+        rule_dports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
+        rule_sports = [p.strip() for p in rule.get("srcPort", "").split(",")] if rule.get("srcPort", "").lower() != "any" else ["any"]
 
-        for idx, rule in enumerate(rules_data):
-            rule_protocol = rule["protocol"].lower()
-            rule_dports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
-            rule_sports = [p.strip() for p in rule.get("srcPort", "").split(",")] if rule.get("srcPort", "").lower() != "any" else ["any"]
+        src_ids = rule["srcCidr"].split(",") if rule["srcCidr"] != "Any" else ["Any"]
+        dst_ids = rule["destCidr"].split(",") if rule["destCidr"] != "Any" else ["Any"]
+        resolved_src_cidrs = resolve_to_cidrs(src_ids, object_map, group_map)
+        resolved_dst_cidrs = resolve_to_cidrs(dst_ids, object_map, group_map)
 
-            src_ids = rule["srcCidr"].split(",") if rule["srcCidr"] != "Any" else ["Any"]
-            dst_ids = rule["destCidr"].split(",") if rule["destCidr"] != "Any" else ["Any"]
-            resolved_src_cidrs = resolve_to_cidrs(src_ids, object_map, group_map)
-            resolved_dst_cidrs = resolve_to_cidrs(dst_ids, object_map, group_map)
+        src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
+        dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
+        proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
 
-            src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
-            dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
-            proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
+        matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
+        matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
+        matched_sports_list = [p.strip() for p in matched_sports_list if p in rule_sports or "any" in rule_sports]
 
-            matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
-            matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
-            matched_sports_list = [p.strip() for p in matched_sports_list if p in rule_sports or "any" in rule_sports]
+        sport_match = len(matched_sports_list) > 0
+        port_match = len(matched_ports_list) > 0 and sport_match
 
-            sport_match = len(matched_sports_list) > 0
-            port_match = len(matched_ports_list) > 0 and sport_match
+        full_match = src_match and dst_match and proto_match and port_match
 
-            full_match = src_match and dst_match and proto_match and port_match
-
-            exact_src = skip_src_check or all(any(is_exact_subnet_match(cidr, resolved_src_cidrs) for rule_cidr in resolved_src_cidrs) for cidr in source_cidrs)
-            exact_dst = skip_dst_check or all(any(is_exact_subnet_match(cidr, resolved_dst_cidrs) for rule_cidr in resolved_dst_cidrs) for cidr in destination_cidrs)
-            exact_ports = skip_dport_check or set(matched_ports_list) == set(dports_to_loop)
-            exact_proto = skip_proto_check or rule_protocol == protocol.lower()
-
-            is_exact = full_match and exact_src and exact_dst and exact_ports and exact_proto
-
-            if full_match:
-                rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
-                for port in matched_ports_list:
-                    if port not in matched_ports:
-                        matched_ports[port] = idx
-                if is_exact and not found_partial_match and first_exact_match_index is None:
-                    first_exact_match_index = idx
-                elif not is_exact:
-                    found_partial_match = True
-
-        rule_rows = []
-        for idx, rule in enumerate(rules_data):
-            matched_ports_for_rule = rule_match_ports.get(idx, [])
-            matched_any = len(matched_ports_for_rule) > 0
-            is_exact_match = idx == first_exact_match_index
-            is_partial_match = matched_any and not is_exact_match
-
-            source_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["srcCidr"].split(",")]
-            dest_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["destCidr"].split(",")]
-
-            rule_rows.append({
-                "Rule Index": idx + 1,
-                "Action": rule["policy"].upper(),
-                "Comment": rule.get("comment", ""),
-                "Source": ", ".join(source_names),
-                "Source Port": rule.get("srcPort", ""),
-                "Destination": ", ".join(dest_names),
-                "Ports": rule["destPort"],
-                "Protocol": rule["protocol"],
-                "Matched Ports": ", ".join(matched_ports_for_rule),
-                "Matched ✅": matched_any,
-                "Exact Match ✅": is_exact_match,
-                "Partial Match 🔶": is_partial_match
-            })
-
-        df = pd.DataFrame(rule_rows)
-        df_to_show = df[df["Matched ✅"]] if filter_toggle else df
-
-        row_style_js = JsCode(f"""
-        function(params) {{
-            if (params.data["Exact Match ✅"] === true) {{
-                return {{
-                    backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
-                    color: 'white',
-                    fontWeight: 'bold'
-                }};
-            }}
-            if (params.data["Partial Match 🔶"] === true) {{
-                return {{
-                    backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
-                    fontWeight: 'bold'
-                }};
-            }}
-            return {{}};
-        }}
-        """)
-
-        gb = GridOptionsBuilder.from_dataframe(df_to_show)
-        gb.configure_column("Comment", wrapText=True, autoHeight=True)
-        gb.configure_column("Source", wrapText=True, autoHeight=True)
-        gb.configure_column("Destination", wrapText=True, autoHeight=True)
-        gb.configure_column("Protocol", wrapText=True, autoHeight=True)
-        gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
-        grid_options = gb.build()
-
-        AgGrid(
-            df_to_show,
-            gridOptions=grid_options,
-            enable_enterprise_modules=False,
-            fit_columns_on_grid_load=True,
-            use_container_width=True,
-            allow_unsafe_jscode=True
+        # Handle 'any' exact match properly
+        exact_src = (
+            True if skip_src_check and "0.0.0.0/0" in resolved_src_cidrs
+            else all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
         )
+        
+        exact_dst = (
+            True if skip_dst_check and "0.0.0.0/0" in resolved_dst_cidrs
+            else all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
+        )
+    
+
+
+        exact_ports = skip_dport_check or set(matched_ports_list) == set(dports_to_loop)
+        exact_proto = skip_proto_check or rule_protocol == protocol.lower()
+
+        is_exact = full_match and exact_src and exact_dst and exact_ports and exact_proto
+
+        if full_match:
+            rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
+            for port in matched_ports_list:
+                if port not in matched_ports:
+                    matched_ports[port] = idx
+            if is_exact and not found_partial_match and first_exact_match_index is None:
+                first_exact_match_index = idx
+            elif not is_exact:
+                found_partial_match = True
+
+    rule_rows = []
+    for idx, rule in enumerate(rules_data):
+        matched_ports_for_rule = rule_match_ports.get(idx, [])
+        matched_any = len(matched_ports_for_rule) > 0
+        is_exact_match = idx == first_exact_match_index
+        is_partial_match = matched_any and not is_exact_match
+
+        source_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["srcCidr"].split(",")]
+        dest_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["destCidr"].split(",")]
+
+        rule_rows.append({
+            "Rule Index": idx + 1,
+            "Action": rule["policy"].upper(),
+            "Comment": rule.get("comment", ""),
+            "Source": ", ".join(source_names),
+            "Source Port": rule.get("srcPort", ""),
+            "Destination": ", ".join(dest_names),
+            "Ports": rule["destPort"],
+            "Protocol": rule["protocol"],
+            "Matched Ports": ", ".join(matched_ports_for_rule),
+            "Matched ✅": matched_any,
+            "Exact Match ✅": is_exact_match,
+            "Partial Match 🔶": is_partial_match
+        })
+
+    df = pd.DataFrame(rule_rows)
+    df_to_show = df[df["Matched ✅"]] if filter_toggle else df
+
+    row_style_js = JsCode(f"""
+function(params) {{
+    if (params.data["Exact Match ✅"] === true) {{
+        return {{
+            backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
+            color: 'white',
+            fontWeight: 'bold'
+        }};
+    }}
+    if (params.data["Partial Match 🔶"] === true) {{
+        return {{
+            backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
+            fontWeight: 'bold'
+        }};
+    }}
+    return {{}};
+}}
+""")
+
+    gb = GridOptionsBuilder.from_dataframe(df_to_show)
+    gb.configure_column("Comment", wrapText=True, autoHeight=True)
+    gb.configure_column("Source", wrapText=True, autoHeight=True)
+    gb.configure_column("Destination", wrapText=True, autoHeight=True)
+    gb.configure_column("Protocol", wrapText=True, autoHeight=True)
+    gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
+    grid_options = gb.build()
+
+    AgGrid(
+        df_to_show,
+        gridOptions=grid_options,
+        enable_enterprise_modules=False,
+        fit_columns_on_grid_load=True,
+        use_container_width=True,
+        allow_unsafe_jscode=True
+    )
+
 elif selected_tab == "🧠 Optimization Insights":
     # Your OPTIMIZATION INSIGHTS code here
  #   st.header("🧠 Optimization Insights")
@@ -584,4 +628,3 @@ elif selected_tab == "🧠 Optimization Insights":
                 st.info("This group has no valid or displayable objects.")
     else:
         st.info("No groups match the current search.")
-
