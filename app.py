@@ -223,54 +223,58 @@ group_map = st.session_state.get("group_map", {})
 with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
-    def color_with_label(key, label, default_hex, help_text):
+    def color_with_label(widget_key, state_key, label, default_hex, help_text):
         col1, col2 = st.columns([1, 3])
-        picked_color = None
         with col1:
-            picked_color = st.color_picker("", value=default_hex, key=key)
+            picked_color = st.color_picker("", value=default_hex, key=widget_key)
         with col2:
             st.markdown(
                 f"<b>{label}</b><br><span style='font-size: 0.8em'>{help_text}</span>",
                 unsafe_allow_html=True
             )
-        return picked_color
+        return state_key, picked_color
 
-    # Define once
-    highlight_colors = {
-        "exact_allow": {
+    highlight_color_defs = [
+        {
+            "widget_key": "colorpicker_exact_allow",
+            "state_key": "exact_allow",
             "label": "Described traffic is fully ALLOWED",
             "default": "#09BC8A",
             "help": "No rule after this one will affect the traffic."
         },
-        "exact_deny": {
+        {
+            "widget_key": "colorpicker_exact_deny",
+            "state_key": "exact_deny",
             "label": "Described traffic is fully DENIED",
             "default": "#DA2C38",
             "help": "No rule after this one will affect the traffic."
         },
-        "partial_allow": {
+        {
+            "widget_key": "colorpicker_partial_allow",
+            "state_key": "partial_allow",
             "label": "Described traffic is partially ALLOWED",
             "default": "#99E2B4",
             "help": "Rule may affect traffic. Use a more specific search to verify."
         },
-        "partial_deny": {
+        {
+            "widget_key": "colorpicker_partial_deny",
+            "state_key": "partial_deny",
             "label": "Described traffic is partially DENIED",
             "default": "#F7EF81",
             "help": "Rule may affect traffic. Use a more specific search to verify."
         }
-    }
+    ]
 
-    # Populate and store in session state after
-    selected_colors = {}
-    for key, cfg in highlight_colors.items():
-        selected_colors[key] = color_with_label(
-            key,
-            cfg["label"],
-            cfg["default"],
-            cfg["help"]
+    for item in highlight_color_defs:
+        key, color = color_with_label(
+            widget_key=item["widget_key"],
+            state_key=item["state_key"],
+            label=item["label"],
+            default_hex=item["default"],
+            help_text=item["help"]
         )
+        st.session_state[key] = color  # Now safely writes to a distinct state key
 
-    # Now safely write once
-    st.session_state.update(selected_colors)
 
 # ------------------ STREAMLIT TABS ------------------
 tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
