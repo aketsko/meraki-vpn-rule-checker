@@ -34,13 +34,7 @@ from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_n
 from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match
 from utils.API import fetch_meraki_data
 
-# ------------------ PAGE SETUP ------------------
-st.set_page_config(
-    page_title="Meraki VPN Rule Checker",
-    layout="wide",
-    page_icon="🛡️",
-    initial_sidebar_state="expanded"
-)
+
 # Initialize session state variables early
 if "source_raw_input" not in st.session_state:
     st.session_state["source_raw_input"] = ""
