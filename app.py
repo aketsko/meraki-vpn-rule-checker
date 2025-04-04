@@ -341,7 +341,13 @@ if selected_tab == "🔎 Object Search":
 
 elif selected_tab == "🛡️ Rule Checker":
     # Your RULE CHECKER code here
-#    st.header("🛡️ Rule Checker")
+
+    # --- Manual Search Mode ---
+    manual_mode = st.checkbox("🛠️ Manual Search Mode", value=False)
+    run_check = True
+    if manual_mode:
+        run_check = st.button("Run Rule Check")    
+    
     def custom_search(term: str):
         term = term.strip()
         results = []
@@ -428,6 +434,11 @@ elif selected_tab == "🛡️ Rule Checker":
     with col_left:
         filter_toggle = st.checkbox("Show only matching rules", value=False)
 
+    if not run_check:
+        st.info("Manual Search Mode is ON. Click 'Run Rule Check' to evaluate.")
+        st.stop()
+
+    
     source_input = source_input or "any"
     destination_input = destination_input or "any"
     source_cidrs = resolve_search_input(source_input)
