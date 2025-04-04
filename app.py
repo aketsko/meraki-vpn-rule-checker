@@ -15,7 +15,34 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
+# ------------------ API CONFIG ------------------
+API_HEADERS = {
+    "X-Cisco-Meraki-API-Key": st.secrets.get("API_KEY", ""),
+    "Content-Type": "application/json",
+    "X-Cisco-Meraki-Organization-ID": st.secrets.get("ORG_ID", "")
+}
+RULES_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/appliance/vpn/vpnFirewallRules"
+OBJECTS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects"
+GROUPS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects/groups"
 
+def fetch_meraki_data():
+    try:
+        rules_resp = requests.get(RULES_URL, headers=API_HEADERS)
+        objects_resp = requests.get(OBJECTS_URL, headers=API_HEADERS)
+        groups_resp = requests.get(GROUPS_URL, headers=API_HEADERS)
+
+        if rules_resp.ok and objects_resp.ok and groups_resp.ok:
+            return (
+                rules_resp.json().get("rules", []),
+                objects_resp.json(),
+                groups_resp.json(),
+                True
+            )
+        else:
+            return [], [], [], False
+    except Exception as e:
+        st.warning(f"API fetch error: {e}")
+        return [], [], [], False
 
 st.markdown("""
 <style>
