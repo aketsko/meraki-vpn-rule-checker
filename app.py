@@ -260,7 +260,7 @@ with tab1:
             results.append((f"Use: {term}", term))
         return results
 
-col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         source_input = st_searchbox(
             custom_search,
