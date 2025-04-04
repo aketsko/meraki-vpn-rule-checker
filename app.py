@@ -115,16 +115,12 @@ org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help
 
 
 # ------------------ API CONFIG ------------------
-def get_api_headers(api_key):
+def get_api_headers(api_key, org_id):
     return {
         "X-Cisco-Meraki-API-Key": api_key,
         "Content-Type": "application/json",
         "X-Cisco-Meraki-Organization-ID": org_id
     }
-
-RULES_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/appliance/vpn/vpnFirewallRules"
-OBJECTS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects"
-GROUPS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects/groups"
 
 def fetch_meraki_data(api_key, org_id):
     try:
