@@ -228,20 +228,20 @@ with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
 
     highlight_colors = {
         "exact_allow": color_slider(
-            "Described traffic is fully ALLOWED", "#09BC8A",
-            "No rule after this one will affect the traffic."
+            "Described traffic is fully ALLOWED", "#09BC8A"
+        #    "No rule after this one will affect the traffic."
         ),
         "exact_deny": color_slider(
-            "Described traffic is fully DENIED", "#DA2C38",
-            "No rule after this one will affect the traffic."
+            "Described traffic is fully DENIED", "#DA2C38"
+        #    "No rule after this one will affect the traffic."
         ),
         "partial_allow": color_slider(
-            "Described traffic is partially ALLOWED", "#99E2B4",
-            "This rule can affect the described traffic. To investigate further, please make the search more specific."
+            "Described traffic is partially ALLOWED", "#99E2B4"
+        #    "This rule can affect the described traffic. To investigate further, please make the search more specific."
         ),
         "partial_deny": color_slider(
-            "Described traffic is partially DENIED", "#F7EF81",
-            "This rule can affect the described traffic. To investigate further, please make the search more specific."
+            "Described traffic is partially DENIED", "#F7EF81"
+        #    "This rule can affect the described traffic. To investigate further, please make the search more specific."
         )
     }
 
