@@ -373,12 +373,17 @@ with tab1:
 
         full_match = src_match and dst_match and proto_match and port_match
 
-        exact_src = skip_src_check or all(
-            is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs
+        # Handle 'any' exact match properly
+        exact_src = (
+            True if skip_src_check and "0.0.0.0/0" in resolved_src_cidrs
+            else all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
         )
-        exact_dst = skip_dst_check or all(
-            is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs
+        
+        exact_dst = (
+            True if skip_dst_check and "0.0.0.0/0" in resolved_dst_cidrs
+            else all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
         )
+    
 
 
         exact_ports = skip_dport_check or set(matched_ports_list) == set(dports_to_loop)
