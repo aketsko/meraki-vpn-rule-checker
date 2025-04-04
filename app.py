@@ -148,16 +148,17 @@ if "rules_data" not in st.session_state or "object_map" not in st.session_state 
     if st.sidebar.button("🔄 Refresh API Data"):
         rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
 
-    if fetched:
-        st.session_state["rules_data"] = rules_data
-        st.session_state["objects_data"] = objects_data
-        st.session_state["groups_data"] = groups_data
-        st.session_state["object_map"] = get_object_map(objects_data)
-        st.session_state["group_map"] = get_group_map(groups_data)
-        st.session_state["fetched_from_api"] = True
-    else:
-        st.warning("⚠️ Failed to load from API. Please upload all files manually.")
-        st.session_state["fetched_from_api"] = False
+        if fetched:
+            st.session_state["rules_data"] = rules_data
+            st.session_state["objects_data"] = objects_data
+            st.session_state["groups_data"] = groups_data
+            st.session_state["object_map"] = get_object_map(objects_data)
+            st.session_state["group_map"] = get_group_map(groups_data)
+            st.session_state["fetched_from_api"] = True
+            st.success("✅ Data fetched from Meraki API.")
+        else:
+            st.warning("⚠️ Failed to load from API. Please upload all files manually.")
+            st.session_state["fetched_from_api"] = False
 
 # File override only for rules if API was used
 if st.session_state.get("fetched_from_api", False):
