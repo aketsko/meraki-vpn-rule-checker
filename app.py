@@ -6,7 +6,7 @@ from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
 from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match
 from streamlit_searchbox import st_searchbox
-from API_Calls import fetch_meraki_data
+from API import fetch_meraki_data
 
 # ------------------ PAGE SETUP ------------------
 st.set_page_config(
