@@ -16,37 +16,7 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
-# ------------------ API CONFIG ------------------
-def get_api_headers(api_key):
-    return {
-        "X-Cisco-Meraki-API-Key": api_key,
-        "Content-Type": "application/json",
-        "X-Cisco-Meraki-Organization-ID": org_id
-    }
 
-RULES_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/appliance/vpn/vpnFirewallRules"
-OBJECTS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects"
-GROUPS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects/groups"
-
-def fetch_meraki_data(api_key, org_id):
-    headers = get_api_headers(api_key, org_id)
-    try:
-        rules_resp = requests.get(RULES_URL.format(org_id=org_id), headers=headers)
-        objects_resp = requests.get(OBJECTS_URL.format(org_id=org_id), headers=headers)
-        groups_resp = requests.get(GROUPS_URL.format(org_id=org_id), headers=headers)
-
-        if rules_resp.ok and objects_resp.ok and groups_resp.ok:
-            return (
-                rules_resp.json().get("rules", []),
-                objects_resp.json(),
-                groups_resp.json(),
-                True
-            )
-        else:
-            return [], [], [], False
-    except Exception as e:
-        st.warning(f"API fetch error: {e}")
-        return [], [], [], False
 
 def load_json_file(uploaded_file):
     try:
@@ -143,21 +113,59 @@ st.sidebar.header("🔧 Upload Configuration Files")
 api_key = st.sidebar.text_input("🔑 Enter your Meraki API Key", type="password")
 org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help="Usually a 10-digit number")
 
+# ------------------ API CONFIG ------------------
+def get_api_headers(api_key):
+    return {
+        "X-Cisco-Meraki-API-Key": api_key,
+        "Content-Type": "application/json",
+        "X-Cisco-Meraki-Organization-ID": org_id
+    }
 
-if "rules_data" not in st.session_state or "object_map" not in st.session_state or "group_map" not in st.session_state:
-    if st.sidebar.button("🔄 Refresh API Data"):
+RULES_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/appliance/vpn/vpnFirewallRules"
+OBJECTS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects"
+GROUPS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects/groups"
+
+def fetch_meraki_data(api_key, org_id):
+    try:
+        headers = get_api_headers(api_key, org_id)
+        rules_url = f"https://api.meraki.com/api/v1/organizations/{org_id}/appliance/vpn/vpnFirewallRules"
+        objects_url = f"https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects"
+        groups_url = f"https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects/groups"
+
+        rules_resp = requests.get(rules_url, headers=headers)
+        objects_resp = requests.get(objects_url, headers=headers)
+        groups_resp = requests.get(groups_url, headers=headers)
+
+        if rules_resp.ok and objects_resp.ok and groups_resp.ok:
+            return (
+                rules_resp.json().get("rules", []),
+                objects_resp.json(),
+                groups_resp.json(),
+                True
+            )
+        else:
+            return [], [], [], False
+    except Exception as e:
+        st.warning(f"API fetch error: {e}")
+        return [], [], [], False
+
+
+if st.sidebar.button("🔄 Refresh API Data"):
+    if api_key and org_id:
         rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
-
-    if fetched:
-        st.session_state["rules_data"] = rules_data
-        st.session_state["objects_data"] = objects_data
-        st.session_state["groups_data"] = groups_data
-        st.session_state["object_map"] = get_object_map(objects_data)
-        st.session_state["group_map"] = get_group_map(groups_data)
-        st.session_state["fetched_from_api"] = True
+        if fetched:
+            st.session_state["rules_data"] = rules_data
+            st.session_state["objects_data"] = objects_data
+            st.session_state["groups_data"] = groups_data
+            st.session_state["object_map"] = get_object_map(objects_data)
+            st.session_state["group_map"] = get_group_map(groups_data)
+            st.session_state["fetched_from_api"] = True
+            st.success("✅ Data refreshed from Meraki API.")
+        else:
+            st.session_state["fetched_from_api"] = False
+            st.error("❌ Failed to refresh data from API.")
     else:
-        st.warning("⚠️ Failed to load from API. Please upload all files manually.")
-        st.session_state["fetched_from_api"] = False
+        st.error("❌ Please enter both API key and Org ID.")
 
 # File override only for rules if API was used
 if st.session_state.get("fetched_from_api", False):
