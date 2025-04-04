@@ -68,8 +68,10 @@ st.markdown("""
 
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
+# ------------------ SIDEBAR FILE UPLOAD ------------------
 st.sidebar.header("🔧 Upload Configuration Files")
 
+# Try to fetch data from API on app start
 if "rules_data" not in st.session_state or "object_map" not in st.session_state or "group_map" not in st.session_state:
     rules_data, objects_data, groups_data, fetched = fetch_meraki_data()
     if fetched:
@@ -78,13 +80,29 @@ if "rules_data" not in st.session_state or "object_map" not in st.session_state 
         st.session_state["groups_data"] = groups_data
         st.session_state["object_map"] = get_object_map(objects_data)
         st.session_state["group_map"] = get_group_map(groups_data)
+        st.session_state["fetched_from_api"] = True
     else:
-        st.warning("⚠️ Failed to load from API. Please upload files manually.")
+        st.warning("⚠️ Failed to load from API. Please upload all files manually.")
+        st.session_state["fetched_from_api"] = False
 
-# Manual override for Rules file
-uploaded_rules_file = st.sidebar.file_uploader("📄 Upload Rules.json", type="json", key="rules_upload")
-if uploaded_rules_file:
-    st.session_state["rules_data"] = safe_dataframe(uploaded_rules_file)["rules"]
+# Show file upload options based on API fetch result
+if st.session_state.get("fetched_from_api", False):
+    uploaded_rules_file = st.sidebar.file_uploader("📄 Upload Rules.json (override)", type="json", key="rules_upload")
+    if uploaded_rules_file:
+        st.session_state["rules_data"] = load_json_file(uploaded_rules_file).get("rules", [])
+else:
+    rules_file = st.sidebar.file_uploader("Upload Rules.json - From /appliance/vpn/vpnFirewallRules", type="json")
+    objects_file = st.sidebar.file_uploader("Upload Objects.json - From /policyObjects", type="json")
+    groups_file = st.sidebar.file_uploader("Upload Object Groups.json - From /policyObjects/groups", type="json")
+
+    if all([rules_file, objects_file, groups_file]):
+        st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
+        objects_data = load_json_file(objects_file)
+        groups_data = load_json_file(groups_file)
+        st.session_state["objects_data"] = objects_data
+        st.session_state["groups_data"] = groups_data
+        st.session_state["object_map"] = get_object_map(objects_data)
+        st.session_state["group_map"] = get_group_map(groups_data)
 
 # Optional Refresh Button
 if st.sidebar.button("🔄 Refresh API Data"):
@@ -95,20 +113,12 @@ if st.sidebar.button("🔄 Refresh API Data"):
         st.session_state["groups_data"] = groups_data
         st.session_state["object_map"] = get_object_map(objects_data)
         st.session_state["group_map"] = get_group_map(groups_data)
+        st.session_state["fetched_from_api"] = True
         st.success("✅ Data refreshed from Meraki API.")
     else:
+        st.session_state["fetched_from_api"] = False
         st.error("❌ Failed to refresh data from API.")
 
-# Aliases
-rules_data = st.session_state.get("rules_data", [])
-objects_data = st.session_state.get("objects_data", [])
-groups_data = st.session_state.get("groups_data", [])
-object_map = st.session_state.get("object_map", {})
-group_map = st.session_state.get("group_map", {})
-
-rules_file = st.sidebar.file_uploader("Upload Rules.json - Get it from /organizations/:organizationId/appliance/vpn/vpnFirewallRules", type="json")
-objects_file = st.sidebar.file_uploader("Upload Objects.json - Get it from /organizations/:organizationId/policyObjects", type="json")
-groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
 #______________________________________________________________________
 
 # ------------------ SIDEBAR TOOLBOX ------------------
