@@ -107,7 +107,7 @@ st.markdown("""
 
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
-st.sidebar.header("🔧 Upload Configuration Files")
+st.sidebar.header("🔧 Athenticate to your Meraki Dashboard")
 
 api_key = st.sidebar.text_input("🔑 Enter your Meraki API Key", type="password")
 org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help="Usually a 10-digit number")
@@ -190,6 +190,7 @@ if st.session_state.get("fetched_from_api", False):
             st.error(f"❌ Failed to load Rules.json: {e}")
 
 # Full manual upload fallback
+st.sidebar.header("🔧 Upload Configuration Files")
 if not st.session_state.get("fetched_from_api", False):
     rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
     objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
