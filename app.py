@@ -54,16 +54,7 @@ green_palette = color_gradient([0, 128, 0], [144, 238, 144])
 red_palette = color_gradient([139, 0, 0], [255, 192, 203])
 
 # ------------------ SIDEBAR TOOLBOX ------------------
-import numpy as np
 
-# Helper to convert RGB to HEX
-def rgb_to_hex(rgb):
-    rgb = np.array(rgb).astype(int)
-    return '#%02x%02x%02x' % tuple(rgb)
-
-# Define color gradient endpoints
-green_start, green_end = [0, 128, 0], [144, 238, 144]
-red_start, red_end = [139, 0, 0], [255, 192, 203]
 
 # 🧰 Toolbox inside a collapsible section
 with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
