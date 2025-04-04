@@ -239,11 +239,7 @@ highlight_colors = {
 }
 
 
-# ------------------ STREAMLIT TABS ------------------
-tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
-
-
-with tab1:
+# ------------------ STREAMLIT TABS ------------------with tab1:
     st.header("🛡️ Rule Checker")
 
     def custom_search(term: str):
@@ -263,23 +259,11 @@ with tab1:
 
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        source_input = st_searchbox(
-            custom_search,
-            placeholder="Source (Object, Group, CIDR, or 'any')",
-            label="Source (SRC)",
-            key="src_searchbox",
-            default="any"
-        )
+        source_input = st_searchbox(custom_search, "Source (SRC)", key="src_searchbox", default="any")
     with col2:
         source_port_input = st.text_input("Source Port(s)", "any")
     with col3:
-        destination_input = st_searchbox(
-            custom_search,
-            placeholder="Destination (Object, Group, CIDR, or 'any')",
-            label="Destination (DST)",
-            key="dst_searchbox",
-            default="any"
-        )
+        destination_input = st_searchbox(custom_search, "Destination (DST)", key="dst_searchbox", default="any")
     with col4:
         port_input = st.text_input("Destination Port(s)", "any")
     with col5:
@@ -287,7 +271,6 @@ with tab1:
 
     filter_toggle = st.checkbox("Show only matching rules", value=False)
 
-    # Resolution of inputs
     source_input = source_input or "any"
     destination_input = destination_input or "any"
     source_cidrs = resolve_search_input(source_input)
@@ -330,15 +313,8 @@ with tab1:
 
         full_match = src_match and dst_match and proto_match and port_match
 
-        # --------- Updated Exact Matching Logic ---------
-        exact_src = skip_src_check or all(
-            any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_src_cidrs)
-            for cidr in source_cidrs
-        )
-        exact_dst = skip_dst_check or all(
-            any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_dst_cidrs)
-            for cidr in destination_cidrs
-        )
+        exact_src = skip_src_check or all(any(is_exact_subnet_match(cidr, resolved_src_cidrs) for rule_cidr in resolved_src_cidrs) for cidr in source_cidrs)
+        exact_dst = skip_dst_check or all(any(is_exact_subnet_match(cidr, resolved_dst_cidrs) for rule_cidr in resolved_dst_cidrs) for cidr in destination_cidrs)
         exact_ports = skip_dport_check or set(matched_ports_list) == set(dports_to_loop)
         exact_proto = skip_proto_check or rule_protocol == protocol.lower()
 
@@ -349,13 +325,11 @@ with tab1:
             for port in matched_ports_list:
                 if port not in matched_ports:
                     matched_ports[port] = idx
-
             if is_exact and not found_partial_match and first_exact_match_index is None:
                 first_exact_match_index = idx
             elif not is_exact:
                 found_partial_match = True
 
-    # ------------------ Render AG Grid ------------------
     rule_rows = []
     for idx, rule in enumerate(rules_data):
         matched_ports_for_rule = rule_match_ports.get(idx, [])
@@ -404,11 +378,11 @@ function(params) {{
 """)
 
     gb = GridOptionsBuilder.from_dataframe(df_to_show)
-    gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     gb.configure_column("Comment", wrapText=True, autoHeight=True)
     gb.configure_column("Source", wrapText=True, autoHeight=True)
     gb.configure_column("Destination", wrapText=True, autoHeight=True)
     gb.configure_column("Protocol", wrapText=True, autoHeight=True)
+    gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     grid_options = gb.build()
 
     AgGrid(
@@ -419,7 +393,6 @@ function(params) {{
         use_container_width=True,
         allow_unsafe_jscode=True
     )
-
 
 with tab2:
     st.header("🧠 Optimization Insights")
