@@ -195,6 +195,12 @@ if not st.session_state.get("fetched_from_api", False):
         except Exception as e:
             st.error(f"❌ Failed to load one or more files: {e}")
 
+# Load current data from session_state into local variables
+rules_data = st.session_state.get("rules_data", [])
+objects_data = st.session_state.get("objects_data", [])
+groups_data = st.session_state.get("groups_data", [])
+object_map = st.session_state.get("object_map", {})
+group_map = st.session_state.get("group_map", {})
 
 # ------------------ SIDEBAR TOOLBOX ------------------
 
