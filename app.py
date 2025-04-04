@@ -95,7 +95,7 @@ else:
     groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
 
     if all([rules_file, objects_file, groups_file]):
-        st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
+        st.session_state["rules_data"] = load_json_file(rules_file)["rules"]
         objects_data = load_json_file(objects_file)
         groups_data = load_json_file(groups_file)
         st.session_state["objects_data"] = objects_data
