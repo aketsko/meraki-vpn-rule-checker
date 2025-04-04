@@ -17,20 +17,23 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 # ------------------ API CONFIG ------------------
-API_HEADERS = {
-    "X-Cisco-Meraki-API-Key": st.secrets.get("API_KEY", ""),
-    "Content-Type": "application/json",
-    "X-Cisco-Meraki-Organization-ID": st.secrets.get("ORG_ID", "")
-}
+def get_api_headers(api_key):
+    return {
+        "X-Cisco-Meraki-API-Key": api_key,
+        "Content-Type": "application/json",
+        "X-Cisco-Meraki-Organization-ID": org_id
+    }
+
 RULES_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/appliance/vpn/vpnFirewallRules"
 OBJECTS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects"
 GROUPS_URL = "https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects/groups"
 
-def fetch_meraki_data():
+def fetch_meraki_data(api_key, org_id):
+    headers = get_api_headers(api_key, org_id)
     try:
-        rules_resp = requests.get(RULES_URL, headers=API_HEADERS)
-        objects_resp = requests.get(OBJECTS_URL, headers=API_HEADERS)
-        groups_resp = requests.get(GROUPS_URL, headers=API_HEADERS)
+        rules_resp = requests.get(RULES_URL.format(org_id=org_id), headers=headers)
+        objects_resp = requests.get(OBJECTS_URL.format(org_id=org_id), headers=headers)
+        groups_resp = requests.get(GROUPS_URL.format(org_id=org_id), headers=headers)
 
         if rules_resp.ok and objects_resp.ok and groups_resp.ok:
             return (
@@ -136,6 +139,10 @@ st.markdown("""
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
 st.sidebar.header("🔧 Upload Configuration Files")
+
+api_key = st.sidebar.text_input("🔑 Enter your Meraki API Key", type="password")
+org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help="Usually a 10-digit number")
+
 
 if "rules_data" not in st.session_state or "object_map" not in st.session_state or "group_map" not in st.session_state:
     rules_data, objects_data, groups_data, fetched = fetch_meraki_data()
