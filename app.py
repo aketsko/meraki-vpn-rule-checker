@@ -244,8 +244,7 @@ highlight_colors = {
 tab_names = ["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
 
 if "active_tab" not in st.session_state:
-    st.session_state.active_tab = tab_names[1]  # Default to Rule Checker
-
+    st.session_state.active_tab = tab_names[0]  
 selected_tab = st.selectbox("Select Tab", tab_names, index=tab_names.index(st.session_state.active_tab), label_visibility="collapsed")
 st.session_state.active_tab = selected_tab
 
