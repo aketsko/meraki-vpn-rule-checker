@@ -252,7 +252,7 @@ st.session_state.active_tab = selected_tab
 # -------- Render based on selected_tab ----------
 if selected_tab == "🔎 Object Search":
     # Your OBJECT SEARCH code here
-    st.header("🔎 Object & Group Search")
+#    st.header("🔎 Object & Group Search")
     def rule_covers(rule_a, rule_b):
         return (
             (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
@@ -341,7 +341,7 @@ if selected_tab == "🔎 Object Search":
 
 elif selected_tab == "🛡️ Rule Checker":
     # Your RULE CHECKER code here
-    st.header("🛡️ Rule Checker")
+#    st.header("🛡️ Rule Checker")
     def custom_search(term: str):
         term = term.strip()
         results = []
@@ -564,7 +564,7 @@ function(params) {{
 
 elif selected_tab == "🧠 Optimization Insights":
     # Your OPTIMIZATION INSIGHTS code here
-    st.header("🧠 Optimization Insights")
+ #   st.header("🧠 Optimization Insights")
 
     search_term = st.text_input("Search by name or CIDR:", "").lower()
 
