@@ -67,7 +67,7 @@ def load_json_file(uploaded_file):
         raise ValueError(f"Invalid JSON: {e}")
     except Exception as e:
         raise ValueError(f"Error reading uploaded file: {e}")
-ef search_objects_and_groups(searchterm: str):
+def search_objects_and_groups(searchterm: str):
     results = []
 
     for obj in objects_data:
