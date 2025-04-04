@@ -140,8 +140,6 @@ st.markdown("""
 # ------------------ SIDEBAR FILE UPLOAD ------------------
 st.sidebar.header("🔧 Upload Configuration Files")
 
-st.sidebar.header("🔧 Upload Configuration Files")
-
 api_key = st.sidebar.text_input("🔑 Enter your Meraki API Key", type="password")
 org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help="Usually a 10-digit number")
 
