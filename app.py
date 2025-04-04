@@ -44,6 +44,8 @@ def fetch_meraki_data():
         st.warning(f"API fetch error: {e}")
         return [], [], [], False
 
+
+
 st.markdown("""
 <style>
 /* Force main container to always use full width */
@@ -67,6 +69,43 @@ st.markdown("""
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
 st.sidebar.header("🔧 Upload Configuration Files")
+
+if "rules_data" not in st.session_state or "object_map" not in st.session_state or "group_map" not in st.session_state:
+    rules_data, objects_data, groups_data, fetched = fetch_meraki_data()
+    if fetched:
+        st.session_state["rules_data"] = rules_data
+        st.session_state["objects_data"] = objects_data
+        st.session_state["groups_data"] = groups_data
+        st.session_state["object_map"] = get_object_map(objects_data)
+        st.session_state["group_map"] = get_group_map(groups_data)
+    else:
+        st.warning("⚠️ Failed to load from API. Please upload files manually.")
+
+# Manual override for Rules file
+uploaded_rules_file = st.sidebar.file_uploader("📄 Upload Rules.json", type="json", key="rules_upload")
+if uploaded_rules_file:
+    st.session_state["rules_data"] = safe_dataframe(uploaded_rules_file)["rules"]
+
+# Optional Refresh Button
+if st.sidebar.button("🔄 Refresh API Data"):
+    rules_data, objects_data, groups_data, fetched = fetch_meraki_data()
+    if fetched:
+        st.session_state["rules_data"] = rules_data
+        st.session_state["objects_data"] = objects_data
+        st.session_state["groups_data"] = groups_data
+        st.session_state["object_map"] = get_object_map(objects_data)
+        st.session_state["group_map"] = get_group_map(groups_data)
+        st.success("✅ Data refreshed from Meraki API.")
+    else:
+        st.error("❌ Failed to refresh data from API.")
+
+# Aliases
+rules_data = st.session_state.get("rules_data", [])
+objects_data = st.session_state.get("objects_data", [])
+groups_data = st.session_state.get("groups_data", [])
+object_map = st.session_state.get("object_map", {})
+group_map = st.session_state.get("group_map", {})
+
 rules_file = st.sidebar.file_uploader("Upload Rules.json - Get it from /organizations/:organizationId/appliance/vpn/vpnFirewallRules", type="json")
 objects_file = st.sidebar.file_uploader("Upload Objects.json - Get it from /organizations/:organizationId/policyObjects", type="json")
 groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
