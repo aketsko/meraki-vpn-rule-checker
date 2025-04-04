@@ -248,6 +248,10 @@ with tab1:
     def custom_search(term: str):
         term = term.strip()
         results = []
+
+        if not objects_data or not groups_data:
+        return [("Data not loaded yet", "any")]
+        
         if term.lower() == "any":
             return [("Any (all traffic)", "any")]
         for obj in objects_data:
