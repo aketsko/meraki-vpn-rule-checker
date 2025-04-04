@@ -346,7 +346,7 @@ elif selected_tab == "🛡️ Rule Checker":
     manual_mode = st.checkbox("🛠️ Dynymic update", value=False)
     run_check = False
     if not manual_mode:
-        run_check = st.button("Run Rule Check")    
+        run_check = True    
     
     def custom_search(term: str):
         term = term.strip()
