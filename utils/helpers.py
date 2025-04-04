@@ -46,11 +46,3 @@ def show_rule_summary(indexes):
             st.warning(f"⚠️ Skipping invalid rule index: {i}")
     if rows:
         st.dataframe(pd.DataFrame(rows), use_container_width=True)
-
-
-# Session state for preserving raw searchbox inputs
-if "source_raw_input" not in st.session_state:
-    st.session_state["source_raw_input"] = ""
-
-if "destination_raw_input" not in st.session_state:
-    st.session_state["destination_raw_input"] = ""
