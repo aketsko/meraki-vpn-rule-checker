@@ -38,6 +38,12 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
+# Initialize session state variables early
+if "source_raw_input" not in st.session_state:
+    st.session_state["source_raw_input"] = ""
+
+if "destination_raw_input" not in st.session_state:
+    st.session_state["destination_raw_input"] = ""
 
 # ------------------ SESSION STATE INIT ------------------
 for key in ["source_raw_input", "destination_raw_input"]:
