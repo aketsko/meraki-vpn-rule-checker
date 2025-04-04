@@ -250,7 +250,7 @@ with tab1:
         results = []
 
         if not objects_data or not groups_data:
-        return [("Data not loaded yet", "any")]
+            return [("Data not loaded yet", "any")]
         
         if term.lower() == "any":
             return [("Any (all traffic)", "any")]
