@@ -260,30 +260,67 @@ with tab1:
             results.append((f"Use: {term}", term))
         return results
 
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        source_input = st_searchbox(
-            custom_search,
-            placeholder="Source (Object, Group, CIDR, or 'any')",
-            label="Source (SRC)",
-            key="src_searchbox",
-            default="any"
-        )
-    with col2:
-        source_port_input = st.text_input("Source Port(s)", "any")
-    with col3:
-        destination_input = st_searchbox(
-            custom_search,
-            placeholder="Destination (Object, Group, CIDR, or 'any')",
-            label="Destination (DST)",
-            key="dst_searchbox",
-            default="any"
-        )
-    with col4:
-        port_input = st.text_input("Destination Port(s)", "any")
-    
-    with col5:
-        protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
+    # --- Searchable values for protocol ---
+def search_protocol(term: str):
+    options = ["any", "tcp", "udp", "icmpv4", "icmpv6"]
+    term = term.strip().lower()
+    return [(proto.upper(), proto) for proto in options if term in proto]
+
+# --- For ports: allow flexible typing, no autocomplete ---
+def passthrough_port(term: str):
+    term = term.strip()
+    if not term:
+        return []
+    return [(f"Use: {term}", term)]
+
+# --- Search boxes ---
+col1, col2, col3, col4, col5 = st.columns(5)
+
+with col1:
+    source_input = st_searchbox(
+        custom_search,
+        placeholder="Source (Object, Group, CIDR, or 'any')",
+        label="Source (SRC)",
+        key="src_searchbox",
+        default="any"
+    )
+
+with col2:
+    source_port_input = st_searchbox(
+        passthrough_port,
+        placeholder="e.g. 80,443 or any",
+        label="Source Port(s)",
+        key="srcport_searchbox",
+        default="any"
+    )
+
+with col3:
+    destination_input = st_searchbox(
+        custom_search,
+        placeholder="Destination (Object, Group, CIDR, or 'any')",
+        label="Destination (DST)",
+        key="dst_searchbox",
+        default="any"
+    )
+
+with col4:
+    port_input = st_searchbox(
+        passthrough_port,
+        placeholder="e.g. 1000-2000,443",
+        label="Destination Port(s)",
+        key="dstport_searchbox",
+        default="any"
+    )
+
+with col5:
+    protocol = st_searchbox(
+        search_protocol,
+        placeholder="Protocol",
+        label="Protocol",
+        key="protocol_searchbox",
+        default="any"
+    )
+
     
     col_left, col_right = st.columns(2)  
 
