@@ -42,11 +42,14 @@ def is_exact_subnet_match(input_value, rule_cidrs):
     for rule_cidr in rule_cidrs:
         try:
             rule_net = ipaddress.ip_network(rule_cidr.strip(), strict=False)
-            # True only if input is fully inside the rule
-            if input_net.subnet_of(rule_net):
+            # Exact only if search input is fully inside rule net
+            if input_net.subnet_of(rule_net) and input_net != rule_net:
+                return True
+            elif input_net == rule_net:
                 return True
         except ValueError:
             continue
     return False
+
 
 
