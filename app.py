@@ -51,12 +51,12 @@ with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     def color_slider(label, default_hex):
         return st.sidebar.color_picker(label, value=default_hex)
 
-highlight_colors = {
-    "exact_allow": color_slider("Exact ALLOW", "#00cc44"),
-    "exact_deny": color_slider("Exact DENY", "#cc0000"),
-    "partial_allow": color_slider("Partial ALLOW", "#99e6b3"),
-    "partial_deny": color_slider("Partial DENY", "#ff9999")
-}
+    highlight_colors = {
+        "exact_allow": color_slider("Exact ALLOW", "#00cc44"),
+        "exact_deny": color_slider("Exact DENY", "#cc0000"),
+        "partial_allow": color_slider("Partial ALLOW", "#99e6b3"),
+        "partial_deny": color_slider("Partial DENY", "#ff9999")
+    }
 
 # Save colors in session state for access elsewhere
 for key, color in highlight_colors.items():
