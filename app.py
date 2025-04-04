@@ -17,23 +17,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Define default colors and store them in session state if not already
-
-default_colors = {
-    "exact_allow": "#09BC8A",
-    "exact_deny": "#DA2C38",
-    "partial_allow": "#99E2B4",
-    "partial_deny": "#F7EF81"
-}
-for key, default in default_colors.items():
-    if key not in st.session_state:
-        st.session_state[key] = default
-
-highlight_colors = {
-    key: st.session_state[key] for key in default_colors
-}
-#------------------------------------------------------------------------------
-
 def load_json_file(uploaded_file):
     try:
         if uploaded_file is None:
@@ -239,15 +222,21 @@ group_map = st.session_state.get("group_map", {})
 with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
-    def color_slider(label, key, help_text=""):
-        if help_text:
-            st.markdown(f"<small style='color:gray'>{help_text}</small>", unsafe_allow_html=True)
-        st.session_state[key] = st.color_picker(label, value=st.session_state[key], key=key)
+    def color_slider(label, key, default_hex):
+        return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
 
-    color_slider("Described traffic is fully ALLOWED", "exact_allow", "No rule after this one will affect the traffic.")
-    color_slider("Described traffic is fully DENIED", "exact_deny", "No rule after this one will affect the traffic.")
-    color_slider("Described traffic is partially ALLOWED", "partial_allow", "This rule can affect the traffic. Try narrowing your search.")
-    color_slider("Described traffic is partially DENIED", "partial_deny", "This rule can affect the traffic. Try narrowing your search.")
+    color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
+    color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
+    color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
+    color_slider("Described traffic is partially DENIED. This rule can affect the traffic. To investigate further, make the search more specific.", key="partial_deny", default_hex="#F7EF81")
+
+# Reconstruct highlight_colors from session state
+highlight_colors = {
+    "exact_allow": st.session_state.get("exact_allow", "#09BC8A"),
+    "exact_deny": st.session_state.get("exact_deny", "#DA2C38"),
+    "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
+    "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
+}
 
 
 # ------------------ STREAMLIT TABS ------------------
