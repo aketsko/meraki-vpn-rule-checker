@@ -106,6 +106,7 @@ if "rules_data" not in st.session_state or "object_map" not in st.session_state 
         st.warning("⚠️ Failed to load from API. Please upload all files manually.")
         st.session_state["fetched_from_api"] = False
 
+# File override only for rules if API was used
 if st.session_state.get("fetched_from_api", False):
     uploaded_rules_file = st.sidebar.file_uploader("📄 Upload Rules.json (override)", type="json", key="rules_upload")
     if uploaded_rules_file:
@@ -115,6 +116,7 @@ if st.session_state.get("fetched_from_api", False):
             st.session_state["rules_data"] = rules_json.get("rules", [])
         except Exception as e:
             st.error(f"❌ Failed to load Rules.json: {e}")
+
 else:
     rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
     objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
@@ -127,13 +129,10 @@ else:
             groups_file.seek(0)
 
             st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
-            objects_data = load_json_file(objects_file)
-            groups_data = load_json_file(groups_file)
-
-            st.session_state["objects_data"] = objects_data
-            st.session_state["groups_data"] = groups_data
-            st.session_state["object_map"] = get_object_map(objects_data)
-            st.session_state["group_map"] = get_group_map(groups_data)
+            st.session_state["objects_data"] = load_json_file(objects_file)
+            st.session_state["groups_data"] = load_json_file(groups_file)
+            st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
+            st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
         except Exception as e:
             st.error(f"❌ Failed to load one or more files: {e}")
 
@@ -150,6 +149,13 @@ if st.sidebar.button("🔄 Refresh API Data"):
     else:
         st.session_state["fetched_from_api"] = False
         st.error("❌ Failed to refresh data from API.")
+
+# Always assign these before tabs so downstream functions don't fail
+rules_data = st.session_state.get("rules_data", [])
+objects_data = st.session_state.get("objects_data", [])
+groups_data = st.session_state.get("groups_data", [])
+object_map = st.session_state.get("object_map", {})
+group_map = st.session_state.get("group_map", {})
 
 # ------------------ SIDEBAR TOOLBOX ------------------
 
@@ -170,7 +176,6 @@ with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     # Save colors in session state for access elsewhere
     for key, color in highlight_colors.items():
         st.session_state[key] = color
-
 # ------------------ STREAMLIT TABS ------------------
 tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
