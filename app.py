@@ -4,6 +4,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
 from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match
+from streamlit_searchbox import st_searchbox
 
 # ------------------ PAGE SETUP ------------------
 st.set_page_config(
@@ -12,12 +13,92 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
+st.markdown("""
+<style>
+/* Force main container to always use full width */
+.css-18e3th9 {
+    flex: 1 1 100%;
+    max-width: 50%;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+    <style>
+    /* Sidebar file uploader text color */
+    section[data-testid="stSidebar"] .stFileUploader label,
+    section[data-testid="stSidebar"] .stFileUploader span {
+        color: black !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
 st.sidebar.header("🔧 Upload Configuration Files")
 rules_file = st.sidebar.file_uploader("Upload Rules.json - Get it from /organizations/:organizationId/appliance/vpn/vpnFirewallRules", type="json")
 objects_file = st.sidebar.file_uploader("Upload Objects.json - Get it from /organizations/:organizationId/policyObjects", type="json")
 groups_file = st.sidebar.file_uploader("Upload Object Groups.json - Get it from /organizations/:organizationId/policyObjects/groups", type="json")
+#______________________________________________________________________
+import numpy as np
+
+# Color helper
+def color_gradient(start_color, end_color, n=256):
+    return [(np.array(start_color)*(1-i/n) + np.array(end_color)*(i/n)).astype(int) for i in range(n+1)]
+
+def rgb_to_hex(rgb):
+    return '#%02x%02x%02x' % tuple(rgb)
+
+# Build palettes
+green_palette = color_gradient([0, 128, 0], [144, 238, 144])
+red_palette = color_gradient([139, 0, 0], [255, 192, 203])
+
+# ------------------ SIDEBAR TOOLBOX ------------------
+import numpy as np
+
+# Helper to convert RGB to HEX
+def rgb_to_hex(rgb):
+    rgb = np.array(rgb).astype(int)
+    return '#%02x%02x%02x' % tuple(rgb)
+
+# Define color gradient endpoints
+green_start, green_end = [0, 128, 0], [144, 238, 144]
+red_start, red_end = [139, 0, 0], [255, 192, 203]
+
+# 🧰 Toolbox inside a collapsible section
+with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
+    st.markdown("Adjust the colors used to highlight rule matches:")
+
+    # Exact ALLOW
+    green1_val = st.slider("Exact Match (ALLOW)", 0, 256, 238)
+    green1 = rgb_to_hex((np.array(green_start)*(1-green1_val/256) + np.array(green_end)*(green1_val/256)).astype(int))
+    st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(green_start)}, {rgb_to_hex(green_end)}); height: 25px;'></div>", unsafe_allow_html=True)
+
+    # Partial ALLOW
+    green2_val = st.slider("Partial Match (ALLOW)", 0, 256, 75)
+    green2 = rgb_to_hex((np.array(green_start)*(1-green2_val/256) + np.array(green_end)*(green2_val/256)).astype(int))
+    st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(green_start)}, {rgb_to_hex(green_end)}); height: 25px;'></div>", unsafe_allow_html=True)
+
+    # Exact DENY
+    red1_val = st.slider("Exact Match (DENY)", 0, 256, 243)
+    red1 = rgb_to_hex((np.array(red_start)*(1-red1_val/256) + np.array(red_end)*(red1_val/256)).astype(int))
+    st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(red_start)}, {rgb_to_hex(red_end)}); height: 25px;'></div>", unsafe_allow_html=True)
+
+    # Partial DENY
+    red2_val = st.slider("Partial Match (DENY)", 0, 256, 123)
+    red2 = rgb_to_hex((np.array(red_start)*(1-red2_val/256) + np.array(red_end)*(red2_val/256)).astype(int))
+    st.markdown(f"<div style='background: linear-gradient(to right, {rgb_to_hex(red_start)}, {rgb_to_hex(red_end)}); height: 25px;'></div>", unsafe_allow_html=True)
+
+# Export selected colors
+highlight_colors = {
+    "exact_allow": green1,
+    "partial_allow": green2,
+    "exact_deny": red1,
+    "partial_deny": red2,
+}
+
+
+#______________________________________________________________________
 
 if not all([rules_file, objects_file, groups_file]):
     st.warning("Please upload all three JSON files to proceed.")
@@ -29,6 +110,33 @@ groups_data = load_json_file(groups_file)
 
 object_map = get_object_map(objects_data)
 group_map = get_group_map(groups_data)
+
+def search_objects_and_groups(searchterm: str):
+    results = []
+
+    for obj in objects_data:
+        if searchterm.lower() in obj.get("name", "").lower() or searchterm in obj.get("cidr", ""):
+            results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
+
+    for group in groups_data:
+        if searchterm.lower() in group.get("name", "").lower():
+            results.append((f"{group['name']} (Group)", group["name"]))
+
+    return results
+
+
+def resolve_search_input(input_str):
+    if not input_str or str(input_str).strip().lower() == "any":
+        return ["0.0.0.0/0"]
+    input_str = input_str.strip()
+    for obj in objects_data:
+        if input_str == obj["name"]:
+            return [obj["cidr"]]
+    for group in groups_data:
+        if input_str == group["name"]:
+            return [object_map[obj_id]["cidr"] for obj_id in group["objectIds"] if obj_id in object_map and "cidr" in object_map[obj_id]]
+    return [input_str]
+
 
 def show_rule_summary(indexes):
     rows = []
@@ -48,30 +156,75 @@ def show_rule_summary(indexes):
             st.warning(f"⚠️ Skipping invalid rule index: {i}")
     if rows:
         st.dataframe(pd.DataFrame(rows), use_container_width=True)
+if "source_raw_input" not in st.session_state:
+    st.session_state["source_raw_input"] = ""
+
+if "destination_raw_input" not in st.session_state:
+    st.session_state["destination_raw_input"] = ""
 
 
 # ------------------ STREAMLIT TABS ------------------
 tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
+
 # ------------------ RULE CHECKER TAB ------------------
 with tab1:
-    st.header("🔍 VPN Rule Checker")
+    st.header("🛡️ Rule Checker")
 
-    col1, col2, col3, col4 = st.columns(4)
+    def custom_search(term: str):
+        term = term.strip()
+        results = []
+        if term.lower() == "any":
+            return [("Any (all traffic)", "any")]
+        for obj in objects_data:
+            if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
+                results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
+        for group in groups_data:
+            if term.lower() in group["name"].lower():
+                results.append((f"{group['name']} (Group)", group["name"]))
+        if not results:
+            results.append((f"Use: {term}", term))
+        return results
+
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        source_ip = st.text_input("Source IP/Subnet (SRC)", "192.168.255.1")
+        source_input = st_searchbox(
+            custom_search,
+            placeholder="Source (Object, Group, CIDR, or 'any')",
+            label="Source (SRC)",
+            key="src_searchbox",
+            default="any"
+        )
     with col2:
         source_port_input = st.text_input("Source Port(s)", "any")
     with col3:
-        destination_ip = st.text_input("Destination IP/Subnet (DST)", "172.17.200.56")
+        destination_input = st_searchbox(
+            custom_search,
+            placeholder="Destination (Object, Group, CIDR, or 'any')",
+            label="Destination (DST)",
+            key="dst_searchbox",
+            default="any"
+        )
     with col4:
-        port_input = st.text_input("Destination Port(s)", "443, 8080")
+        port_input = st.text_input("Destination Port(s)", "any")
+    
+    with col5:
+        protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
+    
+    col_left, col_right = st.columns(2)  
 
-    protocol = st.selectbox("Protocol", ["any", "tcp", "udp", "icmpv4", "icmpv6"], index=0)
-    filter_toggle = st.checkbox("Show only matching rules", value=False)
+    with col_left:
+        filter_toggle = st.checkbox("Show only matching rules", value=False)
 
-    skip_src_check = source_ip.strip().lower() == "any"
-    skip_dst_check = destination_ip.strip().lower() == "any"
+
+    source_input = source_input or "any"
+    destination_input = destination_input or "any"
+
+    source_cidrs = resolve_search_input(source_input)
+    destination_cidrs = resolve_search_input(destination_input)
+
+    skip_src_check = source_input.strip().lower() == "any"
+    skip_dst_check = destination_input.strip().lower() == "any"
     skip_proto_check = protocol.strip().lower() == "any"
     skip_dport_check = port_input.strip().lower() == "any"
     skip_sport_check = source_port_input.strip().lower() == "any"
@@ -94,8 +247,8 @@ with tab1:
         resolved_src_cidrs = resolve_to_cidrs(src_ids, object_map, group_map)
         resolved_dst_cidrs = resolve_to_cidrs(dst_ids, object_map, group_map)
 
-        src_match = True if skip_src_check else match_input_to_rule(resolved_src_cidrs, source_ip)
-        dst_match = True if skip_dst_check else match_input_to_rule(resolved_dst_cidrs, destination_ip)
+        src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
+        dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
         proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
         matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
         matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
@@ -105,10 +258,20 @@ with tab1:
 
         full_match = src_match and dst_match and proto_match and port_match
 
-        exact_src = (skip_src_check and "Any" in rule["srcCidr"]) or (not skip_src_check and is_exact_subnet_match(source_ip, resolved_src_cidrs))
-        exact_dst = (skip_dst_check and "Any" in rule["destCidr"]) or (not skip_dst_check and is_exact_subnet_match(destination_ip, resolved_dst_cidrs))
-        exact_ports = skip_dport_check or len(matched_ports_list) == len(dports_to_loop)
-        is_exact = full_match and exact_src and exact_dst and exact_ports
+        exact_src = ("Any" in rule["srcCidr"]) if skip_src_check else all(
+            any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_src_cidrs)
+            for cidr in source_cidrs
+        )
+
+        exact_dst = ("Any" in rule["destCidr"]) if skip_dst_check else all(
+            any(is_exact_subnet_match(cidr, [rule_cidr]) for rule_cidr in resolved_dst_cidrs)
+            for cidr in destination_cidrs
+        )
+
+        exact_ports = skip_dport_check and rule["destPort"].lower() == "any" and rule.get("srcPort", "").lower() == "any"
+        exact_proto = skip_proto_check and rule["protocol"].lower() == "any"
+        
+        is_exact = full_match and exact_src and exact_dst and exact_ports and exact_proto
 
         if full_match:
             rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
@@ -129,7 +292,6 @@ with tab1:
         is_partial_match = matched_any and not is_exact_match
 
         source_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["srcCidr"].split(",")]
-
         dest_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["destCidr"].split(",")]
 
         rule_rows.append({
@@ -149,47 +311,30 @@ with tab1:
     df = pd.DataFrame(rule_rows)
     df_to_show = df[df["Matched ✅"]] if filter_toggle else df
 
-    # AG Grid Styling
-    row_style_js = JsCode("""
-function(params) {
-    if (params.data["Exact Match ✅"] === true) {
-        return {
-            backgroundColor: params.data.Action === "ALLOW" ? '#00cc44' : '#cc0000',
+    row_style_js = JsCode(f"""
+function(params) {{
+    if (params.data["Exact Match ✅"] === true) {{
+        return {{
+            backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
             color: 'white',
             fontWeight: 'bold'
-        };
-    }
-    if (params.data["Partial Match 🔶"] === true) {
-        return {
-            backgroundColor: params.data.Action === "ALLOW" ? '#99e6b3' : '#ff9999',
+        }};
+    }}
+    if (params.data["Partial Match 🔶"] === true) {{
+        return {{
+            backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
             fontWeight: 'bold'
-        };
-    }
-    return {};
-}
+        }};
+    }}
+    return {{}};
+}}
 """)
 
-
     gb = GridOptionsBuilder.from_dataframe(df_to_show)
-    column_defs = [
-        {"field": "Rule Index", "width": 70},
-        {"field": "Action", "width": 80},
-        {"field": "Protocol", "width": 80},
-        {"field": "Source", "width": 400},
-        {"field": "Destination", "width": 400},
-        {"field": "Source Port", "width": 80},
-        {"field": "Ports", "width": 80},
-        {"field": "Comment", "width": 500},
-        {"field": "Matched Ports", "width": 80},
-        {"field": "Matched ✅", "width": 80},
-        {"field": "Exact Match ✅", "width": 100},
-        {"field": "Partial Match 🔶", "width": 120}
-    ]
-    gb.configure_columns(column_defs)
-    gb.configure_column("Comment", wrapText=True, autoHeight=True)
-    gb.configure_column("Source", wrapText=True, autoHeight=True)
-    gb.configure_column("Destination", wrapText=True, autoHeight=True)
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
+    gb.configure_column("Comment",resizable=True, wrapText=True, autoHeight=True)
+    gb.configure_column("Source",resizable=True, wrapText=True, autoHeight=True)
+    gb.configure_column("Destination",resizable=True, wrapText=True, autoHeight=True)
     grid_options = gb.build()
 
     AgGrid(
