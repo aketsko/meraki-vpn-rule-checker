@@ -79,6 +79,13 @@ def fetch_meraki_data():
         st.warning(f"API fetch error: {e}")
         return [], [], [], False
 
+# Initialize session state for raw inputs
+if "source_raw_input" not in st.session_state:
+    st.session_state["source_raw_input"] = ""
+
+if "destination_raw_input" not in st.session_state:
+    st.session_state["destination_raw_input"] = ""
+
 # ------------------ SIDEBAR DATA HANDLING ------------------
 st.sidebar.header("🔧 Configuration")
 
