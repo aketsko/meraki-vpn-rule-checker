@@ -107,13 +107,14 @@ st.markdown("""
 
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
-st.sidebar.header("🔑 Athenticate to your Meraki Dashboard")
+st.sidebar.header("📡 Connect to Meraki Dashboard")
 
 fetched_from_api = st.session_state.get("fetched_from_api", False)
-with st.sidebar.expander("🔐 API Access", expanded=not (st.session_state.get("fetched_from_api") or (st.session_state.get("rules_data") and st.session_state.get("objects_data") and st.session_state.get("groups_data")))):
-
-    api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
+with st.sidebar.expander("🔒 API Access", expanded=not (st.session_state.get("fetched_from_api") or (st.session_state.get("rules_data") and st.session_state.get("objects_data") and st.session_state.get("groups_data")))):
+    
     org_id = st.text_input("🏢 Enter your Organization ID", value="")
+    api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
+    
 
 
 # ------------------ API CONFIG ------------------
