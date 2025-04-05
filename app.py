@@ -254,7 +254,7 @@ highlight_colors = {
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
     col_c, col_r, col_o, col_g = st.columns(4)
-    col_c.text(("🔎-🛡️-🧠 Choose the module:")
+    col_c.text("🔎-🛡️-🧠 Choose the module:")
     col_r.metric("🔐 Rules", f"{len(rules_data)}")
     col_o.metric("📦 Objects", f"{len(objects_data)}")
     col_g.metric("🧩 Groups", f"{len(groups_data)}")
