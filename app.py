@@ -253,19 +253,9 @@ highlight_colors = {
 #st.header("🔎-🛡️-🧠 Choose the module:")
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
-    col_c, col_r, col_o, col_g = st.columns(4)
+    col_c, col_t, col_r, col_o, col_g = st.columns(4)
     col_c.text("🔎-🛡️-🧠 Choose the module:")
-    col_r.metric("🔐 Rules", f"{len(rules_data)}")
-    col_o.metric("📦 Objects", f"{len(objects_data)}")
-    col_g.metric("🧩 Groups", f"{len(groups_data)}")
-
-
-col1, col2 = st.columns([3, 4])  # Adjust width ratio as needed
-
-with col1:
-    st.markdown("### 🔎-🛡️-🧠 Choose the module:")
-
-with col2:
+    with col_t:
     tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
 
     if "active_tab" not in st.session_state:
@@ -286,6 +276,14 @@ with col2:
     
     # Set local variable only after selectbox is rendered
     selected_tab = st.session_state.active_tab
+    col_r.metric("🔐 Rules", f"{len(rules_data)}")
+    col_o.metric("📦 Objects", f"{len(objects_data)}")
+    col_g.metric("🧩 Groups", f"{len(groups_data)}")
+
+
+
+
+
 
 # -------- Render based on selected_tab ----------
 if selected_tab == "🔎 Object & Group Search":
