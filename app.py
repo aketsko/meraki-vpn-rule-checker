@@ -247,6 +247,7 @@ tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimiz
 st.header("🔎-🛡️-🧠 Choose the module:")
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = tab_names[0]  
+    
 def on_tab_change():
     st.session_state.active_tab = st.session_state.selected_tab
 
@@ -258,6 +259,9 @@ st.selectbox(
     on_change=on_tab_change,
     label_visibility="collapsed"
 )
+
+selected_tab = st.session_state.selected_tab 
+
 # -------- Render based on selected_tab ----------
 if selected_tab == "🔎 Object & Group Search":
 
