@@ -183,10 +183,10 @@ if st.sidebar.button("🔄 Refresh API Data"):
         st.error("❌ Please enter both API key and Org ID.")
 
 # File override only for rules if API was used
-st.sidebar.header("💾 Upload Configuration Files")
+st.sidebar.header("💾 Upload Data Files")
 
 if st.session_state.get("fetched_from_api", False):
-    uploaded_rules_file = st.sidebar.file_uploader("📄 Upload Rules.json (override)", type="json", key="rules_upload")
+    uploaded_rules_file = st.sidebar.file_uploader("📄 Upload alternative Rules.json", type="json", key="rules_upload")
     if uploaded_rules_file:
         uploaded_rules_file.seek(0)
         try:
