@@ -252,33 +252,38 @@ highlight_colors = {
 
 #st.header("🔎-🛡️-🧠 Choose the module:")
 # -------------- MANUAL TAB HANDLING ----------------
-#with st.container():
-    col_c, col_t, col_r, col_o, col_g = st.columns(5)
-    col_c.text("🔎-🛡️-🧠 Choose the module:")
-    with col_t:
-        tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
-    
-        if "active_tab" not in st.session_state:
-            st.session_state.active_tab = tab_names[0]  # Object & Group Search"
+with st.container():
+    #col_c, col_t, col_r, col_o, col_g = st.columns(5)
+    col_c, col_n,  = st.columns(2)
+    with col_c:
+        col_t, col_d,  = st.columns(2)
+        col_c´t.text("🔎-🛡️-🧠 Choose the module:")
+        with col_d:
+            tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
         
-        def on_tab_change():
-            st.session_state.active_tab = st.session_state["selected_tab"]
-        
-        # Display selectbox for tabs
-        st.selectbox(
-            "Select Tab",
-            tab_names,
-            index=tab_names.index(st.session_state.active_tab),
-            key="selected_tab",
-            on_change=on_tab_change,
-            label_visibility="collapsed"
-        )
-        
-        # Set local variable only after selectbox is rendered
-        selected_tab = st.session_state.active_tab
-    col_r.metric("🔐 Rules", f"{len(rules_data)}")
-    col_o.metric("📦 Objects", f"{len(objects_data)}")
-    col_g.metric("🧩 Groups", f"{len(groups_data)}")
+            if "active_tab" not in st.session_state:
+                st.session_state.active_tab = tab_names[0]  # Object & Group Search"
+            
+            def on_tab_change():
+                st.session_state.active_tab = st.session_state["selected_tab"]
+            
+            # Display selectbox for tabs
+            st.selectbox(
+                "Select Tab",
+                tab_names,
+                index=tab_names.index(st.session_state.active_tab),
+                key="selected_tab",
+                on_change=on_tab_change,
+                label_visibility="collapsed"
+            )
+            
+            # Set local variable only after selectbox is rendered
+            selected_tab = st.session_state.active_tab
+    with col_n:
+        col_r, col_o, col_g = st.columns(3)
+        col_r.metric("🔐 Rules", f"{len(rules_data)}")
+        col_o.metric("📦 Objects", f"{len(objects_data)}")
+        col_g.metric("🧩 Groups", f"{len(groups_data)}")
 
 
 
