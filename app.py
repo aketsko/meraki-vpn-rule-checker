@@ -110,7 +110,8 @@ st.markdown("""
 st.sidebar.header("🔑 Athenticate to your Meraki Dashboard")
 
 fetched_from_api = st.session_state.get("fetched_from_api", False)
-with st.sidebar.expander("🔐 API Access", expanded=not fetched_from_api):
+with st.sidebar.expander("🔐 API Access", expanded=not (st.session_state.get("fetched_from_api") or all([st.session_state.get("rules_data"), st.session_state.get("objects_data"), st.session_state.get("groups_data")]))):
+
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
     org_id = st.text_input("🏢 Enter your Organization ID", value="")
 
