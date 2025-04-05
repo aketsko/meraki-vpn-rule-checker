@@ -338,13 +338,6 @@ if selected_tab == "🔎 Object & Group Search":
         st.info("No groups match the current search.")
 
 elif selected_tab == "🛡️ Rule Checker":
-    # Your RULE CHECKER code here
-
-    # --- Manual Search Mode ---
-    dynamic_mode = st.checkbox("🛠️ Dynymic update", value=False)
-#    run_check = False
- #   if not manual_mode:
- #       run_check = True    
     
     def custom_search(term: str):
         term = term.strip()
@@ -428,7 +421,9 @@ elif selected_tab == "🛡️ Rule Checker":
 
     
     col_left, col_right = st.columns(2)  
-
+    with col_right:    
+        dynamic_mode = st.checkbox("🛠️ Dynymic update", value=False)
+    
     with col_left:
         filter_toggle = st.checkbox("Show only matching rules", value=False)
 
