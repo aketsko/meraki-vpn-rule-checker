@@ -421,12 +421,12 @@ elif selected_tab == "🛡️ Rule Checker":
 
     
     col_left, col_right = st.columns(2)  
-    with col_right:    
-        dynamic_mode = st.checkbox("🛠️ Dynymic update", value=False)
+    with col_right:  
+        filter_toggle = st.checkbox("✅ Show only matching rules", value=False)
     
     with col_left:
-        filter_toggle = st.checkbox("✅ Show only matching rules", value=False)
-
+        dynamic_mode = st.checkbox("🛠️ Dynymic update", value=False)
+        
     if not dynamic_mode:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
         st.stop()
