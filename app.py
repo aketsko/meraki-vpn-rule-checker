@@ -179,6 +179,8 @@ if st.sidebar.button("🔄 Refresh API Data"):
         st.error("❌ Please enter both API key and Org ID.")
 
 # File override only for rules if API was used
+st.sidebar.header("💾 Upload Configuration Files")
+
 if st.session_state.get("fetched_from_api", False):
     uploaded_rules_file = st.sidebar.file_uploader("📄 Upload Rules.json (override)", type="json", key="rules_upload")
     if uploaded_rules_file:
@@ -190,7 +192,7 @@ if st.session_state.get("fetched_from_api", False):
             st.error(f"❌ Failed to load Rules.json: {e}")
 
 # Full manual upload fallback
-st.sidebar.header("💾 Upload Configuration Files")
+
 if not st.session_state.get("fetched_from_api", False):
     rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
     objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
