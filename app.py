@@ -253,7 +253,7 @@ highlight_colors = {
 #st.header("🔎-🛡️-🧠 Choose the module:")
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
-    col_c, col_t, col_r, col_o, col_g = st.columns(4)
+    col_c, col_t, col_r, col_o, col_g = st.columns(5)
     col_c.text("🔎-🛡️-🧠 Choose the module:")
     with col_t:
         tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
