@@ -275,9 +275,9 @@ with st.container():
     # RIGHT: Metrics
     with col_right:
         col_r, col_o, col_g = st.columns(3)
-        col_r.metric("🔐 Rules", f"{len(rules_data)}")
-        col_o.metric("📦 Objects", f"{len(objects_data)}")
-        col_g.metric("🧩 Groups", f"{len(groups_data)}")
+        col_r.metric("🛡️ Rules", f"{len(rules_data)}")
+        col_o.metric("🌐 Objects", f"{len(objects_data)}")
+        col_g.metric("🗃️ Groups", f"{len(groups_data)}")
 
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
