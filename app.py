@@ -252,7 +252,7 @@ highlight_colors = {
 
 #st.header("🔎-🛡️-🧠 Choose the module:")
 # -------------- MANUAL TAB HANDLING ----------------
-with st.container():
+#with st.container():
     col_c, col_t, col_r, col_o, col_g = st.columns(5)
     col_c.text("🔎-🛡️-🧠 Choose the module:")
     with col_t:
