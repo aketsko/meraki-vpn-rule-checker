@@ -247,6 +247,9 @@ tab_names = ["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization In
 st.header("🔎-🛡️-🧠 Choose the module:")
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = tab_names[0]  
+def on_tab_change():
+    st.session_state.active_tab = st.session_state.selected_tab
+
 st.selectbox(
     "Select Tab",
     tab_names,
