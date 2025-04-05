@@ -260,25 +260,32 @@ with st.container():
     col_g.metric("🧩 Groups", f"{len(groups_data)}")
 
 
-tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
-if "active_tab" not in st.session_state:
-    st.session_state.active_tab = tab_names[0]  # Object & Group Search"
+col1, col2 = st.columns([3, 4])  # Adjust width ratio as needed
 
-def on_tab_change():
-    st.session_state.active_tab = st.session_state["selected_tab"]
+with col1:
+    st.markdown("### 🔎-🛡️-🧠 Choose the module:")
 
-# Display selectbox for tabs
-st.selectbox(
-    "Select Tab",
-    tab_names,
-    index=tab_names.index(st.session_state.active_tab),
-    key="selected_tab",
-    on_change=on_tab_change,
-    label_visibility="collapsed"
-)
+with col2:
+    tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
 
-# Set local variable only after selectbox is rendered
-selected_tab = st.session_state.active_tab
+    if "active_tab" not in st.session_state:
+        st.session_state.active_tab = tab_names[0]  # Object & Group Search"
+    
+    def on_tab_change():
+        st.session_state.active_tab = st.session_state["selected_tab"]
+    
+    # Display selectbox for tabs
+    st.selectbox(
+        "Select Tab",
+        tab_names,
+        index=tab_names.index(st.session_state.active_tab),
+        key="selected_tab",
+        on_change=on_tab_change,
+        label_visibility="collapsed"
+    )
+    
+    # Set local variable only after selectbox is rendered
+    selected_tab = st.session_state.active_tab
 
 # -------- Render based on selected_tab ----------
 if selected_tab == "🔎 Object & Group Search":
