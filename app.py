@@ -248,16 +248,18 @@ highlight_colors = {
 
 
 # ------------------ STREAMLIT TABS ------------------
+
+
 st.header("🔎-🛡️-🧠 Choose the module:")
+# -------------- MANUAL TAB HANDLING ----------------
 with st.container():
-    col_r, col_o, col_g = st.columns(3)
+    col_c, col_r, col_o, col_g = st.columns(4)
+    col_c(tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
     col_r.metric("🔐 Rules", f"{len(rules_data)}")
     col_o.metric("📦 Objects", f"{len(objects_data)}")
     col_g.metric("🧩 Groups", f"{len(groups_data)}")
 
 
-# -------------- MANUAL TAB HANDLING ----------------
-tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
 
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = tab_names[0]  # Object & Group Search"
