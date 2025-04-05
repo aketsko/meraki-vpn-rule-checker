@@ -148,7 +148,8 @@ def fetch_meraki_data(api_key, org_id):
         return [], [], [], False
 
 # Try auto-fetch if session not set
-if st.button("📡 Connect to Meraki API"):
+if "rules_data" not in st.session_state:
+    if api_key and org_id:
         rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
         if fetched:
             st.session_state["rules_data"] = rules_data
@@ -157,10 +158,9 @@ if st.button("📡 Connect to Meraki API"):
             st.session_state["object_map"] = get_object_map(objects_data)
             st.session_state["group_map"] = get_group_map(groups_data)
             st.session_state["fetched_from_api"] = True
-            st.success("✅ Successfully loaded data from Meraki API.")
         else:
             st.session_state["fetched_from_api"] = False
-            st.error("❌ Failed to load data from API. Please check your credentials.")
+            st.warning("⚠️ Failed to load from API. Please upload files manually.")
             
 # Manual refresh on button click
 if st.sidebar.button("🔄 Refresh API Data"):
