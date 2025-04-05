@@ -257,7 +257,7 @@ with st.container():
     col_c, col_n,  = st.columns(2)
     with col_c:
         col_t, col_d,  = st.columns(2)
-        col_c´t.text("🔎-🛡️-🧠 Choose the module:")
+        col_c.text("🔎-🛡️-🧠 Choose the module:")
         with col_d:
             tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
         
