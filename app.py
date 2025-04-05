@@ -244,7 +244,7 @@ highlight_colors = {
 # ------------------ STREAMLIT TABS ------------------
 st.header("🔎-🛡️-🧠 Choose the module:")
 # -------------- MANUAL TAB HANDLING ----------------
-tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
+tab_names = ["🧠 Optimization Insights", "🛡️ Rule Checker", "🔎 Object & Group Search"]
 
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = tab_names[1]  # Object & Group Search"
@@ -266,7 +266,7 @@ st.selectbox(
 selected_tab = st.session_state.active_tab
 
 # -------- Render based on selected_tab ----------
-if selected_tab == "🔎 Object & Group Search":
+if selected_tab == "🧠 Optimization Insights":
 
     def rule_covers(rule_a, rule_b):
         return (
@@ -588,7 +588,7 @@ function(params) {{
         allow_unsafe_jscode=True
     )
 
-elif selected_tab == "🧠 Optimization Insights":
+elif selected_tab == "🔎 Object & Group Search":
 
     search_term = st.text_input("Search by name or CIDR:", "").lower()
 
