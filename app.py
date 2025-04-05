@@ -247,9 +247,14 @@ tab_names = ["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization In
 st.header("🔎-🛡️-🧠 Choose the module:")
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = tab_names[0]  
-selected_tab = st.selectbox("Select Tab", tab_names, index=tab_names.index(st.session_state.active_tab), label_visibility="collapsed")
-st.session_state.active_tab = selected_tab
-
+st.selectbox(
+    "Select Tab",
+    tab_names,
+    index=tab_names.index(st.session_state.active_tab),
+    key="selected_tab",
+    on_change=on_tab_change,
+    label_visibility="collapsed"
+)
 # -------- Render based on selected_tab ----------
 if selected_tab == "🔎 Object Search":
     # Your OBJECT SEARCH code here
