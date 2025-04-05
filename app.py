@@ -242,15 +242,17 @@ highlight_colors = {
 
 
 # ------------------ STREAMLIT TABS ------------------
+st.header("🔎-🛡️-🧠 Choose the module:")
 # -------------- MANUAL TAB HANDLING ----------------
 tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
-st.header("🔎-🛡️-🧠 Choose the module:")
-if "active_tab" not in st.session_state:
-    st.session_state.active_tab = tab_names[0]  
-    
-def on_tab_change():
-    st.session_state.active_tab = st.session_state.selected_tab
 
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = tab_names[1]  # Default to "Rule Checker"
+
+def on_tab_change():
+    st.session_state.active_tab = st.session_state["selected_tab"]
+
+# Display selectbox for tabs
 st.selectbox(
     "Select Tab",
     tab_names,
@@ -260,7 +262,8 @@ st.selectbox(
     label_visibility="collapsed"
 )
 
-selected_tab = st.session_state.selected_tab 
+# Set local variable only after selectbox is rendered
+selected_tab = st.session_state.active_tab
 
 # -------- Render based on selected_tab ----------
 if selected_tab == "🔎 Object & Group Search":
