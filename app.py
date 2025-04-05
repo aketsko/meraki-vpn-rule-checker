@@ -109,8 +109,10 @@ st.markdown("""
 # ------------------ SIDEBAR FILE UPLOAD ------------------
 st.sidebar.header("🔑 Athenticate to your Meraki Dashboard")
 
-api_key = st.sidebar.text_input("🔑 Enter your Meraki API Key", type="password")
-org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help="Usually a 10-digit number")
+fetched_from_api = st.session_state.get("fetched_from_api", False)
+ith st.sidebar.expander("🔐 API Access", expanded=not fetched_from_api):
+    api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
+    org_id = st.text_input("🏢 Enter your Organization ID", value="")
 
 
 # ------------------ API CONFIG ------------------
@@ -146,8 +148,7 @@ def fetch_meraki_data(api_key, org_id):
         return [], [], [], False
 
 # Try auto-fetch if session not set
-if "rules_data" not in st.session_state:
-    if api_key and org_id:
+if st.button("📡 Connect to Meraki API"):
         rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
         if fetched:
             st.session_state["rules_data"] = rules_data
@@ -156,10 +157,11 @@ if "rules_data" not in st.session_state:
             st.session_state["object_map"] = get_object_map(objects_data)
             st.session_state["group_map"] = get_group_map(groups_data)
             st.session_state["fetched_from_api"] = True
+            st.success("✅ Successfully loaded data from Meraki API.")
         else:
             st.session_state["fetched_from_api"] = False
-            st.warning("⚠️ Failed to load from API. Please upload files manually.")
-
+            st.error("❌ Failed to load data from API. Please check your credentials.")
+            
 # Manual refresh on button click
 if st.sidebar.button("🔄 Refresh API Data"):
     if api_key and org_id:
