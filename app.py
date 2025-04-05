@@ -244,10 +244,10 @@ highlight_colors = {
 # ------------------ STREAMLIT TABS ------------------
 st.header("🔎-🛡️-🧠 Choose the module:")
 # -------------- MANUAL TAB HANDLING ----------------
-tab_names = ["🧠 Optimization Insights", "🛡️ Rule Checker", "🔎 Object & Group Search"]
+tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
 
 if "active_tab" not in st.session_state:
-    st.session_state.active_tab = tab_names[1]  # Object & Group Search"
+    st.session_state.active_tab = tab_names[0]  # Object & Group Search"
 
 def on_tab_change():
     st.session_state.active_tab = st.session_state["selected_tab"]
@@ -266,93 +266,70 @@ st.selectbox(
 selected_tab = st.session_state.active_tab
 
 # -------- Render based on selected_tab ----------
-if selected_tab == "🧠 Optimization Insights":
+if selected_tab == "🔎 Object & Group Search":
 
-    def rule_covers(rule_a, rule_b):
-        return (
-            (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
-            (rule_a["destCidr"] == "Any" or rule_a["destCidr"] == rule_b["destCidr"]) and
-            (rule_a["destPort"].lower() == "any" or rule_a["destPort"] == rule_b["destPort"]) and
-            (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
+    search_term = st.text_input("Search by name or CIDR:", "").lower()
+
+    def match_object(obj, term):
+        return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
+
+    filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
+    filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
+
+    st.subheader("🔹 Matching Network Objects")
+    object_rows = []
+    for o in filtered_objs:
+        object_rows.append({
+            "ID": o.get("id", ""),
+            "Name": o.get("name", ""),
+            "CIDR": o.get("cidr", ""),
+            "FQDN": o.get("fqdn", ""),
+            "Group IDs": o.get("groupIds", []),
+            "Network IDs": o.get("networkIds", [])
+        })
+    st.dataframe(safe_dataframe(object_rows))
+
+    st.subheader("🔸 Matching Object Groups")
+    group_rows = []
+    for g in filtered_grps:
+        group_rows.append({
+            "ID": str(g.get("id", "")),
+            "Name": str(g.get("name", "")),
+            "Type": str(g.get("category", "")),
+            "Object Count": str(len(g.get("objectIds", []))),
+            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else ""
+        })
+    st.dataframe(safe_dataframe(group_rows))
+
+    if filtered_grps:
+        selected_group = st.selectbox(
+            "Explore group membership:",
+            options=[g["id"] for g in filtered_grps],
+            format_func=lambda x: group_map.get(x, {}).get("name", f"(unknown: {x})")
         )
 
-    insight_rows = []
-    seen_rules = set()
+        if selected_group and selected_group in group_map:
+            group_members = group_map[selected_group].get("objectIds", [])
+            member_objs = [object_map[oid] for oid in group_members if oid in object_map]
 
-    for i, rule in enumerate(rules_data):
-        sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
-        if sig in seen_rules:
-            insight_rows.append((
-                f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
-                [i+1]
-            ))
-        else:
-            seen_rules.add(sig)
+            st.markdown(f"**Group Name:** `{group_map[selected_group]['name']}`")
+            st.markdown(f"**Members:** `{len(member_objs)}` object(s)`")
 
-        # Broad rule exclusion
-        is_last = i == len(rules_data) - 1
-        is_penultimate = i == len(rules_data) - 2
-        is_allow_any = rule["policy"].lower() == "allow"
-        is_deny_any = rule["policy"].lower() == "deny"
+            member_data = []
+            for o in member_objs:
+                member_data.append({
+                    "Object ID": o.get("id", ""),
+                    "Name": o.get("name", ""),
+                    "CIDR": o.get("cidr", ""),
+                    "FQDN": o.get("fqdn", "")
+                })
 
-        if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
-            and rule["destPort"].lower() == "any"
-            and rule["protocol"].lower() == "any"):
-            if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
-                pass  # expected, skip
+            if member_data:
+                st.dataframe(safe_dataframe(member_data))
             else:
-                insight_rows.append((
-                    f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
-                    [i+1]
-                ))
-
-        # ✅ Shadowed rule detection
-        for j in range(i):
-            if rule_covers(rules_data[j], rule):
-                insight_rows.append((
-                    f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
-                    [j+1, i+1]
-                ))
-                break
-
-        # Merge opportunities
-        if i < len(rules_data) - 1:
-            next_rule = rules_data[i+1]
-            fields_to_compare = ["policy", "srcCidr", "destCidr"]
-            if all(rule[f] == next_rule[f] for f in fields_to_compare):
-                if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
-                    insight_rows.append((
-                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
-                        [i+1, i+2]
-                    ))
-                elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
-                    if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
-                        continue
-                    insight_rows.append((
-                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/src/dst/ports, different protocol.",
-                        [i+1, i+2]
-                    ))
-
-    if insight_rows:
-        for msg, rule_indexes in insight_rows:
-            st.markdown(msg)
-            show_rule_summary(rule_indexes)
-
-        st.download_button("📥 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
+                st.info("This group has no valid or displayable objects.")
     else:
-        st.success("✅ No optimization issues detected.")
-
-    # ℹ️ Legend
-    st.markdown("---")
-    st.subheader("ℹ️ Legend")
-    st.markdown("""
-| Term               | Description                                                                 |
-|--------------------|-----------------------------------------------------------------------------|
-| 🔁 **Duplicate Rule** | Rule is identical to a previous one (all fields except comment)           |
-| 🔄 **Merge Candidate** | Rules could be combined (only one field differs, e.g., port)              |
-| ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               |
-| 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic |
-""")
+        st.info("No groups match the current search.")
 
 elif selected_tab == "🛡️ Rule Checker":
     # Your RULE CHECKER code here
@@ -588,67 +565,90 @@ function(params) {{
         allow_unsafe_jscode=True
     )
 
-elif selected_tab == "🔎 Object & Group Search":
+elif selected_tab == "🧠 Optimization Insights":
 
-    search_term = st.text_input("Search by name or CIDR:", "").lower()
-
-    def match_object(obj, term):
-        return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
-
-    filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
-    filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
-
-    st.subheader("🔹 Matching Network Objects")
-    object_rows = []
-    for o in filtered_objs:
-        object_rows.append({
-            "ID": o.get("id", ""),
-            "Name": o.get("name", ""),
-            "CIDR": o.get("cidr", ""),
-            "FQDN": o.get("fqdn", ""),
-            "Group IDs": o.get("groupIds", []),
-            "Network IDs": o.get("networkIds", [])
-        })
-    st.dataframe(safe_dataframe(object_rows))
-
-    st.subheader("🔸 Matching Object Groups")
-    group_rows = []
-    for g in filtered_grps:
-        group_rows.append({
-            "ID": str(g.get("id", "")),
-            "Name": str(g.get("name", "")),
-            "Type": str(g.get("category", "")),
-            "Object Count": str(len(g.get("objectIds", []))),
-            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else ""
-        })
-    st.dataframe(safe_dataframe(group_rows))
-
-    if filtered_grps:
-        selected_group = st.selectbox(
-            "Explore group membership:",
-            options=[g["id"] for g in filtered_grps],
-            format_func=lambda x: group_map.get(x, {}).get("name", f"(unknown: {x})")
+    def rule_covers(rule_a, rule_b):
+        return (
+            (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
+            (rule_a["destCidr"] == "Any" or rule_a["destCidr"] == rule_b["destCidr"]) and
+            (rule_a["destPort"].lower() == "any" or rule_a["destPort"] == rule_b["destPort"]) and
+            (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
         )
 
-        if selected_group and selected_group in group_map:
-            group_members = group_map[selected_group].get("objectIds", [])
-            member_objs = [object_map[oid] for oid in group_members if oid in object_map]
+    insight_rows = []
+    seen_rules = set()
 
-            st.markdown(f"**Group Name:** `{group_map[selected_group]['name']}`")
-            st.markdown(f"**Members:** `{len(member_objs)}` object(s)`")
+    for i, rule in enumerate(rules_data):
+        sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
+        if sig in seen_rules:
+            insight_rows.append((
+                f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
+                [i+1]
+            ))
+        else:
+            seen_rules.add(sig)
 
-            member_data = []
-            for o in member_objs:
-                member_data.append({
-                    "Object ID": o.get("id", ""),
-                    "Name": o.get("name", ""),
-                    "CIDR": o.get("cidr", ""),
-                    "FQDN": o.get("fqdn", "")
-                })
+        # Broad rule exclusion
+        is_last = i == len(rules_data) - 1
+        is_penultimate = i == len(rules_data) - 2
+        is_allow_any = rule["policy"].lower() == "allow"
+        is_deny_any = rule["policy"].lower() == "deny"
 
-            if member_data:
-                st.dataframe(safe_dataframe(member_data))
+        if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
+            and rule["destPort"].lower() == "any"
+            and rule["protocol"].lower() == "any"):
+            if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
+                pass  # expected, skip
             else:
-                st.info("This group has no valid or displayable objects.")
+                insight_rows.append((
+                    f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
+                    [i+1]
+                ))
+
+        # ✅ Shadowed rule detection
+        for j in range(i):
+            if rule_covers(rules_data[j], rule):
+                insight_rows.append((
+                    f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
+                    [j+1, i+1]
+                ))
+                break
+
+        # Merge opportunities
+        if i < len(rules_data) - 1:
+            next_rule = rules_data[i+1]
+            fields_to_compare = ["policy", "srcCidr", "destCidr"]
+            if all(rule[f] == next_rule[f] for f in fields_to_compare):
+                if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
+                    insight_rows.append((
+                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
+                        [i+1, i+2]
+                    ))
+                elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
+                    if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
+                        continue
+                    insight_rows.append((
+                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/src/dst/ports, different protocol.",
+                        [i+1, i+2]
+                    ))
+
+    if insight_rows:
+        for msg, rule_indexes in insight_rows:
+            st.markdown(msg)
+            show_rule_summary(rule_indexes)
+
+        st.download_button("📥 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
     else:
-        st.info("No groups match the current search.")
+        st.success("✅ No optimization issues detected.")
+
+    # ℹ️ Legend
+    st.markdown("---")
+    st.subheader("ℹ️ Legend")
+    st.markdown("""
+| Term               | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| 🔁 **Duplicate Rule** | Rule is identical to a previous one (all fields except comment)           |
+| 🔄 **Merge Candidate** | Rules could be combined (only one field differs, e.g., port)              |
+| ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               |
+| 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic |
+""")
