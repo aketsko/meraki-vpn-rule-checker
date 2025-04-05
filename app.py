@@ -260,7 +260,7 @@ with st.container():
     col_g.metric("🧩 Groups", f"{len(groups_data)}")
 
 
-(tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
+tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = tab_names[0]  # Object & Group Search"
 
