@@ -174,8 +174,8 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
             network_id = net["id"]
             network_name = net["name"]
 
-           # if update_progress:
-           #     update_progress(i, len(networks), network_name)
+            if update_progress:
+                update_progress(i, len(networks), network_name)
 
 
             # Update spinner or text
@@ -198,7 +198,7 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
                 "vpn_rules": rules_data.get("rules", [])
             }
 
-            progress_bar.progress((i + 1) / total)
+         #   progress_bar.progress((i + 1) / total)
 
         progress_bar.empty()
         st.success("✅ Extended Meraki data loaded.")
