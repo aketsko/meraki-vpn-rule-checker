@@ -17,7 +17,7 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
-progress_text.markdown =""
+
 def load_json_file(uploaded_file):
     try:
         if uploaded_file is None:
@@ -267,14 +267,19 @@ if st.sidebar.button("❌ Cancel Fetch"):
 if st.sidebar.button("📡 Get Extended API Data"):
     st.session_state["cancel_extended_fetch"] = False
 
+    # 🧩 This line is missing in your current code
+    progress_text = st.sidebar.empty()
+
     def update_progress(current, total, name):
-        progress_text.markdown(f"🔄 Processing **{name}** ({current}/{total})")
+        progress_text.markdown(
+            f"🔄 **Processing network**: `{name}` ({current}/{total})"
+        )
 
     with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
         try:
             extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
 
-            # If cancelled during fetch (e.g. your function periodically checks the flag)
+            # Check for cancellation
             if st.session_state.get("cancel_extended_fetch"):
                 extended_status.info("⛔ Fetch cancelled before completion.")
                 st.session_state["extended_data"] = None
