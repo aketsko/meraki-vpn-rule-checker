@@ -360,7 +360,13 @@ if uploaded_snapshot:
         st.session_state["fetched_from_api"] = True  # Emulate success
 
         network_count = len(st.session_state["extended_data"].get("network_map", {}))
-        st.sidebar.success(f"📦 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
+        import time
+
+        snapshot_msg = st.sidebar.empty()
+        snapshot_msg.success(f"📦 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
+        time.sleep(10)
+        snapshot_msg.empty()
+
     except Exception as e:
         st.error(f"❌ Failed to load snapshot: {e}")
 
