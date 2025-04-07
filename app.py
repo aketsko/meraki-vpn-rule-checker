@@ -429,10 +429,8 @@ highlight_colors = {
 st.sidebar.markdown("---")
 
 # Save & Download all API data
-import json
-from datetime import datetime
 
-def prepare_snapshot(rules_data, objects_data, groups_data, extended_data=None):
+def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, object_location_map):
     snapshot = {
         "rules": rules_data,
         "objects": objects_data,
