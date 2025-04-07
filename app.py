@@ -254,25 +254,38 @@ st.sidebar.markdown("---")
 
 # Add a placeholder for progress/cancel feedback
 extended_status = st.sidebar.empty()
-cancel_flag = st.sidebar.button("❌ Cancel Fetch")
 
+# Place the cancel button first to register the cancel intent early
+if st.sidebar.button("❌ Cancel Fetch"):
+    st.session_state["cancel_extended_fetch"] = True
+    extended_status.info("⛔ Fetch cancelled by user.")
+
+# Then check for the extended fetch button
 if st.sidebar.button("📡 Get Extended API Data"):
     st.session_state["cancel_extended_fetch"] = False
 
     with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
-        extended_result = fetch_meraki_data_extended(api_key, org_id)
+        try:
+            extended_result = fetch_meraki_data_extended(api_key, org_id)
 
-        if "error" in extended_result:
+            # If cancelled during fetch (e.g. your function periodically checks the flag)
+            if st.session_state.get("cancel_extended_fetch"):
+                extended_status.info("⛔ Fetch cancelled before completion.")
+                st.session_state["extended_data"] = None
+
+            elif "error" in extended_result:
+                extended_status.error(f"❌ Error: {extended_result['error']}")
+                st.session_state["extended_data"] = None
+
+            else:
+                st.session_state["extended_data"] = extended_result
+                extended_status.success("✅ Extended data successfully retrieved.")
+
+        except Exception as e:
+            extended_status.error(f"❌ Exception: {e}")
             st.session_state["extended_data"] = None
-            extended_status.error(f"❌ Error: {extended_result['error']}")
-        else:
-            st.session_state["extended_data"] = extended_result
-            extended_status.success("✅ Extended data successfully retrieved.")
 
-elif cancel_flag:
-    st.session_state["cancel_extended_fetch"] = True
-    extended_status.info("⛔ Fetch cancelled by user.")
-
+            
 # Upload Snapshot to restore everything
 uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
 if uploaded_snapshot:
