@@ -74,3 +74,39 @@ def find_object_locations(cidr_list, extended_data):
 
     return sorted(locations)
 
+def build_object_location_map(objects_data, groups_data, extended_data):
+    object_location_map = {}
+    vpn_subnets_per_network = {}
+
+    # Prepare VPN subnets per network
+    for net_id, details in extended_data.get("network_details", {}).items():
+        network_name = details.get("network_name", "")
+        subnets = details.get("vpn_settings", {}).get("subnets", [])
+        cidrs = [s.get("localSubnet", "") for s in subnets if "localSubnet" in s]
+        vpn_subnets_per_network[network_name] = cidrs
+
+    # Match objects to networks
+    for obj in objects_data:
+        obj_id = obj.get("id")
+        obj_cidr = obj.get("cidr", "")
+        if not obj_id or not obj_cidr:
+            continue
+        obj_networks = []
+        for network_name, subnets in vpn_subnets_per_network.items():
+            if any(match_input_to_rule([subnet], obj_cidr) for subnet in subnets):
+                obj_networks.append(network_name)
+        object_location_map[obj_id] = obj_networks
+
+    # Match groups based on their members
+    for grp in groups_data:
+        group_id = grp.get("id")
+        if not group_id:
+            continue
+        member_ids = grp.get("objectIds", [])
+        seen = set()
+        for mid in member_ids:
+            for net in object_location_map.get(mid, []):
+                seen.add(net)
+        object_location_map[str(group_id)] = list(seen)
+
+    return object_location_map
