@@ -256,6 +256,8 @@ if st.sidebar.button("🔄 Refresh API Data"):
 st.sidebar.markdown("---")
 
 # Add a placeholder for progress/cancel feedback
+progress_bar = st.sidebar.empty()
+progress_text = st.sidebar.empty()
 extended_status = st.sidebar.empty()
 
 # Place the cancel button first to register the cancel intent early
@@ -267,15 +269,17 @@ if st.sidebar.button("❌ Cancel Fetch"):
 if st.sidebar.button("📡 Get Extended API Data"):
     st.session_state["cancel_extended_fetch"] = False
 
-    progress_bar = st.sidebar.progress(0)
-    progress_text = st.sidebar.empty()
 
     def update_progress(current, total, name):
-        progress_bar.progress(min(current / total, 1.0))
-        progress_text.markdown(
-            f"🔄 **Processing network**:({current}/{total})<br>`{name}`",
-            unsafe_allow_html=True
-        )
+        try:
+            progress_bar.progress(min(current / total, 1.0))
+            progress_text.markdown(
+                f"🔄 **Processing network**: ({current}/{total})<br>`{name}`",
+                unsafe_allow_html=True
+            )
+        except:
+            pass  # Streamlit isn't ready yet or race condition — silently skip
+        
 
     with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
         try:
