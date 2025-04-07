@@ -308,6 +308,7 @@ if st.sidebar.button("📡 Get Extended API Data"):
 
 
 # Upload Snapshot to restore everything
+uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
 if uploaded_snapshot:
     try:
         snapshot = json.load(uploaded_snapshot)
@@ -329,7 +330,6 @@ if uploaded_snapshot:
 
     except Exception as e:
         st.error(f"❌ Failed to load snapshot: {e}")
-
 
 
 # File override only for rules if API was used
