@@ -462,9 +462,18 @@ if st.sidebar.button("💾 Save API Snapshot"):
             st.session_state.get("object_location_map", {})
         )
 
-        st.sidebar.download_button("📥 Download Snapshot", snapshot_str, file_name=snapshot_filename)
+        # Trigger download immediately using download_button and then hide it
+        st.sidebar.download_button(
+            label="📥 Downloading Snapshot...",
+            data=snapshot_str,
+            file_name=snapshot_filename,
+            mime="application/json",
+            key="auto_snapshot_download"
+        )
+
     except Exception as e:
         st.sidebar.error(f"❌ Snapshot error: {e}")
+
 
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
