@@ -441,18 +441,9 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 
 
-   # In snapshot loading:
-# """ 
-#    st.session_state["rules_data"] = snapshot.get("rules_data", [])
-#    st.session_state["objects_data"] = snapshot.get("objects_data", [])
-#    st.session_state["groups_data"] = snapshot.get("groups_data", [])
-#    st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
-#    st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-#   st.session_state["extended_api_data"] = snapshot.get("extended_api_data", {})
-#    st.session_state["location_map"] = snapshot.get("location_map", {})
-# """
+
 # Trigger the snapshot and download immediately
-if st.sidebar.button("💾 Save API Snapshot"):
+if st.sidebar.button("💾 Create API Snapshot"):
     try:
         snapshot_str, snapshot_filename = prepare_snapshot(
             st.session_state.get("rules_data", []),
@@ -464,7 +455,7 @@ if st.sidebar.button("💾 Save API Snapshot"):
 
         # Trigger download immediately using download_button and then hide it
         st.sidebar.download_button(
-            label="📥 Downloading Snapshot...",
+            label="📥 Download API Snapshot",
             data=snapshot_str,
             file_name=snapshot_filename,
             mime="application/json",
