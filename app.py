@@ -523,12 +523,34 @@ import ipaddress
 
 
 if selected_tab == "🔎 Object & Group Search":
-    from utils.match_logic import build_object_location_map  # Ensure this is imported
+    from utils.match_logic import build_object_location_map
 
-    search_term = st.text_input("Search by name or CIDR:", "").lower()
+    col1, col2 = st.columns([3, 2])
+
+    with col1:
+        search_term = st.text_input("Search by name or CIDR:", "").lower()
+
+    with col2:
+        def location_search(term: str):
+            unique_locations = set()
+            for locs in location_map.values():
+                unique_locations.update(locs)
+            term = term.strip().lower()
+            return [(loc, loc) for loc in sorted(unique_locations) if term in loc.lower()]
+
+        selected_location = st_searchbox(
+            location_search,
+            placeholder="🔍 Filter by Location",
+            label="Location Filter",
+            key="location_filter_box"
+        )
 
     def match_object(obj, term):
         return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
+
+    def location_matches(entry_id: str, cidr: str = "") -> bool:
+        location_list = location_map.get(f"GRP({entry_id})", []) if cidr == "" else location_map.get(cidr, []) or location_map.get(f"OBJ({entry_id})", [])
+        return selected_location in location_list if selected_location else True
 
     # Build location map if extended data and not already available
     if "object_location_map" not in st.session_state and "extended_data" in st.session_state and st.session_state["extended_data"]:
@@ -541,9 +563,16 @@ if selected_tab == "🔎 Object & Group Search":
             st.session_state["object_location_map"] = location_map
 
     location_map = st.session_state.get("object_location_map", {})
-    
-    filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
-    filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
+
+    filtered_objs = [
+        o for o in objects_data 
+        if (not search_term or match_object(o, search_term)) and location_matches(o.get("id", ""), o.get("cidr", ""))
+    ]
+
+    filtered_grps = [
+        g for g in groups_data 
+        if (not search_term or search_term in g["name"].lower()) and location_matches(g.get("id", ""))
+    ]
 
     st.subheader("🔹 Matching Network Objects")
     object_rows = []
