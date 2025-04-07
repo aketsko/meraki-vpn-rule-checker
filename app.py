@@ -298,10 +298,9 @@ if st.sidebar.button("❌ Cancel Fetch"):
 if st.sidebar.button("📡 Get Extended API Data"):
     st.session_state["cancel_extended_fetch"] = False
 
-
     def update_progress(current, total, name):
         ratio = current / total if total else 0
-        ratio = min(max(ratio, 0.0), 1.0)  # Ensure it's between 0.0 and 1.0
+        ratio = min(max(ratio, 0.0), 1.0)
         try:
             progress_bar.progress(ratio)
             progress_text.markdown(
@@ -309,31 +308,40 @@ if st.sidebar.button("📡 Get Extended API Data"):
                 unsafe_allow_html=True
             )
         except:
-            pass  # Streamlit isn't ready yet or race condition — silently skip
-
+            pass
 
     with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
         try:
             extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
 
-            # Check for cancellation
             if st.session_state.get("cancel_extended_fetch"):
                 extended_status.info("⛔ Fetch cancelled before completion.")
                 st.session_state["extended_data"] = None
+                st.session_state["object_location_map"] = {}
 
             elif "error" in extended_result:
                 extended_status.error(f"❌ Error: {extended_result['error']}")
                 st.session_state["extended_data"] = None
+                st.session_state["object_location_map"] = {}
 
             else:
                 st.session_state["extended_data"] = extended_result
-                extended_status.success("✅ Extended data successfully retrieved.")
+
+                # ✅ Build object location map immediately
+                with st.spinner("🧠 Mapping objects to VPN locations..."):
+                    location_map = build_object_location_map(
+                        st.session_state["objects_data"],
+                        st.session_state["groups_data"],
+                        extended_result
+                    )
+                    st.session_state["object_location_map"] = location_map
+
+                extended_status.success("✅ Extended data + object location map retrieved.")
 
         except Exception as e:
             extended_status.error(f"❌ Exception: {e}")
             st.session_state["extended_data"] = None
-
-        
+            st.session_state["object_location_map"] = {}
 
 
 
@@ -348,18 +356,15 @@ if uploaded_snapshot:
         st.session_state["groups_data"] = snapshot.get("groups_data", [])
         st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
         st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
+        st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
+        st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Додано
+        st.session_state["fetched_from_api"] = True  # Emulate success
 
-        # Extended data
-        extended_data = snapshot.get("extended_api_data", {})
-        st.session_state["extended_data"] = extended_data
-        st.session_state["fetched_from_api"] = True  # Emulate fetch success
-
-        # Optional: Show metric feedback
-        network_count = len(extended_data.get("network_map", {}))
+        network_count = len(st.session_state["extended_data"].get("network_map", {}))
         st.sidebar.success(f"📦 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
-
     except Exception as e:
         st.error(f"❌ Failed to load snapshot: {e}")
+
 
 
 # File override only for rules if API was used
@@ -432,16 +437,18 @@ st.sidebar.markdown("---")
 
 def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, object_location_map):
     snapshot = {
-        "rules": rules_data,
-        "objects": objects_data,
-        "groups": groups_data,
-        "extended_data": extended_data or {}
+        "rules_data": rules_data,
+        "objects_data": objects_data,
+        "groups_data": groups_data,
+        "extended_api_data": extended_data or {},
+        "location_map": object_location_map or {}
     }
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"meraki_snapshot_{timestamp}.json"
 
     return json.dumps(snapshot, indent=2), filename
+
 
 
    # In snapshot loading:
