@@ -150,7 +150,7 @@ def fetch_meraki_data(api_key, org_id):
         st.warning(f"API fetch error: {e}")
         return [], [], [], False
 
-def fetch_meraki_data_extended(api_key: str, org_id: str, base_url="https://api.meraki.com/api/v1"):
+def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, base_url="https://api.meraki.com/api/v1"):
     headers = {
         "X-Cisco-Meraki-API-Key": api_key,
         "Content-Type": "application/json",
@@ -170,12 +170,15 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, base_url="https://api.
         progress_bar = st.progress(0)
         total = len(networks)
 
-        for i, net in enumerate(networks):
+        for i, net in enumerate(networks, start=1):
             network_id = net["id"]
             network_name = net["name"]
 
+            if update_progress:
+                update_progress(i, len(networks), network_name)
+
+
             # Update spinner or text
-            st.text(f"📡 Processing {network_name} ({i+1}/{total})")
             if st.session_state.get("cancel_extended_fetch"):
                 raise Exception("Fetch cancelled by user.")
             # Step 1: VPN site-to-site settings
@@ -264,6 +267,9 @@ if st.sidebar.button("❌ Cancel Fetch"):
 if st.sidebar.button("📡 Get Extended API Data"):
     st.session_state["cancel_extended_fetch"] = False
 
+    def update_progress(current, total, name):
+        progress_text.markdown(f"🔄 Processing **{name}** ({current}/{total})")
+
     with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
         try:
             extended_result = fetch_meraki_data_extended(api_key, org_id)
@@ -285,7 +291,7 @@ if st.sidebar.button("📡 Get Extended API Data"):
             extended_status.error(f"❌ Exception: {e}")
             st.session_state["extended_data"] = None
 
-            
+
 # Upload Snapshot to restore everything
 uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
 if uploaded_snapshot:
@@ -419,7 +425,7 @@ with st.container():
     with col_right:
         col_b, col_r, col_o, col_g = st.columns(4)
         col_b.text("")
-        col_r.metric("🛡️ Rules", f"{len(rules_data)}")
+        col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
 
