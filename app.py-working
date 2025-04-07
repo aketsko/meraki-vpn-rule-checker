@@ -107,14 +107,10 @@ st.markdown("""
 
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
-st.sidebar.header("📡 Connect to Meraki Dashboard")
+st.sidebar.header("🔧 Upload Configuration Files")
 
-fetched_from_api = st.session_state.get("fetched_from_api", False)
-with st.sidebar.expander("🔒 API Access", expanded=not (st.session_state.get("fetched_from_api") or (st.session_state.get("rules_data") and st.session_state.get("objects_data") and st.session_state.get("groups_data")))):
-    
-    org_id = st.text_input("🏢 Enter your Organization ID", value="")
-    api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
-    
+api_key = st.sidebar.text_input("🔑 Enter your Meraki API Key", type="password")
+org_id = st.sidebar.text_input("🏢 Enter your Organization ID", value="", help="Usually a 10-digit number")
 
 
 # ------------------ API CONFIG ------------------
@@ -163,7 +159,7 @@ if "rules_data" not in st.session_state:
         else:
             st.session_state["fetched_from_api"] = False
             st.warning("⚠️ Failed to load from API. Please upload files manually.")
-            
+
 # Manual refresh on button click
 if st.sidebar.button("🔄 Refresh API Data"):
     if api_key and org_id:
@@ -183,10 +179,8 @@ if st.sidebar.button("🔄 Refresh API Data"):
         st.error("❌ Please enter both API key and Org ID.")
 
 # File override only for rules if API was used
-st.sidebar.header("💾 Upload Data Files")
-
 if st.session_state.get("fetched_from_api", False):
-    uploaded_rules_file = st.sidebar.file_uploader("📄 Upload alternative Rules.json", type="json", key="rules_upload")
+    uploaded_rules_file = st.sidebar.file_uploader("📄 Upload Rules.json (override)", type="json", key="rules_upload")
     if uploaded_rules_file:
         uploaded_rules_file.seek(0)
         try:
@@ -196,7 +190,6 @@ if st.session_state.get("fetched_from_api", False):
             st.error(f"❌ Failed to load Rules.json: {e}")
 
 # Full manual upload fallback
-
 if not st.session_state.get("fetched_from_api", False):
     rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
     objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
@@ -226,13 +219,12 @@ group_map = st.session_state.get("group_map", {})
 # ------------------ SIDEBAR TOOLBOX ------------------
 
 # 🧰 Toolbox inside a collapsible section
-with st.sidebar.expander("🎨 Rule Highlighting Colors", expanded=False):
+with st.sidebar.expander("🎛️ Rule Highlighting Colors", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
     def color_slider(label, key, default_hex):
         return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
 
-    
     color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
     color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
     color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
@@ -247,112 +239,12 @@ highlight_colors = {
 }
 
 
+# ------------------ STREAMLIT TABS ------------------
+tab4, tab1, tab2 = st.tabs(["🔎 Object Search", "🛡️ Rule Checker", "🧠 Optimization Insights"])
 
-# -------------- MANUAL TAB HANDLING ----------------
-with st.container():
-    col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
+with tab1:
+    st.header("🛡️ Rule Checker")
 
-    # LEFT: Label + Selectbox
-    with col_left:
-        st.markdown(" 🔎-🛡️-🧠 Choose the module:")
-        tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
-
-        if "active_tab" not in st.session_state:
-            st.session_state.active_tab = tab_names[0]  # Default
-
-        def on_tab_change():
-            st.session_state.active_tab = st.session_state["selected_tab"]
-
-        st.selectbox(
-            "Select Tab",
-            tab_names,
-            index=tab_names.index(st.session_state.active_tab),
-            key="selected_tab",
-            on_change=on_tab_change,
-            label_visibility="collapsed"
-        )
-
-    # RIGHT: Metrics
-    with col_right:
-        col_b, col_r, col_o, col_g = st.columns(4)
-        col_b.text("")
-        col_r.metric("🛡️ Rules", f"{len(rules_data)}")
-        col_o.metric("🌐 Objects", f"{len(objects_data)}")
-        col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-
-# Update active_tab variable
-selected_tab = st.session_state.active_tab
-
-
-
-# -------- Render based on selected_tab ----------
-if selected_tab == "🔎 Object & Group Search":
-
-    search_term = st.text_input("Search by name or CIDR:", "").lower()
-
-    def match_object(obj, term):
-        return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
-
-    filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
-    filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
-
-    st.subheader("🔹 Matching Network Objects")
-    object_rows = []
-    for o in filtered_objs:
-        object_rows.append({
-            "ID": o.get("id", ""),
-            "Name": o.get("name", ""),
-            "CIDR": o.get("cidr", ""),
-            "FQDN": o.get("fqdn", ""),
-            "Group IDs": o.get("groupIds", []),
-            "Network IDs": o.get("networkIds", [])
-        })
-    st.dataframe(safe_dataframe(object_rows))
-
-    st.subheader("🔸 Matching Object Groups")
-    group_rows = []
-    for g in filtered_grps:
-        group_rows.append({
-            "ID": str(g.get("id", "")),
-            "Name": str(g.get("name", "")),
-            "Type": str(g.get("category", "")),
-            "Object Count": str(len(g.get("objectIds", []))),
-            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else ""
-        })
-    st.dataframe(safe_dataframe(group_rows))
-
-    if filtered_grps:
-        selected_group = st.selectbox(
-            "Explore group membership:",
-            options=[g["id"] for g in filtered_grps],
-            format_func=lambda x: group_map.get(x, {}).get("name", f"(unknown: {x})")
-        )
-
-        if selected_group and selected_group in group_map:
-            group_members = group_map[selected_group].get("objectIds", [])
-            member_objs = [object_map[oid] for oid in group_members if oid in object_map]
-
-            st.markdown(f"**Group Name:** `{group_map[selected_group]['name']}`")
-            st.markdown(f"**Members:** `{len(member_objs)}` object(s)`")
-
-            member_data = []
-            for o in member_objs:
-                member_data.append({
-                    "Object ID": o.get("id", ""),
-                    "Name": o.get("name", ""),
-                    "CIDR": o.get("cidr", ""),
-                    "FQDN": o.get("fqdn", "")
-                })
-
-            if member_data:
-                st.dataframe(safe_dataframe(member_data))
-            else:
-                st.info("This group has no valid or displayable objects.")
-    else:
-        st.info("No groups match the current search.")
-
-elif selected_tab == "🛡️ Rule Checker":
-    
     def custom_search(term: str):
         term = term.strip()
         results = []
@@ -435,17 +327,10 @@ elif selected_tab == "🛡️ Rule Checker":
 
     
     col_left, col_right = st.columns(2)  
-    with col_right:  
-        filter_toggle = st.checkbox("✅ Show only matching rules", value=False)
-    
-    with col_left:
-        dynamic_mode = st.checkbox("🛠️ Dynymic update", value=False)
-        
-    if not dynamic_mode:
-        st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
-        st.stop()
 
-    
+    with col_left:
+        filter_toggle = st.checkbox("Show only matching rules", value=False)
+
     source_input = source_input or "any"
     destination_input = destination_input or "any"
     source_cidrs = resolve_search_input(source_input)
@@ -579,8 +464,9 @@ function(params) {{
         use_container_width=True,
         allow_unsafe_jscode=True
     )
-
-elif selected_tab == "🧠 Optimization Insights":
+#----------------Tab 2: Optimization Insights------------------
+with tab2:
+    st.header("🧠 Optimization Insights")
 
     def rule_covers(rule_a, rule_b):
         return (
@@ -667,3 +553,71 @@ elif selected_tab == "🧠 Optimization Insights":
 | ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               |
 | 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic |
 """)
+
+
+# ------------------ TAB 4: Object Search ------------------
+with tab4:
+    st.header("🔎 Object & Group Search")
+
+    search_term = st.text_input("Search by name or CIDR:", "").lower()
+
+    def match_object(obj, term):
+        return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
+
+    filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
+    filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
+
+    st.subheader("🔹 Matching Network Objects")
+    object_rows = []
+    for o in filtered_objs:
+        object_rows.append({
+            "ID": o.get("id", ""),
+            "Name": o.get("name", ""),
+            "CIDR": o.get("cidr", ""),
+            "FQDN": o.get("fqdn", ""),
+            "Group IDs": o.get("groupIds", []),
+            "Network IDs": o.get("networkIds", [])
+        })
+    st.dataframe(safe_dataframe(object_rows))
+
+    st.subheader("🔸 Matching Object Groups")
+    group_rows = []
+    for g in filtered_grps:
+        group_rows.append({
+            "ID": str(g.get("id", "")),
+            "Name": str(g.get("name", "")),
+            "Type": str(g.get("category", "")),
+            "Object Count": str(len(g.get("objectIds", []))),
+            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else ""
+        })
+    st.dataframe(safe_dataframe(group_rows))
+
+    if filtered_grps:
+        selected_group = st.selectbox(
+            "Explore group membership:",
+            options=[g["id"] for g in filtered_grps],
+            format_func=lambda x: group_map.get(x, {}).get("name", f"(unknown: {x})")
+        )
+
+        if selected_group and selected_group in group_map:
+            group_members = group_map[selected_group].get("objectIds", [])
+            member_objs = [object_map[oid] for oid in group_members if oid in object_map]
+
+            st.markdown(f"**Group Name:** `{group_map[selected_group]['name']}`")
+            st.markdown(f"**Members:** `{len(member_objs)}` object(s)`")
+
+            member_data = []
+            for o in member_objs:
+                member_data.append({
+                    "Object ID": o.get("id", ""),
+                    "Name": o.get("name", ""),
+                    "CIDR": o.get("cidr", ""),
+                    "FQDN": o.get("fqdn", "")
+                })
+
+            if member_data:
+                st.dataframe(safe_dataframe(member_data))
+            else:
+                st.info("This group has no valid or displayable objects.")
+    else:
+        st.info("No groups match the current search.")

@@ -38,11 +38,18 @@ def is_exact_subnet_match(input_value, rule_cidrs):
         input_net = ipaddress.ip_network(input_value, strict=False)
     except ValueError:
         return False
-    for cidr in rule_cidrs:
+
+    for rule_cidr in rule_cidrs:
         try:
-            rule_net = ipaddress.ip_network(cidr.strip(), strict=False)
-            if input_net.subnet_of(rule_net):
+            rule_net = ipaddress.ip_network(rule_cidr.strip(), strict=False)
+            # Exact only if search input is fully inside rule net
+            if input_net.subnet_of(rule_net) and input_net != rule_net:
+                return True
+            elif input_net == rule_net:
                 return True
         except ValueError:
             continue
     return False
+
+
+
