@@ -527,43 +527,21 @@ def get_matching_network_names(cidrs, extended_data):
 #--------------------Cose New---------------------------------
 
 
-location_map = st.session_state.get("location_map", {})
+
 
 # -------- Render based on selected_tab ----------
 if selected_tab == "🔎 Object & Group Search":
-
     search_term = st.text_input("Search by name or CIDR:", "").lower()
 
     def match_object(obj, term):
         return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
 
-    extended = st.session_state.get("extended_data", {})
-    network_details = extended.get("network_details", {}) if isinstance(extended, dict) else {}
-
-    def find_locations_for_cidr(cidr):
-        matches = []
-        for net_id, details in network_details.items():
-            subnets = details.get("vpn_settings", {}).get("subnets", [])
-            for s in subnets:
-                subnet_cidr = s.get("localSubnet", "")
-                if match_input_to_rule([subnet_cidr], cidr):
-                    matches.append(details.get("network_name", net_id))
-        return ", ".join(sorted(set(matches)))
-
-    def find_locations_for_group(group):
-        all_cidrs = []
-        for obj_id in group.get("objectIds", []):
-            obj = object_map.get(str(obj_id))
-            if obj and "cidr" in obj:
-                all_cidrs.append(obj["cidr"])
-        locations = set()
-        for cidr in all_cidrs:
-            locations.update(find_locations_for_cidr(cidr).split(", "))
-        return ", ".join(sorted(locations))
-
     filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
-    filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
+    filtered_grps = [g for g in groups_data if search_term in g["name"].lower()] if search_term else groups_data
 
+    location_map = st.session_state.get("location_map", {})
+
+    # ---------- OBJECT TABLE ----------
     st.subheader("🔹 Matching Network Objects")
     object_rows = []
     for o in filtered_objs:
@@ -577,9 +555,9 @@ if selected_tab == "🔎 Object & Group Search":
             "Network IDs": o.get("networkIds", []),
             "Location": ", ".join(location_map.get(oid, []))
         })
-        
     st.dataframe(safe_dataframe(object_rows))
 
+    # ---------- GROUP TABLE ----------
     st.subheader("🔸 Matching Object Groups")
     group_rows = []
     for g in filtered_grps:
@@ -591,9 +569,10 @@ if selected_tab == "🔎 Object & Group Search":
             "Object Count": str(len(g.get("objectIds", []))),
             "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
             "Location": ", ".join(location_map.get(gid, []))
-       })
+        })
     st.dataframe(safe_dataframe(group_rows))
 
+    # ---------- MEMBERS EXPLORATION ----------
     if filtered_grps:
         selected_group = st.selectbox(
             "Explore group membership:",
@@ -610,13 +589,13 @@ if selected_tab == "🔎 Object & Group Search":
 
             member_data = []
             for o in member_objs:
-                cidr = o.get("cidr", "")
+                oid = f"OBJ({o['id']})"
                 member_data.append({
                     "Object ID": o.get("id", ""),
                     "Name": o.get("name", ""),
-                    "CIDR": cidr,
+                    "CIDR": o.get("cidr", ""),
                     "FQDN": o.get("fqdn", ""),
-                    "Location": find_locations_for_cidr(cidr)
+                    "Location": ", ".join(location_map.get(oid, []))
                 })
 
             if member_data:
@@ -625,8 +604,6 @@ if selected_tab == "🔎 Object & Group Search":
                 st.info("This group has no valid or displayable objects.")
     else:
         st.info("No groups match the current search.")
-
-
 
 
 
