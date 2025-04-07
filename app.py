@@ -17,7 +17,7 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
-
+progress_text.markdown =""
 def load_json_file(uploaded_file):
     try:
         if uploaded_file is None:
