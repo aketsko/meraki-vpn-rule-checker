@@ -270,6 +270,7 @@ if st.sidebar.button("📡 Get Extended API Data"):
     progress_text = st.sidebar.empty()
 
     def update_progress(current, total, name):
+        progress_bar.progress(min(current / total, 1.0))
         progress_text.markdown(
             f"🔄 **Processing network**: `{name}` ({current}/{total})"
         )
