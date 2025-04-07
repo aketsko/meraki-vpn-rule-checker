@@ -432,7 +432,7 @@ with st.container():
         col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-        col_n.metric("🏢 Networks", len(st.session_state.get("extended_data", {}).get("networks", [])))
+        col_n.metric("🌐 Networks", len(networks) if 'networks' in locals() else 0)
 
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
