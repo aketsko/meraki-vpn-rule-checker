@@ -259,9 +259,9 @@ st.sidebar.markdown("---")
 extended_status = st.sidebar.empty()
 
 # Place the cancel button first to register the cancel intent early
-# if st.sidebar.button("❌ Cancel Fetch"):
-#     st.session_state["cancel_extended_fetch"] = True
-#     extended_status.info("⛔ Fetch cancelled by user.")
+if st.sidebar.button("❌ Cancel Fetch"):
+    st.session_state["cancel_extended_fetch"] = True
+    extended_status.info("⛔ Fetch cancelled by user.")
 
 # Then check for the extended fetch button
 if st.sidebar.button("📡 Get Extended API Data"):
@@ -272,7 +272,7 @@ if st.sidebar.button("📡 Get Extended API Data"):
 
     with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
         try:
-             extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
+            extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
 
             # If cancelled during fetch (e.g. your function periodically checks the flag)
             if st.session_state.get("cancel_extended_fetch"):
