@@ -363,27 +363,12 @@ if uploaded_snapshot:
         import time
 
         snapshot_msg = st.sidebar.empty()
-        snapshot_msg.success(f"📦 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
+        snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
         time.sleep(10)
         snapshot_msg.empty()
 
     except Exception as e:
         st.error(f"❌ Failed to load snapshot: {e}")
-
-
-
-# File override only for rules if API was used
-st.sidebar.header("💾 Upload Data Files")
-
-if st.session_state.get("fetched_from_api", False):
-    uploaded_rules_file = st.sidebar.file_uploader("📄 Upload alternative Rules.json", type="json", key="rules_upload")
-    if uploaded_rules_file:
-        uploaded_rules_file.seek(0)
-        try:
-            rules_json = load_json_file(uploaded_rules_file)
-            st.session_state["rules_data"] = rules_json.get("rules", [])
-        except Exception as e:
-            st.error(f"❌ Failed to load Rules.json: {e}")
 
 # Full manual upload fallback
 
