@@ -274,7 +274,7 @@ if st.sidebar.button("📡 Get Extended API Data"):
         ratio = current / total if total else 0
         ratio = min(max(ratio, 0.0), 1.0)  # Ensure it's between 0.0 and 1.0
         try:
-            progress_bar.progress(ratio)
+            #progress_bar.progress(ratio)
             progress_text.markdown(
                 f"🔄 **Processing network**: ({current}/{total})<br>`{name}`",
                 unsafe_allow_html=True
