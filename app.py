@@ -612,7 +612,10 @@ if selected_tab == "🔎 Object & Group Search":
                 cidr = obj.get("cidr", "")
                 loc = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({obj.get('id')})", []))
                 if loc:
+                    if isinstance(loc, str):
                     group_locations.update(loc.split(", "))
+                elif isinstance(loc, list):
+                    group_locations.update(loc)
 
         group_locations.update(location_map.get(f"GRP({group_id})", []))
         group_rows.append({
