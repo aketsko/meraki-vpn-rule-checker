@@ -308,19 +308,28 @@ if st.sidebar.button("📡 Get Extended API Data"):
 
 
 # Upload Snapshot to restore everything
-uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
 if uploaded_snapshot:
     try:
         snapshot = json.load(uploaded_snapshot)
+
         st.session_state["rules_data"] = snapshot.get("rules_data", [])
         st.session_state["objects_data"] = snapshot.get("objects_data", [])
         st.session_state["groups_data"] = snapshot.get("groups_data", [])
         st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
         st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-        st.session_state["extended_api_data"] = snapshot.get("extended_api_data", {})
-        st.success("✅ Snapshot loaded successfully!")
+
+        # Extended data
+        extended_data = snapshot.get("extended_api_data", {})
+        st.session_state["extended_data"] = extended_data
+        st.session_state["fetched_from_api"] = True  # Emulate fetch success
+
+        # Optional: Show metric feedback
+        network_count = len(extended_data.get("network_map", {}))
+        st.sidebar.success(f"📦 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
+
     except Exception as e:
         st.error(f"❌ Failed to load snapshot: {e}")
+
 
 
 # File override only for rules if API was used
