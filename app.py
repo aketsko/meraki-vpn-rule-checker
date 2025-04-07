@@ -446,15 +446,16 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data=None):
     return json.dumps(snapshot, indent=2), filename
 
 
- """    # In snapshot loading:
-    st.session_state["rules_data"] = snapshot.get("rules_data", [])
-    st.session_state["objects_data"] = snapshot.get("objects_data", [])
-    st.session_state["groups_data"] = snapshot.get("groups_data", [])
-    st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
-    st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-    st.session_state["extended_api_data"] = snapshot.get("extended_api_data", {})
-    st.session_state["location_map"] = snapshot.get("location_map", {})
- """
+   # In snapshot loading:
+# """ 
+#    st.session_state["rules_data"] = snapshot.get("rules_data", [])
+#    st.session_state["objects_data"] = snapshot.get("objects_data", [])
+#    st.session_state["groups_data"] = snapshot.get("groups_data", [])
+#    st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
+#    st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
+#   st.session_state["extended_api_data"] = snapshot.get("extended_api_data", {})
+#    st.session_state["location_map"] = snapshot.get("location_map", {})
+# """
 # Trigger the snapshot and download immediately
 if st.sidebar.button("💾 Save API Snapshot"):
      try:
