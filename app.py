@@ -332,7 +332,7 @@ if st.sidebar.button("📡 Get Extended API Data"):
         except Exception as e:
             extended_status.error(f"❌ Exception: {e}")
             st.session_state["extended_data"] = None
- #       st.write("DEBUG: extended_result", extended_result)
+
         
 
 
@@ -534,11 +534,12 @@ if selected_tab == "🔎 Object & Group Search":
     st.subheader("🛠️ Debug: Object Location Map")
     if location_map:
         debug_rows = []
-        for cidr, locations in location_map.items():
+        for key, locations in location_map.items():
             debug_rows.append({
-                "CIDR": cidr,
-                "Locations": ", ".join(locations) if isinstance(locations, list) else locations
+                "CIDR": key,
+                "Locations": ", ".join(locations)
             })
+
         st.dataframe(pd.DataFrame(debug_rows))
     else:
         st.info("📭 No object-location mapping available.")
