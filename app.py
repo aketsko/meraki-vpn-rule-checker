@@ -267,7 +267,6 @@ if st.sidebar.button("❌ Cancel Fetch"):
 if st.sidebar.button("📡 Get Extended API Data"):
     st.session_state["cancel_extended_fetch"] = False
 
-    # 🧩 This line is missing in your current code
     progress_text = st.sidebar.empty()
 
     def update_progress(current, total, name):
@@ -428,11 +427,12 @@ with st.container():
 
     # RIGHT: Metrics
     with col_right:
-        col_b, col_r, col_o, col_g = st.columns(4)
+        col_b, col_r, col_o, col_g, col_n = st.columns(5)
         col_b.text("")
         col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
+        col_n.metric("🏢 Networks", len(st.session_state.get("extended_data", {}).get("networks", [])))
 
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
