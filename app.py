@@ -310,39 +310,38 @@ if st.sidebar.button("📡 Get Extended API Data"):
         except:
             pass
 
-    with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
-        try:
-            extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
+    try:
+        extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
 
-            if st.session_state.get("cancel_extended_fetch"):
-                extended_status.info("⛔ Fetch cancelled before completion.")
-                st.session_state["extended_data"] = None
-                st.session_state["object_location_map"] = {}
-
-            elif "error" in extended_result:
-                extended_status.error(f"❌ Error: {extended_result['error']}")
-                st.session_state["extended_data"] = None
-                st.session_state["object_location_map"] = {}
-
-            else:
-                st.session_state["extended_data"] = extended_result
-
-                # ✅ Build object location map immediately
-                with st.spinner("🧠 Mapping objects to VPN locations..."):
-                    location_map = build_object_location_map(
-                        st.session_state["objects_data"],
-                        st.session_state["groups_data"],
-                        extended_result
-                    )
-                    st.session_state["object_location_map"] = location_map
-
-                extended_status.success("✅ Extended data + object location map retrieved.")
-
-        except Exception as e:
-            extended_status.error(f"❌ Exception: {e}")
+        if st.session_state.get("cancel_extended_fetch"):
+            extended_status.info("⛔ Fetch cancelled before completion.")
             st.session_state["extended_data"] = None
             st.session_state["object_location_map"] = {}
 
+        elif "error" in extended_result:
+            extended_status.error(f"❌ Error: {extended_result['error']}")
+            st.session_state["extended_data"] = None
+            st.session_state["object_location_map"] = {}
+
+        else:
+            st.session_state["extended_data"] = extended_result
+
+            # ✅ Notify success BEFORE building location map
+            extended_status.success("✅ Extended Meraki data has been fetched successfully!")
+
+            # 🔄 Now build the location map with a new spinner
+            with st.spinner("🧠 Mapping objects to VPN locations..."):
+                location_map = build_object_location_map(
+                    st.session_state["objects_data"],
+                    st.session_state["groups_data"],
+                    extended_result
+                )
+                st.session_state["object_location_map"] = location_map
+
+    except Exception as e:
+        extended_status.error(f"❌ Exception: {e}")
+        st.session_state["extended_data"] = None
+        st.session_state["object_location_map"] = {}
 
 
 # Upload Snapshot to restore everything
