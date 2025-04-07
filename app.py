@@ -160,54 +160,81 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
         with st.spinner("🔄 Fetching network list..."):
             networks_url = f"{base_url}/organizations/{org_id}/networks"
             networks_resp = requests.get(networks_url, headers=headers)
-            if not networks_resp.ok:
-                raise Exception(f"Failed to fetch networks: {networks_resp.text}")
-            networks = networks_resp.json()
+            networks = networks_resp.json() if networks_resp.ok else []
+            if not networks:
+                raise Exception("No networks retrieved")
 
         network_map = {net["name"]: net["id"] for net in networks}
         extended_data = {}
+        location_map = {}
 
         progress_bar = st.progress(0)
         total = len(networks)
 
         for i, net in enumerate(networks, start=1):
+            if update_progress:
+                update_progress(i, total, net["name"])
+            if st.session_state.get("cancel_extended_fetch"):
+                raise Exception("Fetch cancelled by user.")
+
             network_id = net["id"]
             network_name = net["name"]
 
-            if update_progress:
-                update_progress(i, len(networks), network_name)
-
-
-            # Update spinner or text
-            if st.session_state.get("cancel_extended_fetch"):
-                raise Exception("Fetch cancelled by user.")
-            # Step 1: VPN site-to-site settings
             vpn_url = f"{base_url}/networks/{network_id}/appliance/vpn/siteToSiteVpn"
-            vpn_resp = requests.get(vpn_url, headers=headers)
-            vpn_data = vpn_resp.json() if vpn_resp.ok else {}
-
-            # Step 2: Organization-wide VPN firewall rules
             rules_url = f"{base_url}/networks/{network_id}/appliance/firewall/l3FirewallRules"
+
+            vpn_resp = requests.get(vpn_url, headers=headers)
             rules_resp = requests.get(rules_url, headers=headers)
+
+            vpn_data = vpn_resp.json() if vpn_resp.ok else {}
             rules_data = rules_resp.json() if rules_resp.ok else {}
 
-            
-            # Store results
             extended_data[network_id] = {
                 "network_name": network_name,
                 "vpn_settings": vpn_data,
                 "firewall_rules": rules_data.get("rules", [])
             }
-        
-        #    progress_bar.progress((i + 1) / total)
+
+        # Build location mapping
+        obj_map = st.session_state.get("object_map", {})
+        grp_map = st.session_state.get("group_map", {})
+        location_map = {}
+
+        for network_id, data in extended_data.items():
+            subnets = [s.get("localSubnet") for s in data.get("vpn_settings", {}).get("subnets", []) if "localSubnet" in s]
+            network_name = data.get("network_name")
+
+            for obj_id, obj in obj_map.items():
+                if "cidr" in obj:
+                    try:
+                        ip = ipaddress.ip_network(obj["cidr"], strict=False)
+                        for subnet in subnets:
+                            net = ipaddress.ip_network(subnet, strict=False)
+                            if ip.subnet_of(net) or ip == net:
+                                location_map.setdefault(f"OBJ({obj_id})", []).append(network_name)
+                    except:
+                        continue
+
+            for grp_id, group in grp_map.items():
+                members = group.get("objectIds", [])
+                for m in members:
+                    member_obj = obj_map.get(m)
+                    if member_obj and "cidr" in member_obj:
+                        try:
+                            ip = ipaddress.ip_network(member_obj["cidr"], strict=False)
+                            for subnet in subnets:
+                                net = ipaddress.ip_network(subnet, strict=False)
+                                if ip.subnet_of(net) or ip == net:
+                                    location_map.setdefault(f"GRP({grp_id})", []).append(network_name)
+                        except:
+                            continue
 
         progress_bar.empty()
-        st.success("✅ Extended Meraki data loaded.")
-
         return {
             "networks": networks,
             "network_map": network_map,
-            "network_details": extended_data
+            "network_details": extended_data,
+            "location_map": location_map
         }
 
     except Exception as e:
@@ -216,9 +243,10 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
             "error": str(e),
             "networks": [],
             "network_map": {},
-            "network_details": {}
+            "network_details": {},
+            "location_map": {}
         }
-
+    
 
 # Try auto-fetch if session not set
 if "rules_data" not in st.session_state:
@@ -404,12 +432,18 @@ def prepare_snapshot():
         "rules_data": st.session_state.get("rules_data", []),
         "objects_data": st.session_state.get("objects_data", []),
         "groups_data": st.session_state.get("groups_data", []),
-        "extended_api_data": st.session_state.get("extended_data", {})
+        "extended_api_data": st.session_state.get("extended_api_data", {}),
+        "location_map": st.session_state.get("location_map", {})
     }
-    json_str = json.dumps(snapshot, indent=2)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"meraki_snapshot_{timestamp}.json"
-    return json_str, filename
+
+    # In snapshot loading:
+    st.session_state["rules_data"] = snapshot.get("rules_data", [])
+    st.session_state["objects_data"] = snapshot.get("objects_data", [])
+    st.session_state["groups_data"] = snapshot.get("groups_data", [])
+    st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
+    st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
+    st.session_state["extended_api_data"] = snapshot.get("extended_api_data", {})
+    st.session_state["location_map"] = snapshot.get("location_map", {})
 
 # Trigger the snapshot and download immediately
 if st.sidebar.button("💾 Save API Snapshot"):
@@ -497,7 +531,7 @@ def get_matching_network_names(cidrs, extended_data):
 
 # -------- Render based on selected_tab ----------
 if selected_tab == "🔎 Object & Group Search":
-
+    location_map = st.session_state.get("location_map", {})
     search_term = st.text_input("Search by name or CIDR:", "").lower()
 
     def match_object(obj, term):
@@ -533,29 +567,30 @@ if selected_tab == "🔎 Object & Group Search":
     st.subheader("🔹 Matching Network Objects")
     object_rows = []
     for o in filtered_objs:
-        cidr = o.get("cidr", "")
+        oid = f"OBJ({o['id']})"
         object_rows.append({
             "ID": o.get("id", ""),
             "Name": o.get("name", ""),
-            "CIDR": cidr,
+            "CIDR": o.get("cidr", ""),
             "FQDN": o.get("fqdn", ""),
             "Group IDs": o.get("groupIds", []),
             "Network IDs": o.get("networkIds", []),
-            "Location": find_locations_for_cidr(cidr)
+            "Location": ", ".join(location_map.get(oid, []))
         })
     st.dataframe(safe_dataframe(object_rows))
 
     st.subheader("🔸 Matching Object Groups")
     group_rows = []
-    for g in filtered_grps:
-        group_rows.append({
-            "ID": str(g.get("id", "")),
-            "Name": str(g.get("name", "")),
-            "Type": str(g.get("category", "")),
-            "Object Count": str(len(g.get("objectIds", []))),
-            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
-            "Location": find_locations_for_group(g)
-        })
+for g in filtered_grps:
+    gid = f"GRP({g['id']})"
+    group_rows.append({
+        "ID": str(g.get("id", "")),
+        "Name": str(g.get("name", "")),
+        "Type": str(g.get("category", "")),
+        "Object Count": str(len(g.get("objectIds", []))),
+        "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
+        "Location": ", ".join(location_map.get(gid, []))
+    })
     st.dataframe(safe_dataframe(group_rows))
 
     if filtered_grps:
@@ -589,23 +624,6 @@ if selected_tab == "🔎 Object & Group Search":
                 st.info("This group has no valid or displayable objects.")
     else:
         st.info("No groups match the current search.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 elif selected_tab == "🛡️ Rule Checker":
     
