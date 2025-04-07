@@ -317,7 +317,7 @@ if uploaded_snapshot:
         st.session_state["groups_data"] = snapshot.get("groups_data", [])
         st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
         st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-        st.session_state["extended_api_data"] = snapshot.get("extended_data", {})
+        st.session_state["extended_api_data"] = snapshot.get("extended_api_data", {})
         st.success("✅ Snapshot loaded successfully!")
     except Exception as e:
         st.error(f"❌ Failed to load snapshot: {e}")
@@ -443,8 +443,9 @@ with st.container():
         col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-        extended_networks = st.session_state.get("extended_data", {}).get("networks", [])
-        col_n.metric("🏢 Networks", len(extended_networks))
+        network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
+        col_n.metric("🏢 Networks", network_count)
+
 
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
