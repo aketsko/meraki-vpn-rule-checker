@@ -182,6 +182,31 @@ if st.sidebar.button("🔄 Refresh API Data"):
     else:
         st.error("❌ Please enter both API key and Org ID.")
 
+
+st.sidebar.markdown("---")
+
+# Add a placeholder for progress/cancel feedback
+extended_status = st.sidebar.empty()
+cancel_flag = st.sidebar.button("❌ Cancel Fetch")
+
+if st.sidebar.button("📡 Get Extended API Data"):
+    st.session_state["cancel_extended_fetch"] = False
+
+    with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
+        extended_result = fetch_meraki_data_extended(api_key, org_id)
+
+        if "error" in extended_result:
+            st.session_state["extended_data"] = None
+            extended_status.error(f"❌ Error: {extended_result['error']}")
+        else:
+            st.session_state["extended_data"] = extended_result
+            extended_status.success("✅ Extended data successfully retrieved.")
+
+elif cancel_flag:
+    st.session_state["cancel_extended_fetch"] = True
+    extended_status.info("⛔ Fetch cancelled by user.")
+
+
 # File override only for rules if API was used
 st.sidebar.header("💾 Upload Data Files")
 

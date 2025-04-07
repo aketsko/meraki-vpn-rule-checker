@@ -67,7 +67,8 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, base_url="https://api.
 
             # Update spinner or text
             st.text(f"📡 Processing {network_name} ({i+1}/{total})")
-
+            if st.session_state.get("cancel_extended_fetch"):
+                raise Exception("Fetch cancelled by user.")
             # Step 1: VPN site-to-site settings
             vpn_url = f"{base_url}/networks/{network_id}/appliance/vpn/siteToSiteVpn"
             vpn_resp = requests.get(vpn_url, headers=headers)
