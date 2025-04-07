@@ -6,7 +6,7 @@ from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
-from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match
+from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, find_object_locations
 from streamlit_searchbox import st_searchbox
 #from utils.API import fetch_meraki_data_extended
 
@@ -459,6 +459,40 @@ with st.container():
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
 
+import ipaddress
+
+#--------------------New---------------------------------
+
+def get_matching_network_names(cidrs, extended_data):
+    matching_networks = set()
+
+    if not extended_data:
+        return ""
+
+    for net_id, data in extended_data.get("network_details", {}).items():
+        network_name = data.get("network_name", f"(unnamed: {net_id})")
+        vpn_settings = data.get("vpn_settings", {})
+        local_subnets = vpn_settings.get("subnets", [])
+
+        for obj_cidr in cidrs:
+            try:
+                obj_net = ipaddress.ip_network(obj_cidr, strict=False)
+            except ValueError:
+                continue
+
+            for subnet in local_subnets:
+                try:
+                    vpn_net = ipaddress.ip_network(subnet.get("localSubnet", ""), strict=False)
+                    if obj_net.subnet_of(vpn_net) or obj_net == vpn_net or vpn_net.subnet_of(obj_net):
+                        matching_networks.add(network_name)
+                except ValueError:
+                    continue
+
+    return ", ".join(sorted(matching_networks))
+
+#--------------------Cose New---------------------------------
+
+
 
 
 # -------- Render based on selected_tab ----------
@@ -469,19 +503,45 @@ if selected_tab == "🔎 Object & Group Search":
     def match_object(obj, term):
         return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
 
+    extended = st.session_state.get("extended_data", {})
+    network_details = extended.get("network_details", {}) if isinstance(extended, dict) else {}
+
+    def find_locations_for_cidr(cidr):
+        matches = []
+        for net_id, details in network_details.items():
+            subnets = details.get("vpn_settings", {}).get("subnets", [])
+            for s in subnets:
+                subnet_cidr = s.get("localSubnet", "")
+                if match_input_to_rule([subnet_cidr], cidr):
+                    matches.append(details.get("network_name", net_id))
+        return ", ".join(sorted(set(matches)))
+
+    def find_locations_for_group(group):
+        all_cidrs = []
+        for obj_id in group.get("objectIds", []):
+            obj = object_map.get(str(obj_id))
+            if obj and "cidr" in obj:
+                all_cidrs.append(obj["cidr"])
+        locations = set()
+        for cidr in all_cidrs:
+            locations.update(find_locations_for_cidr(cidr).split(", "))
+        return ", ".join(sorted(locations))
+
     filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
     filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
 
     st.subheader("🔹 Matching Network Objects")
     object_rows = []
     for o in filtered_objs:
+        cidr = o.get("cidr", "")
         object_rows.append({
             "ID": o.get("id", ""),
             "Name": o.get("name", ""),
-            "CIDR": o.get("cidr", ""),
+            "CIDR": cidr,
             "FQDN": o.get("fqdn", ""),
             "Group IDs": o.get("groupIds", []),
-            "Network IDs": o.get("networkIds", [])
+            "Network IDs": o.get("networkIds", []),
+            "Location": find_locations_for_cidr(cidr)
         })
     st.dataframe(safe_dataframe(object_rows))
 
@@ -493,7 +553,8 @@ if selected_tab == "🔎 Object & Group Search":
             "Name": str(g.get("name", "")),
             "Type": str(g.get("category", "")),
             "Object Count": str(len(g.get("objectIds", []))),
-            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else ""
+            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
+            "Location": find_locations_for_group(g)
         })
     st.dataframe(safe_dataframe(group_rows))
 
@@ -513,11 +574,13 @@ if selected_tab == "🔎 Object & Group Search":
 
             member_data = []
             for o in member_objs:
+                cidr = o.get("cidr", "")
                 member_data.append({
                     "Object ID": o.get("id", ""),
                     "Name": o.get("name", ""),
-                    "CIDR": o.get("cidr", ""),
-                    "FQDN": o.get("fqdn", "")
+                    "CIDR": cidr,
+                    "FQDN": o.get("fqdn", ""),
+                    "Location": find_locations_for_cidr(cidr)
                 })
 
             if member_data:
@@ -526,6 +589,23 @@ if selected_tab == "🔎 Object & Group Search":
                 st.info("This group has no valid or displayable objects.")
     else:
         st.info("No groups match the current search.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 elif selected_tab == "🛡️ Rule Checker":
     

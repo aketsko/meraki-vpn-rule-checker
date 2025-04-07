@@ -51,5 +51,26 @@ def is_exact_subnet_match(input_value, rule_cidrs):
             continue
     return False
 
+def find_object_locations(cidr_list, extended_data):
+    """
+    Given a list of CIDRs and the extended Meraki data,
+    return a sorted list of network names where any of these CIDRs match the VPN subnets.
+    """
+    locations = set()
 
+    for net_id, net_info in extended_data.get("network_details", {}).items():
+        vpn_subnets = net_info.get("vpn_settings", {}).get("subnets", [])
+        subnet_cidrs = [s.get("localSubnet", "") for s in vpn_subnets if s.get("localSubnet")]
+
+        for cidr in cidr_list:
+            for subnet in subnet_cidrs:
+                try:
+                    cidr_net = ipaddress.ip_network(cidr.strip(), strict=False)
+                    subnet_net = ipaddress.ip_network(subnet.strip(), strict=False)
+                    if cidr_net.subnet_of(subnet_net) or cidr_net == subnet_net or subnet_net.subnet_of(cidr_net):
+                        locations.add(net_info.get("network_name", net_id))
+                except Exception:
+                    continue
+
+    return sorted(locations)
 
