@@ -271,6 +271,8 @@ if st.sidebar.button("📡 Get Extended API Data"):
 
 
     def update_progress(current, total, name):
+        ratio = current / total if total else 0
+        ratio = min(max(ratio, 0.0), 1.0)  # Ensure it's between 0.0 and 1.0
         try:
             progress_bar.progress(min(current / total, 1.0))
             progress_text.markdown(
@@ -279,7 +281,7 @@ if st.sidebar.button("📡 Get Extended API Data"):
             )
         except:
             pass  # Streamlit isn't ready yet or race condition — silently skip
-        
+
 
     with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
         try:
