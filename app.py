@@ -189,7 +189,8 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
             # Step 2: Organization-wide VPN firewall rules
             rules_url = f"{base_url}/networks/{network_id}/appliance/firewall/l3FirewallRules"
             rules_resp = requests.get(rules_url, headers=headers)
-            rules_data = rules_resp.json() if rules_resp.ok else {"error"}
+            rules_data = rules_resp.json() if rules_resp.ok else {}
+
             
             # Store results
             extended_data[network_id] = {
@@ -394,7 +395,7 @@ def prepare_snapshot():
         "rules_data": st.session_state.get("rules_data", []),
         "objects_data": st.session_state.get("objects_data", []),
         "groups_data": st.session_state.get("groups_data", []),
-        "extended_api_data": st.session_state.get("extended_api_data", {})
+        "extended_api_data": st.session_state.get("extended_data", {})
     }
     json_str = json.dumps(snapshot, indent=2)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
