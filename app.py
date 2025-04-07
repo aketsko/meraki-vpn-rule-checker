@@ -543,7 +543,7 @@ if selected_tab == "🔎 Object & Group Search":
     object_rows = []
     for o in filtered_objs:
         cidr = o.get("cidr", "")
-        location = location_map.get(cidr, "")
+        location = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({o.get('id')})", []))
         object_rows.append({
             "ID": o.get("id", ""),
             "Name": o.get("name", ""),
@@ -562,15 +562,17 @@ if selected_tab == "🔎 Object & Group Search":
         group_name = str(g.get("name", ""))
         group_objects = g.get("objectIds", [])
         group_locations = set()
-
+    
         for obj_id in group_objects:
             obj = object_map.get(obj_id)
             if obj:
                 cidr = obj.get("cidr", "")
-                loc = location_map.get(cidr)
+                loc = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({obj.get('id')})", []))
                 if loc:
-                    group_locations.add(loc)
-
+                    group_locations.update(loc.split(", "))
+    
+       
+        group_locations.update(location_map.get(f"GRP({group_id})", []))
         group_rows.append({
             "ID": group_id,
             "Name": group_name,
