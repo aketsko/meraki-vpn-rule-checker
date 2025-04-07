@@ -290,14 +290,16 @@ progress_text = st.sidebar.empty()
 extended_status = st.sidebar.empty()
 
 # Place the cancel button first to register the cancel intent early
-if st.sidebar.button("❌ Cancel Fetch"):
-    st.session_state["cancel_extended_fetch"] = True
-    extended_status.info("⛔ Fetch cancelled by user.")
+if st.session_state.get("fetching_extended", False):
+    if st.sidebar.button("❌ Cancel Fetch"):
+        st.session_state["cancel_extended_fetch"] = True
+        extended_status.info("⛔ Fetch cancelled by user.")
 
 # Then check for the extended fetch button
 if st.sidebar.button("📡 Get Extended API Data"):
     st.session_state["cancel_extended_fetch"] = False
-
+    st.session_state["fetching_extended"] = True
+    
     def update_progress(current, total, name):
         ratio = current / total if total else 0
         ratio = min(max(ratio, 0.0), 1.0)
@@ -317,18 +319,21 @@ if st.sidebar.button("📡 Get Extended API Data"):
             extended_status.info("⛔ Fetch cancelled before completion.")
             st.session_state["extended_data"] = None
             st.session_state["object_location_map"] = {}
-
+            st.session_state["fetching_extended"] = False
+            
         elif "error" in extended_result:
             extended_status.error(f"❌ Error: {extended_result['error']}")
             st.session_state["extended_data"] = None
             st.session_state["object_location_map"] = {}
-
+            st.session_state["fetching_extended"] = False
+            
         else:
             st.session_state["extended_data"] = extended_result
 
             # ✅ Notify success BEFORE building location map
             extended_status.success("✅ Extended Meraki data has been fetched successfully!")
-
+            st.session_state["fetching_extended"] = False
+            
             # 🔄 Now build the location map with a new spinner
             with st.spinner("🧠 Mapping objects to VPN locations..."):
                 location_map = build_object_location_map(
