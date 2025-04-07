@@ -169,13 +169,13 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
 
         progress_bar = st.progress(0)
         total = len(networks)
-        
+
         for i, net in enumerate(networks, start=1):
             network_id = net["id"]
             network_name = net["name"]
 
             if update_progress:
-             update_progress(i, len(networks), network_name)
+                update_progress(i, len(networks), network_name)
 
 
             # Update spinner or text
@@ -217,7 +217,7 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
             "network_map": {},
             "network_details": {}
         }
-networks = st.session_state.get("extended_data", {}).get("networks", [])
+
 
 # Try auto-fetch if session not set
 if "rules_data" not in st.session_state:
@@ -442,7 +442,7 @@ with st.container():
         col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-        col_n.metric("🏢 Networks", len(networks) if 'networks' in locals() else 0)
+        col_n.metric("🏢 Networks", len(st.session_state.get("extended_data", {}).get("networks", [])))
 
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
