@@ -317,7 +317,7 @@ if uploaded_snapshot:
         st.session_state["groups_data"] = snapshot.get("groups_data", [])
         st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
         st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-        st.session_state["extended_api_data"] = snapshot.get("extended_api_data", {})
+        st.session_state["extended_api_data"] = snapshot.get("extended_data", {})
         st.success("✅ Snapshot loaded successfully!")
     except Exception as e:
         st.error(f"❌ Failed to load snapshot: {e}")
