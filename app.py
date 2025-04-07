@@ -187,10 +187,10 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
             vpn_data = vpn_resp.json() if vpn_resp.ok else {}
 
             # Step 2: Organization-wide VPN firewall rules
-            rules_url = f"{base_url}/organizations/{org_id}/networks/{network_id}/appliance/firewall/l3FirewallRules"
+            rules_url = f"{base_url}/networks/{network_id}/appliance/firewall/l3FirewallRules"
             rules_resp = requests.get(rules_url, headers=headers)
             rules_data = rules_resp.json() if rules_resp.ok else {}
-
+            
             # Store results
             extended_data[network_id] = {
                 "network_name": network_name,
