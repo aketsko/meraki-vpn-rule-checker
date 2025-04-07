@@ -273,7 +273,7 @@ if st.sidebar.button("📡 Get Extended API Data"):
     def update_progress(current, total, name):
         progress_bar.progress(min(current / total, 1.0))
         progress_text.markdown(
-            f"🔄 **Processing network**:   ({current}/{total})   `{name}`"
+            f"🔄 **Processing network**:\n({current}/{total})\n`{name}`"
         )
 
     with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
