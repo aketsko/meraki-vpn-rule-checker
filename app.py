@@ -169,13 +169,53 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
 
         progress_bar = st.progress(0)
         total = len(networks)
-
-        for i, net in enumerate(networks, start=1):
+        test = [
+               {
+                    "id": "L_3668744846446690472",
+                    "organizationId": "437647",
+                    "name": "SE-010-Vasteras-Sjohagen-NT",
+                    "productTypes": [
+                        "appliance",
+                        "switch",
+                        "wireless"
+                    ],
+                    "timeZone": "CET",
+                    "tags": [
+                        "SE"
+                    ],
+                    "enrollmentString": null,
+                    "url": "https://n517.meraki.com/SE-010-Vasteras-/n/xVelMbnwb/manage/usage/list",
+                    "notes": "Michael Rowland",
+                    "isBoundToConfigTemplate": false,
+                    "isVirtual": false
+                },
+                {
+                    "id": "L_3668744846446690603",
+                    "organizationId": "437647",
+                    "name": "IN-240-Hyderabad-NT",
+                    "productTypes": [
+                        "appliance",
+                        "switch",
+                        "wireless"
+                    ],
+                    "timeZone": "Asia/Calcutta",
+                    "tags": [
+                        "IN",
+                        "cara#incident#INCIDENT984778"
+                    ],
+                    "enrollmentString": null,
+                    "url": "https://n517.meraki.com/IN-240-Hyderabad/n/Fvw7kdSc/manage/usage/list",
+                    "notes": "",
+                    "isBoundToConfigTemplate": false,
+                    "isVirtual": false
+                }
+                ]
+        for i, net in enumerate(test, start=1):
             network_id = net["id"]
             network_name = net["name"]
 
-            if update_progress:
-                update_progress(i, len(networks), network_name)
+           # if update_progress:
+        #     update_progress(i, len(networks), network_name)
 
 
             # Update spinner or text
