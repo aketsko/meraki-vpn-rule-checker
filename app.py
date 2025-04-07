@@ -463,7 +463,8 @@ if st.sidebar.button("💾 Save API Snapshot"):
             st.session_state.get("rules_data", []),
             st.session_state.get("objects_data", []),
             st.session_state.get("groups_data", []),
-            st.session_state.get("extended_data", {})  # Optional if used
+            st.session_state.get("extended_data", {}),
+            st.session_state.get("object_location_map", {})
         )
 
         st.sidebar.download_button("📥 Download Snapshot", snapshot_str, file_name=snapshot_filename)
