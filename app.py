@@ -333,7 +333,16 @@ if st.sidebar.button("📡 Get Extended API Data"):
             extended_status.error(f"❌ Exception: {e}")
             st.session_state["extended_data"] = None
         st.write("DEBUG: extended_result", extended_result)
-
+        with st.spinner("📍 Mapping objects and groups to VPN locations..."):
+            st.session_state["object_location_map"] = build_object_location_map(
+                st.session_state["objects_data"],
+                st.session_state.get("extended_api_data", {}).get("network_details", {})
+            )
+        
+            st.session_state["group_location_map"] = build_group_location_map(
+                st.session_state["groups_data"],
+                st.session_state["object_location_map"]
+            )
 
 # Upload Snapshot to restore everything
 uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
