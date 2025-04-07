@@ -6,7 +6,7 @@ from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
-from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, find_object_locations, object_location_map
+from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, find_object_locations, build_object_location_map
 from streamlit_searchbox import st_searchbox
 #from utils.API import fetch_meraki_data_extended
 
@@ -429,16 +429,24 @@ highlight_colors = {
 st.sidebar.markdown("---")
 
 # Save & Download all API data
-def prepare_snapshot():
+import json
+from datetime import datetime
+
+def prepare_snapshot(rules_data, objects_data, groups_data, extended_data=None):
     snapshot = {
-        "rules_data": st.session_state.get("rules_data", []),
-        "objects_data": st.session_state.get("objects_data", []),
-        "groups_data": st.session_state.get("groups_data", []),
-        "extended_api_data": st.session_state.get("extended_api_data", {}),
-        "location_map": st.session_state.get("location_map", {})
+        "rules": rules_data,
+        "objects": objects_data,
+        "groups": groups_data,
+        "extended_data": extended_data or {}
     }
 
-    # In snapshot loading:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"meraki_snapshot_{timestamp}.json"
+
+    return json.dumps(snapshot, indent=2), filename
+
+
+ """    # In snapshot loading:
     st.session_state["rules_data"] = snapshot.get("rules_data", [])
     st.session_state["objects_data"] = snapshot.get("objects_data", [])
     st.session_state["groups_data"] = snapshot.get("groups_data", [])
@@ -446,16 +454,22 @@ def prepare_snapshot():
     st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
     st.session_state["extended_api_data"] = snapshot.get("extended_api_data", {})
     st.session_state["location_map"] = snapshot.get("location_map", {})
-
+ """
 # Trigger the snapshot and download immediately
 if st.sidebar.button("💾 Save API Snapshot"):
-    snapshot_str, snapshot_filename = prepare_snapshot()
-    st.sidebar.download_button(
-        label="Download Started...",
-        data=snapshot_str,
-        file_name=snapshot_filename,
-        mime="application/json"
-    )
+     try:
+        from utils.helpers import prepare_snapshot  # Adjust path if needed
+
+        snapshot_str, snapshot_filename = prepare_snapshot(
+            st.session_state.get("rules_data", []),
+            st.session_state.get("objects_data", []),
+            st.session_state.get("groups_data", []),
+            st.session_state.get("extended_data", {})  # Optional if used
+        )
+
+        st.sidebar.download_button("📥 Download Snapshot", snapshot_str, file_name=snapshot_filename)
+    except Exception as e:
+        st.sidebar.error(f"❌ Snapshot error: {e}")
 
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
