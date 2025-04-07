@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import json
+from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
@@ -272,6 +273,21 @@ elif cancel_flag:
     st.session_state["cancel_extended_fetch"] = True
     extended_status.info("⛔ Fetch cancelled by user.")
 
+# Upload Snapshot to restore everything
+uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
+if uploaded_snapshot:
+    try:
+        snapshot = json.load(uploaded_snapshot)
+        st.session_state["rules_data"] = snapshot.get("rules_data", [])
+        st.session_state["objects_data"] = snapshot.get("objects_data", [])
+        st.session_state["groups_data"] = snapshot.get("groups_data", [])
+        st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
+        st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
+        st.session_state["extended_api_data"] = snapshot.get("extended_api_data", {})
+        st.success("✅ Snapshot loaded successfully!")
+    except Exception as e:
+        st.error(f"❌ Failed to load snapshot: {e}")
+
 
 # File override only for rules if API was used
 st.sidebar.header("💾 Upload Data Files")
@@ -337,7 +353,26 @@ highlight_colors = {
     "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
 }
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("💾 Backup & Restore")
 
+# Save & Download all API data
+if st.sidebar.button("💾 Save API Snapshot"):
+    snapshot = {
+        "rules_data": st.session_state.get("rules_data", []),
+        "objects_data": st.session_state.get("objects_data", []),
+        "groups_data": st.session_state.get("groups_data", []),
+        "extended_api_data": st.session_state.get("extended_api_data", {})
+    }
+    json_str = json.dumps(snapshot, indent=2)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"meraki_snapshot_{timestamp}.json"
+    st.download_button(
+        label="⬇️ Download Snapshot",
+        data=json_str,
+        file_name=filename,
+        mime="application/json"
+    )
 
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
