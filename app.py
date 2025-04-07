@@ -6,7 +6,7 @@ from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
-from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, find_object_locations
+from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, find_object_locations, object_location_map
 from streamlit_searchbox import st_searchbox
 #from utils.API import fetch_meraki_data_extended
 
@@ -332,17 +332,10 @@ if st.sidebar.button("📡 Get Extended API Data"):
         except Exception as e:
             extended_status.error(f"❌ Exception: {e}")
             st.session_state["extended_data"] = None
-        st.write("DEBUG: extended_result", extended_result)
-        with st.spinner("📍 Mapping objects and groups to VPN locations..."):
-            st.session_state["object_location_map"] = build_object_location_map(
-                st.session_state["objects_data"],
-                st.session_state.get("extended_api_data", {}).get("network_details", {})
-            )
+ #       st.write("DEBUG: extended_result", extended_result)
         
-            st.session_state["group_location_map"] = build_group_location_map(
-                st.session_state["groups_data"],
-                st.session_state["object_location_map"]
-            )
+
+
 
 # Upload Snapshot to restore everything
 uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
@@ -504,7 +497,7 @@ selected_tab = st.session_state.active_tab
 
 import ipaddress
 
-#--------------------New---------------------------------
+""" #--------------------New---------------------------------
 
 def get_matching_network_names(cidrs, extended_data):
     matching_networks = set()
@@ -533,13 +526,13 @@ def get_matching_network_names(cidrs, extended_data):
 
     return ", ".join(sorted(matching_networks))
 
-#--------------------Cose New---------------------------------
+#--------------------Cose New--------------------------------- """
 
 
 
 
 # -------- Render based on selected_tab ----------
-if selected_tab == "🔎 Object & Group Search":
+""" if selected_tab == "🔎 Object & Group Search":
     search_term = st.text_input("Search by name or CIDR:", "").lower()
 
     def match_object(obj, term):
@@ -613,7 +606,104 @@ if selected_tab == "🔎 Object & Group Search":
                 st.info("This group has no valid or displayable objects.")
     else:
         st.info("No groups match the current search.")
+ """
+if selected_tab == "🔎 Object & Group Search":
+    from utils.match_logic import build_object_location_map  # Ensure this is imported
 
+    search_term = st.text_input("Search by name or CIDR:", "").lower()
+
+    def match_object(obj, term):
+        return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
+
+    # Build location map if extended data and not already available
+    if "object_location_map" not in st.session_state and "extended_data" in st.session_state and st.session_state["extended_data"]:
+        with st.spinner("🔄 Building location mapping..."):
+            location_map = build_object_location_map(
+                st.session_state["objects_data"],
+                st.session_state["groups_data"],
+                st.session_state["extended_data"]
+            )
+            st.session_state["object_location_map"] = location_map
+
+    location_map = st.session_state.get("object_location_map", {})
+
+    filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
+    filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
+
+    st.subheader("🔹 Matching Network Objects")
+    object_rows = []
+    for o in filtered_objs:
+        cidr = o.get("cidr", "")
+        location = location_map.get(cidr, "")
+        object_rows.append({
+            "ID": o.get("id", ""),
+            "Name": o.get("name", ""),
+            "CIDR": cidr,
+            "FQDN": o.get("fqdn", ""),
+            "Group IDs": o.get("groupIds", []),
+            "Network IDs": o.get("networkIds", []),
+            "Location": location
+        })
+    st.dataframe(safe_dataframe(object_rows))
+
+    st.subheader("🔸 Matching Object Groups")
+    group_rows = []
+    for g in filtered_grps:
+        group_id = str(g.get("id", ""))
+        group_name = str(g.get("name", ""))
+        group_objects = g.get("objectIds", [])
+        group_locations = set()
+
+        for obj_id in group_objects:
+            obj = object_map.get(obj_id)
+            if obj:
+                cidr = obj.get("cidr", "")
+                loc = location_map.get(cidr)
+                if loc:
+                    group_locations.add(loc)
+
+        group_rows.append({
+            "ID": group_id,
+            "Name": group_name,
+            "Type": str(g.get("category", "")),
+            "Object Count": str(len(group_objects)),
+            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
+            "Location": ", ".join(sorted(group_locations)) if group_locations else ""
+        })
+    st.dataframe(safe_dataframe(group_rows))
+
+    if filtered_grps:
+        selected_group = st.selectbox(
+            "Explore group membership:",
+            options=[g["id"] for g in filtered_grps],
+            format_func=lambda x: group_map.get(x, {}).get("name", f"(unknown: {x})")
+        )
+
+        if selected_group and selected_group in group_map:
+            group_members = group_map[selected_group].get("objectIds", [])
+            member_objs = [object_map[oid] for oid in group_members if oid in object_map]
+
+            st.markdown(f"**Group Name:** `{group_map[selected_group]['name']}`")
+            st.markdown(f"**Members:** `{len(member_objs)}` object(s)`")
+
+            member_data = []
+            for o in member_objs:
+                cidr = o.get("cidr", "")
+                location = location_map.get(cidr, "")
+                member_data.append({
+                    "Object ID": o.get("id", ""),
+                    "Name": o.get("name", ""),
+                    "CIDR": cidr,
+                    "FQDN": o.get("fqdn", ""),
+                    "Location": location
+                })
+
+            if member_data:
+                st.dataframe(safe_dataframe(member_data))
+            else:
+                st.info("This group has no valid or displayable objects.")
+    else:
+        st.info("No groups match the current search.")
 
 
 
