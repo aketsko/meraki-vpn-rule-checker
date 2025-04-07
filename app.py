@@ -530,12 +530,7 @@ if selected_tab == "🔎 Object & Group Search":
             st.session_state["object_location_map"] = location_map
 
     location_map = st.session_state.get("object_location_map", {})
-    st.subheader("📍 Debug: Object Location Map")
-    if location_map:
-        debug_rows = [{"CIDR": k, "Location(s)": v} for k, v in location_map.items()]
-        st.dataframe(pd.DataFrame(debug_rows))
-    else:
-        st.warning("⚠️ No object locations matched any VPN subnets. Check your extended data or object CIDRs.")
+    
     filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
     filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
 
