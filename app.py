@@ -574,8 +574,8 @@ if selected_tab == "🔎 Object & Group Search":
             "CIDR": o.get("cidr", ""),
             "FQDN": o.get("fqdn", ""),
             "Group IDs": o.get("groupIds", []),
-            "Network IDs": o.get("networkIds", []),
-            "Location": ", ".join(location_map.get(oid, []))
+            "Location": ", ".join(location_map.get(oid, [])),
+            "Network IDs": o.get("networkIds", [])
         })
         
     st.dataframe(safe_dataframe(object_rows))
@@ -589,8 +589,9 @@ if selected_tab == "🔎 Object & Group Search":
             "Name": str(g.get("name", "")),
             "Type": str(g.get("category", "")),
             "Object Count": str(len(g.get("objectIds", []))),
-            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
-            "Location": ", ".join(location_map.get(gid, []))
+            "Location": ", ".join(location_map.get(gid, [])),
+            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else ""
+            
        })
     st.dataframe(safe_dataframe(group_rows))
 
@@ -606,7 +607,7 @@ if selected_tab == "🔎 Object & Group Search":
             member_objs = [object_map[oid] for oid in group_members if oid in object_map]
 
             st.markdown(f"**Group Name:** `{group_map[selected_group]['name']}`")
-            st.markdown(f"**Members:** `{len(member_objs)}` object(s)`")
+            st.markdown(f"**Members:** `{len(member_objs)}` object(s)")
 
             member_data = []
             for o in member_objs:
