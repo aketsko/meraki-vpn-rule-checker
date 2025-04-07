@@ -267,6 +267,7 @@ if st.sidebar.button("❌ Cancel Fetch"):
 if st.sidebar.button("📡 Get Extended API Data"):
     st.session_state["cancel_extended_fetch"] = False
 
+    progress_bar = st.sidebar.progress(0)
     progress_text = st.sidebar.empty()
 
     def update_progress(current, total, name):
