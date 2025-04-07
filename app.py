@@ -294,6 +294,7 @@ if st.sidebar.button("📡 Get Extended API Data"):
         except Exception as e:
             extended_status.error(f"❌ Exception: {e}")
             st.session_state["extended_data"] = None
+        st.write("DEBUG: extended_result", extended_result)
 
 
 # Upload Snapshot to restore everything
