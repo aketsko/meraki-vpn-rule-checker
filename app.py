@@ -527,11 +527,11 @@ def get_matching_network_names(cidrs, extended_data):
 #--------------------Cose New---------------------------------
 
 
-
+location_map = st.session_state.get("location_map", {})
 
 # -------- Render based on selected_tab ----------
 if selected_tab == "🔎 Object & Group Search":
-    location_map = st.session_state.get("location_map", {})
+
     search_term = st.text_input("Search by name or CIDR:", "").lower()
 
     def match_object(obj, term):
@@ -577,20 +577,21 @@ if selected_tab == "🔎 Object & Group Search":
             "Network IDs": o.get("networkIds", []),
             "Location": ", ".join(location_map.get(oid, []))
         })
+        
     st.dataframe(safe_dataframe(object_rows))
 
     st.subheader("🔸 Matching Object Groups")
     group_rows = []
-for g in filtered_grps:
-    gid = f"GRP({g['id']})"
-    group_rows.append({
-        "ID": str(g.get("id", "")),
-        "Name": str(g.get("name", "")),
-        "Type": str(g.get("category", "")),
-        "Object Count": str(len(g.get("objectIds", []))),
-        "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
-        "Location": ", ".join(location_map.get(gid, []))
-    })
+    for g in filtered_grps:
+        gid = f"GRP({g['id']})"
+        group_rows.append({
+            "ID": str(g.get("id", "")),
+            "Name": str(g.get("name", "")),
+            "Type": str(g.get("category", "")),
+            "Object Count": str(len(g.get("objectIds", []))),
+            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
+            "Location": ", ".join(location_map.get(gid, []))
+       })
     st.dataframe(safe_dataframe(group_rows))
 
     if filtered_grps:
@@ -624,6 +625,23 @@ for g in filtered_grps:
                 st.info("This group has no valid or displayable objects.")
     else:
         st.info("No groups match the current search.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 elif selected_tab == "🛡️ Rule Checker":
     
