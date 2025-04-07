@@ -354,10 +354,9 @@ highlight_colors = {
 }
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("💾 Backup & Restore")
 
 # Save & Download all API data
-if st.sidebar.button("💾 Save API Snapshot"):
+def prepare_snapshot():
     snapshot = {
         "rules_data": st.session_state.get("rules_data", []),
         "objects_data": st.session_state.get("objects_data", []),
@@ -367,10 +366,15 @@ if st.sidebar.button("💾 Save API Snapshot"):
     json_str = json.dumps(snapshot, indent=2)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"meraki_snapshot_{timestamp}.json"
-    st.download_button(
-        label="⬇️ Download Snapshot",
-        data=json_str,
-        file_name=filename,
+    return json_str, filename
+
+# Trigger the snapshot and download immediately
+if st.sidebar.button("💾 Save API Snapshot"):
+    snapshot_str, snapshot_filename = prepare_snapshot()
+    st.sidebar.download_button(
+        label="Download Started...",
+        data=snapshot_str,
+        file_name=snapshot_filename,
         mime="application/json"
     )
 
