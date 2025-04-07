@@ -458,7 +458,7 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data=None):
 # """
 # Trigger the snapshot and download immediately
 if st.sidebar.button("💾 Save API Snapshot"):
-     try:
+    try:
         from utils.helpers import prepare_snapshot  # Adjust path if needed
 
         snapshot_str, snapshot_filename = prepare_snapshot(
