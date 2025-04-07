@@ -529,22 +529,6 @@ if selected_tab == "🔎 Object & Group Search":
             st.session_state["object_location_map"] = location_map
 
     location_map = st.session_state.get("object_location_map", {})
-
-    # Show object_location_map content for debugging
-    st.subheader("🛠️ Debug: Object Location Map")
-    if location_map:
-        debug_rows = []
-        for key, locations in location_map.items():
-            debug_rows.append({
-                "CIDR": key,
-                "Locations": ", ".join(locations)
-            })
-
-        st.dataframe(pd.DataFrame(debug_rows))
-    else:
-        st.info("📭 No object-location mapping available.")
-
-
     
     filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
     filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
