@@ -86,11 +86,17 @@ def build_object_location_map(objects_data, groups_data, extended_data):
         vpn_subnets_per_network[network_name] = cidrs
 
     # Match objects to networks
-    for obj in objects_data:
-        obj_id = obj.get("id")
-        obj_cidr = obj.get("cidr", "")
-        if not obj_id or not obj_cidr:
-            continue
+    for obj_id, obj in obj_map.items():
+        if "cidr" in obj:
+            try:
+                ip = ipaddress.ip_network(obj["cidr"], strict=False)
+                for subnet in subnets:
+                    net = ipaddress.ip_network(subnet, strict=False)
+                    if ip.subnet_of(net) or ip == net:
+                        location_map.setdefault(obj["cidr"], []).append(network_name)
+            except:
+                continue
+
         obj_networks = []
         for network_name, subnets in vpn_subnets_per_network.items():
             if any(match_input_to_rule([subnet], obj_cidr) for subnet in subnets):
@@ -98,10 +104,17 @@ def build_object_location_map(objects_data, groups_data, extended_data):
         object_location_map[obj_id] = obj_networks
 
     # Match groups based on their members
-    for grp in groups_data:
-        group_id = grp.get("id")
-        if not group_id:
-            continue
+    for obj_id, obj in obj_map.items():
+        if "cidr" in obj:
+            try:
+                ip = ipaddress.ip_network(obj["cidr"], strict=False)
+                for subnet in subnets:
+                    net = ipaddress.ip_network(subnet, strict=False)
+                    if ip.subnet_of(net) or ip == net:
+                        location_map.setdefault(obj["cidr"], []).append(network_name)
+            except:
+                continue
+
         member_ids = grp.get("objectIds", [])
         seen = set()
         for mid in member_ids:
