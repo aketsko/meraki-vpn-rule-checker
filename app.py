@@ -412,181 +412,202 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
-st.sidebar.header("☁️ Connect to Meraki Dashboard")
+with st.sidebar.expanderst.sidebar.header("☁️ Connect to Meraki Dashboard"):
 
-fetched_from_api = st.session_state.get("fetched_from_api", False)
-with st.sidebar.expander("🔒 API Access", expanded=not (st.session_state.get("fetched_from_api") or (st.session_state.get("rules_data") and st.session_state.get("objects_data") and st.session_state.get("groups_data")))):
-    
-    org_id = st.text_input("🆔 Enter your Organization ID", value="")
-    api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
-    
-
-
-
-
-
-
-
-# Try auto-fetch if session not set
-if "rules_data" not in st.session_state:
-    if api_key and org_id:
-        rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
-        if fetched:
-            st.session_state["rules_data"] = rules_data
-            st.session_state["objects_data"] = objects_data
-            st.session_state["groups_data"] = groups_data
-            st.session_state["object_map"] = get_object_map(objects_data)
-            st.session_state["group_map"] = get_group_map(groups_data)
-            st.session_state["fetched_from_api"] = True
+    fetched_from_api = st.session_state.get("fetched_from_api", False)
+    with st.sidebar.expander("🔒 API Access", expanded=not (st.session_state.get("fetched_from_api") or (st.session_state.get("rules_data") and st.session_state.get("objects_data") and st.session_state.get("groups_data")))):
+        
+        org_id = st.text_input("🆔 Enter your Organization ID", value="")
+        api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
+        
+    # Try auto-fetch if session not set
+    if "rules_data" not in st.session_state:
+        if api_key and org_id:
+            rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
+            if fetched:
+                st.session_state["rules_data"] = rules_data
+                st.session_state["objects_data"] = objects_data
+                st.session_state["groups_data"] = groups_data
+                st.session_state["object_map"] = get_object_map(objects_data)
+                st.session_state["group_map"] = get_group_map(groups_data)
+                st.session_state["fetched_from_api"] = True
+            else:
+                st.session_state["fetched_from_api"] = False
+                st.warning("⚠️ Failed to load from API. Please upload files manually.")
+                
+    # Manual refresh on button click
+    if st.sidebar.button("🔄 Refresh API Data"):
+        if api_key and org_id:
+            rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
+            if fetched:
+                st.session_state["rules_data"] = rules_data
+                st.session_state["objects_data"] = objects_data
+                st.session_state["groups_data"] = groups_data
+                st.session_state["object_map"] = get_object_map(objects_data)
+                st.session_state["group_map"] = get_group_map(groups_data)
+                st.session_state["fetched_from_api"] = True
+                st.success("✅ Data refreshed from Meraki API.")
+            else:
+                st.session_state["fetched_from_api"] = False
+                st.error("❌ Failed to refresh data from API.")
         else:
-            st.session_state["fetched_from_api"] = False
-            st.warning("⚠️ Failed to load from API. Please upload files manually.")
-            
-# Manual refresh on button click
-if st.sidebar.button("🔄 Refresh API Data"):
-    if api_key and org_id:
-        rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
-        if fetched:
-            st.session_state["rules_data"] = rules_data
-            st.session_state["objects_data"] = objects_data
-            st.session_state["groups_data"] = groups_data
-            st.session_state["object_map"] = get_object_map(objects_data)
-            st.session_state["group_map"] = get_group_map(groups_data)
-            st.session_state["fetched_from_api"] = True
-            st.success("✅ Data refreshed from Meraki API.")
-        else:
-            st.session_state["fetched_from_api"] = False
-            st.error("❌ Failed to refresh data from API.")
-    else:
-        st.error("❌ Please enter both API key and Org ID.")
+            st.error("❌ Please enter both API key and Org ID.")
 
 
-st.sidebar.markdown("---")
+    # Add a placeholder for progress/cancel feedback
+    progress_bar = st.sidebar.empty()
+    progress_text = st.sidebar.empty()
+    extended_status = st.sidebar.empty()
 
-# Add a placeholder for progress/cancel feedback
-progress_bar = st.sidebar.empty()
-progress_text = st.sidebar.empty()
-extended_status = st.sidebar.empty()
+    # Sidebar placeholders
+    cancel_button_placeholder = st.sidebar.empty()
+    progress_bar = st.sidebar.empty()
+    progress_text = st.sidebar.empty()
+    extended_status = st.sidebar.empty()
 
-# Sidebar placeholders
-cancel_button_placeholder = st.sidebar.empty()
-progress_bar = st.sidebar.empty()
-progress_text = st.sidebar.empty()
-extended_status = st.sidebar.empty()
+    # Cancel button - only shown while fetching is in progress
+    if st.session_state.get("fetching_extended", False):
+        if cancel_button_placeholder.button("❌ Cancel Fetch"):
+            st.session_state["cancel_extended_fetch"] = True
+            extended_status.info("⛔ Fetch cancelled by user.")
 
-# Cancel button - only shown while fetching is in progress
-if st.session_state.get("fetching_extended", False):
-    if cancel_button_placeholder.button("❌ Cancel Fetch"):
-        st.session_state["cancel_extended_fetch"] = True
-        extended_status.info("⛔ Fetch cancelled by user.")
+    # Extended fetch button
+    if st.sidebar.button("📡 Get Extended API Data"):
+        st.session_state["cancel_extended_fetch"] = False
+        st.session_state["fetching_extended"] = True
 
-# Extended fetch button
-if st.sidebar.button("📡 Get Extended API Data"):
-    st.session_state["cancel_extended_fetch"] = False
-    st.session_state["fetching_extended"] = True
-
-    def update_progress(current, total, name):
-        ratio = current / total if total else 0
-        ratio = min(max(ratio, 0.0), 1.0)
-        try:
-            progress_bar.progress(ratio)
-            progress_text.markdown(
-                f"🔄 **Processing network**: ({current}/{total})<br>`{name}`",
-                unsafe_allow_html=True
-            )
-        except:
-            pass
-
-    try:
-        extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
-
-        if st.session_state.get("cancel_extended_fetch"):
-            extended_status.info("⛔ Fetch cancelled before completion.")
-            st.session_state["extended_data"] = None
-            st.session_state["object_location_map"] = {}
-        elif "error" in extended_result:
-            extended_status.error(f"❌ Error: {extended_result['error']}")
-            st.session_state["extended_data"] = None
-            st.session_state["object_location_map"] = {}
-        else:
-            st.session_state["extended_data"] = extended_result
-
-            # ✅ Notify success BEFORE building location map
-            extended_status.success("✅ Extended Meraki data has been fetched successfully!")
-
-            # 🔄 Build object-location map
-            with st.spinner("🧠 Mapping objects to VPN locations..."):
-                location_map = build_object_location_map(
-                    st.session_state["objects_data"],
-                    st.session_state["groups_data"],
-                    extended_result
+        def update_progress(current, total, name):
+            ratio = current / total if total else 0
+            ratio = min(max(ratio, 0.0), 1.0)
+            try:
+                progress_bar.progress(ratio)
+                progress_text.markdown(
+                    f"🔄 **Processing network**: ({current}/{total})<br>`{name}`",
+                    unsafe_allow_html=True
                 )
-                st.session_state["object_location_map"] = location_map
+            except:
+                pass
 
-    except Exception as e:
-        extended_status.error(f"❌ Exception: {e}")
-        st.session_state["extended_data"] = None
-        st.session_state["object_location_map"] = {}
-
-    # Clean up
-    st.session_state["fetching_extended"] = False
-    cancel_button_placeholder.empty()
-    progress_bar.empty()
-    progress_text.empty()
-
-# Upload Snapshot to restore everything
-uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
-if uploaded_snapshot:
-    try:
-        snapshot = json.load(uploaded_snapshot)
-
-        st.session_state["rules_data"] = snapshot.get("rules_data", [])
-        st.session_state["objects_data"] = snapshot.get("objects_data", [])
-        st.session_state["groups_data"] = snapshot.get("groups_data", [])
-        st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
-        st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-        st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
-        st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Додано
-        st.session_state["fetched_from_api"] = True  # Emulate success
-
-        network_count = len(st.session_state["extended_data"].get("network_map", {}))
-        import time
-
-        snapshot_msg = st.sidebar.empty()
-        snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
-        #time.sleep(10)
-        snapshot_msg.empty()
-
-    except Exception as e:
-        st.error(f"❌ Failed to load snapshot: {e}")
-
-# Full manual upload fallback
-
-if not st.session_state.get("fetched_from_api", False):
-    rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
-    objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
-    groups_file = st.sidebar.file_uploader("Upload Object Groups.json", type="json")
-
-    if all([rules_file, objects_file, groups_file]):
         try:
-            rules_file.seek(0)
-            objects_file.seek(0)
-            groups_file.seek(0)
+            extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
 
-            st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
-            st.session_state["objects_data"] = load_json_file(objects_file)
-            st.session_state["groups_data"] = load_json_file(groups_file)
+            if st.session_state.get("cancel_extended_fetch"):
+                extended_status.info("⛔ Fetch cancelled before completion.")
+                st.session_state["extended_data"] = None
+                st.session_state["object_location_map"] = {}
+            elif "error" in extended_result:
+                extended_status.error(f"❌ Error: {extended_result['error']}")
+                st.session_state["extended_data"] = None
+                st.session_state["object_location_map"] = {}
+            else:
+                st.session_state["extended_data"] = extended_result
+
+                # ✅ Notify success BEFORE building location map
+                extended_status.success("✅ Extended Meraki data has been fetched successfully!")
+
+                # 🔄 Build object-location map
+                with st.spinner("🧠 Mapping objects to VPN locations..."):
+                    location_map = build_object_location_map(
+                        st.session_state["objects_data"],
+                        st.session_state["groups_data"],
+                        extended_result
+                    )
+                    st.session_state["object_location_map"] = location_map
+
+        except Exception as e:
+            extended_status.error(f"❌ Exception: {e}")
+            st.session_state["extended_data"] = None
+            st.session_state["object_location_map"] = {}
+
+        # Clean up
+        st.session_state["fetching_extended"] = False
+        cancel_button_placeholder.empty()
+        progress_bar.empty()
+        progress_text.empty()
+
+
+with st.sidebar.expanderst.sidebar.header("📤 Data Import"):
+# Upload Snapshot to restore everything
+    uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
+    if uploaded_snapshot:
+        try:
+            snapshot = json.load(uploaded_snapshot)
+
+            st.session_state["rules_data"] = snapshot.get("rules_data", [])
+            st.session_state["objects_data"] = snapshot.get("objects_data", [])
+            st.session_state["groups_data"] = snapshot.get("groups_data", [])
             st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
             st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-        except Exception as e:
-            st.error(f"❌ Failed to load one or more files: {e}")
+            st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
+            st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Додано
+            st.session_state["fetched_from_api"] = True  # Emulate success
 
-# Load current data from session_state into local variables
-rules_data = st.session_state.get("rules_data", [])
-objects_data = st.session_state.get("objects_data", [])
-groups_data = st.session_state.get("groups_data", [])
-object_map = st.session_state.get("object_map", {})
-group_map = st.session_state.get("group_map", {})
+            network_count = len(st.session_state["extended_data"].get("network_map", {}))
+            import time
+
+            snapshot_msg = st.sidebar.empty()
+            snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
+            #time.sleep(10)
+            snapshot_msg.empty()
+
+        except Exception as e:
+            st.error(f"❌ Failed to load snapshot: {e}")
+
+    # Full manual upload fallback
+
+    if not st.session_state.get("fetched_from_api", False):
+        rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
+        objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
+        groups_file = st.sidebar.file_uploader("Upload Object Groups.json", type="json")
+
+        if all([rules_file, objects_file, groups_file]):
+            try:
+                rules_file.seek(0)
+                objects_file.seek(0)
+                groups_file.seek(0)
+
+                st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
+                st.session_state["objects_data"] = load_json_file(objects_file)
+                st.session_state["groups_data"] = load_json_file(groups_file)
+                st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
+                st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
+            except Exception as e:
+                st.error(f"❌ Failed to load one or more files: {e}")
+
+    # Load current data from session_state into local variables
+    rules_data = st.session_state.get("rules_data", [])
+    objects_data = st.session_state.get("objects_data", [])
+    groups_data = st.session_state.get("groups_data", [])
+    object_map = st.session_state.get("object_map", {})
+    group_map = st.session_state.get("group_map", {})
+
+
+    st.sidebar.markdown("---")
+        # Save & Download all API data
+
+    # Trigger the snapshot and download immediately
+    if st.sidebar.button("💾 Create API Snapshot"):
+        try:
+            snapshot_str, snapshot_filename = prepare_snapshot(
+                st.session_state.get("rules_data", []),
+                st.session_state.get("objects_data", []),
+                st.session_state.get("groups_data", []),
+                st.session_state.get("extended_data", {}),
+                st.session_state.get("object_location_map", {})
+            )
+
+            # Trigger download immediately using download_button and then hide it
+            st.sidebar.download_button(
+                label="📥 Download API Snapshot",
+                data=snapshot_str,
+                file_name=snapshot_filename,
+                mime="application/json",
+                key="auto_snapshot_download"
+            )
+
+        except Exception as e:
+            st.sidebar.error(f"❌ Snapshot error: {e}")
+
 
 # ------------------ SIDEBAR TOOLBOX ------------------
 
@@ -611,36 +632,8 @@ highlight_colors = {
     "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
 }
 
-st.sidebar.markdown("---")
-
-# Save & Download all API data
 
 
-
-
-
-# Trigger the snapshot and download immediately
-if st.sidebar.button("💾 Create API Snapshot"):
-    try:
-        snapshot_str, snapshot_filename = prepare_snapshot(
-            st.session_state.get("rules_data", []),
-            st.session_state.get("objects_data", []),
-            st.session_state.get("groups_data", []),
-            st.session_state.get("extended_data", {}),
-            st.session_state.get("object_location_map", {})
-        )
-
-        # Trigger download immediately using download_button and then hide it
-        st.sidebar.download_button(
-            label="📥 Download API Snapshot",
-            data=snapshot_str,
-            file_name=snapshot_filename,
-            mime="application/json",
-            key="auto_snapshot_download"
-        )
-
-    except Exception as e:
-        st.sidebar.error(f"❌ Snapshot error: {e}")
 
 
 
