@@ -122,12 +122,12 @@ def generate_rule_table(rules,
     title_prefix="Rules",
     key="default_grid"
 ):
+    rule_rows = []
+    rule_match_ports = {}
+    matched_ports = {}
+    found_partial_match = False
+    first_exact_match_index = None
 
-    rule_rows = []  # Initialize rule_rows as an empty list
-    rule_match_ports = {}  # Initialize rule_match_ports as an empty dictionary
-    matched_ports = {}  # Initialize matched_ports as an empty dictionary
-    found_partial_match = False  # Initialize found_partial_match as False
-    first_exact_match_index = None  # Initialize first_exact_match_index as None
     for idx, rule in enumerate(rules):
         rule_protocol = rule["protocol"].lower()
         rule_dports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
@@ -146,9 +146,10 @@ def generate_rule_table(rules,
         dports_to_loop = port_input.split(",") if port_input.strip().lower() != "any" else ["any"]
         skip_dport_check = port_input.strip().lower() == "any"
         matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
+
         skip_sport_check = source_port_input.strip().lower() == "any"
-        matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
-        matched_sports_list = [p.strip() for p in matched_sports_list if p in rule_sports or "any" in rule_sports]
+        src_ports_input_list = source_port_input.split(",") if not skip_sport_check else ["any"]
+        matched_sports_list = [p.strip() for p in src_ports_input_list if p.strip() in rule_sports or "any" in rule_sports]
 
         sport_match = len(matched_sports_list) > 0
         port_match = len(matched_ports_list) > 0 and sport_match
@@ -163,21 +164,18 @@ def generate_rule_table(rules,
             True if skip_dst_check and "0.0.0.0/0" in resolved_dst_cidrs
             else all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
         )
-        # Destination Port check
-        input_dports_set = set(p.strip() for p in dports_to_loop if p.strip())
-        exact_ports = skip_dport_check or (set(rule_dports) == input_dports_set)
 
-        # Source Port check
-        input_sports_set = set(p.strip() for p in source_port_input.split(",") if p.strip()) if not skip_sport_check else {"any"}
+        input_dports_set = set(p.strip() for p in dports_to_loop if p.strip())
+        rule_dports_set = set(rule_dports)
+        exact_ports = skip_dport_check or (rule_dports_set == input_dports_set)
+
+        input_sports_set = set(p.strip() for p in src_ports_input_list if p.strip())
         rule_sports_set = set(rule_sports)
         exact_sports = skip_sport_check or (rule_sports_set == input_sports_set)
 
-        # Protocol check
         exact_proto = skip_proto_check or rule_protocol == protocol.lower()
 
-
         is_exact = full_match and exact_src and exact_dst and exact_ports and exact_sports and exact_proto
-
 
         if full_match:
             rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
