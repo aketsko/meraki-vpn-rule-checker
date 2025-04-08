@@ -879,6 +879,42 @@ elif selected_tab == "🛡️ Rule Checker":
         )
 
     
+            # --------- Render Local Firewall Rules if shared location(s) ---------
+        local_rule_rendered = False
+        if shared_locations:
+            for location in shared_locations:
+                local_rules = []
+                for net_id, info in extended_data.get("network_details", {}).items():
+                    if info.get("network_name") == location:
+                        local_rules = info.get("firewall_rules", [])
+                        break
+
+                if local_rules:
+                    st.subheader(f"🏠 Local Firewall - `{location}`")
+                    generate_rule_table(
+                        rules=local_rules,
+                        source_input=source_input,
+                        destination_input=destination_input,
+                        source_port_input=source_port_input,
+                        port_input=port_input,
+                        protocol=protocol,
+                        filter_toggle=filter_toggle,
+                        object_map=object_map,
+                        group_map=group_map,
+                        highlight_colors=highlight_colors
+                    )
+                    local_rule_rendered = True
+
+        if local_rule_rendered and len(shared_locations) == 1:
+            st.stop()
+
+
+
+
+
+
+
+
 
 
 
