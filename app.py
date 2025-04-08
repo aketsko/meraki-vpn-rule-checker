@@ -902,6 +902,8 @@ elif selected_tab == "🛡️ Rule Checker":
                     object_map=object_map,
                     group_map=group_map,
                     highlight_colors=highlight_colors,
+                    skip_src_check=skip_src_check,
+                    skip_dst_check=skip_dst_check,
                     title_prefix=f"🏠 Local Firewall Rules - {location}",
                     key=f"local_grid_{location}"
                 )
