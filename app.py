@@ -900,7 +900,11 @@ elif selected_tab == "🛡️ Rule Checker":
             filter_toggle=filter_toggle,
             object_map=object_map,
             group_map=group_map,
-            highlight_colors=highlight_colors
+            highlight_colors=highlight_colors,
+            source_cidrs=source_cidrs,
+            destination_cidrs=destination_cidrs,
+            skip_src_check=skip_src_check,
+            skip_dst_check=skip_dst_check
         )
 
     # Only show VPN rules if no shared location
@@ -933,7 +937,11 @@ elif selected_tab == "🛡️ Rule Checker":
                 filter_toggle=filter_toggle,
                 object_map=object_map,
                 group_map=group_map,
-                highlight_colors=highlight_colors
+                highlight_colors=highlight_colors,
+                source_cidrs=source_cidrs,
+                destination_cidrs=destination_cidrs,
+                skip_src_check=skip_src_check,
+                skip_dst_check=skip_dst_check
             )
 
         # Only show VPN rules if no shared location
@@ -982,7 +990,11 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
                 filter_toggle=filter_toggle,
                 object_map=object_map,
                 group_map=group_map,
-                highlight_colors=highlight_colors
+                highlight_colors=highlight_colors,
+                source_cidrs=source_cidrs,
+                destination_cidrs=destination_cidrs,
+                skip_src_check=skip_src_check,
+                skip_dst_check=skip_dst_check
             )
             local_rule_rendered = True
 
@@ -994,7 +1006,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
     if not local_rule_rendered:
         st.subheader("🌐 VPN Firewall Rules")
         generate_rule_table(
-            rules=rules_data,
+            rules=local_rules,
             source_input=source_input,
             destination_input=destination_input,
             source_port_input=source_port_input,
@@ -1003,7 +1015,11 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
             filter_toggle=filter_toggle,
             object_map=object_map,
             group_map=group_map,
-            highlight_colors=highlight_colors
+            highlight_colors=highlight_colors,
+            source_cidrs=source_cidrs,
+            destination_cidrs=destination_cidrs,
+            skip_src_check=skip_src_check,
+            skip_dst_check=skip_dst_check
         )
 
 
