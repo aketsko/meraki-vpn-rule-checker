@@ -175,6 +175,7 @@ def generate_rule_table(
     grid_options = gb.build()
 
     st.markdown(f"### {'🏠' if 'Local' in title_prefix else '🌐'} {title_prefix}")
+    
     AgGrid(
         df_to_show,
         gridOptions=grid_options,
@@ -862,7 +863,7 @@ elif selected_tab == "🛡️ Rule Checker":
             st.stop()
 
     # Fallback to VPN rules
-    if not local_rule_rendered or len(shared_locations) != 1:
+    if not local_rule_rendered and len(shared_locations) != 1:
         generate_rule_table(
             rules=rules_data,
             source_input=source_input,
@@ -874,60 +875,10 @@ elif selected_tab == "🛡️ Rule Checker":
             object_map=object_map,
             group_map=group_map,
             highlight_colors=highlight_colors,
-            title_prefix="VPN Firewall Rules"
+            title_prefix=f"VPN Firewall Rules - Fallback"
         )
+
     
-            # --------- Render Local Firewall Rules if shared location(s) ---------
-        local_rule_rendered = False
-        if shared_locations:
-            for location in shared_locations:
-                local_rules = []
-                for net_id, info in extended_data.get("network_details", {}).items():
-                    if info.get("network_name") == location:
-                        local_rules = info.get("firewall_rules", [])
-                        break
-
-                if local_rules:
-                    st.subheader(f"🏠 Local Firewall - `{location}`")
-                    generate_rule_table(
-                        rules=local_rules,
-                        source_input=source_input,
-                        destination_input=destination_input,
-                        source_port_input=source_port_input,
-                        port_input=port_input,
-                        protocol=protocol,
-                        filter_toggle=filter_toggle,
-                        object_map=object_map,
-                        group_map=group_map,
-                        highlight_colors=highlight_colors
-                    )
-                    local_rule_rendered = True
-
-        if local_rule_rendered and len(shared_locations) == 1:
-            st.stop()
-
-        # Fallback to VPN rules if no shared location or not fully covered
-        st.subheader("🌐 VPN Firewall Rules")
-        generate_rule_table(
-            rules=rules_data,
-            source_input=source_input,
-            destination_input=destination_input,
-            source_port_input=source_port_input,
-            port_input=port_input,
-            protocol=protocol,
-            filter_toggle=filter_toggle,
-            object_map=object_map,
-            group_map=group_map,
-            highlight_colors=highlight_colors
-        )
-
-
-
-
-
-
-
-
 
 
 
