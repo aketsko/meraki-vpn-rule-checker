@@ -64,8 +64,8 @@ def generate_rule_table(
     highlight_colors,
     title_prefix="VPN Firewall Rules"
 ):
-    source_cidrs = resolve_search_input(source_input)
-    destination_cidrs = resolve_search_input(destination_input)
+    source_cidrs = resolve_to_cidrs(source_input)
+    destination_cidrs = resolve_to_cidrs(destination_input)
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
 
@@ -806,8 +806,8 @@ elif selected_tab == "🛡️ Rule Checker":
     # Resolve inputs
     source_input = source_input or "any"
     destination_input = destination_input or "any"
-    source_cidrs = resolve_search_input(source_input)
-    destination_cidrs = resolve_search_input(destination_input)
+    source_cidrs = resolve_to_cidrs(source_input)
+    destination_cidrs = resolve_to_cidrs(destination_input)
 
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
@@ -874,6 +874,52 @@ elif selected_tab == "🛡️ Rule Checker":
             highlight_colors=highlight_colors,
             title_prefix="VPN Firewall Rules"
         )
+    
+            # --------- Render Local Firewall Rules if shared location(s) ---------
+        local_rule_rendered = False
+        if shared_locations:
+            for location in shared_locations:
+                local_rules = []
+                for net_id, info in extended_data.get("network_details", {}).items():
+                    if info.get("network_name") == location:
+                        local_rules = info.get("firewall_rules", [])
+                        break
+
+                if local_rules:
+                    st.subheader(f"🏠 Local Firewall - `{location}`")
+                    generate_rule_table(
+                        rules=local_rules,
+                        source_input=source_input,
+                        destination_input=destination_input,
+                        source_port_input=source_port_input,
+                        port_input=port_input,
+                        protocol=protocol,
+                        filter_toggle=filter_toggle,
+                        object_map=object_map,
+                        group_map=group_map,
+                        highlight_colors=highlight_colors
+                    )
+                    local_rule_rendered = True
+
+        if local_rule_rendered and len(shared_locations) == 1:
+            st.stop()
+
+        # Fallback to VPN rules if no shared location or not fully covered
+        st.subheader("🌐 VPN Firewall Rules")
+        generate_rule_table(
+            rules=rules_data,
+            source_input=source_input,
+            destination_input=destination_input,
+            source_port_input=source_port_input,
+            port_input=port_input,
+            protocol=protocol,
+            filter_toggle=filter_toggle,
+            object_map=object_map,
+            group_map=group_map,
+            highlight_colors=highlight_colors
+        )
+
+
 
 
 
