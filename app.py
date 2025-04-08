@@ -940,7 +940,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
         if is_dst_any:
-            st.info("🌍 Destination is set to `any`. Evaluating local rules based on source location(s) and all VPN rules.")
+            st.info("🌍 Destination is set to ANY. Evaluating local rules based on source location(s) and VPN rules.")
 
         # ---------- LOCAL ONLY ----------
         if show_local_only:
@@ -964,7 +964,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         key=f"local_{location}"
                     )
                     break
-            st.info("🟩 Local rules fully evaluated based on single shared location. VPN rules skipped.")
+            st.info("🏠 Local rules fully evaluated based on single shared location. VPN rules skipped.")
             st.stop()
             
         # ---------- LOCAL + VPN ----------
@@ -991,11 +991,10 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                 skip_dst_check=skip_dst_check,
                                 key=f"local_{location}"
                             )
-                st.info("🟡 Some local rules evaluated. VPN rules also shown below.")
 
         # ---------- VPN ONLY ----------
         elif show_vpn_only:
-            st.info("⚠️ Source and destination belong to different locations. VPN rules will be used.")
+            st.info("🌐 Source and destination belong to different locations. VPN rules will be used.")
 
     # ---------- Fallback: VPN Firewall ----------
     st.subheader("🌐 VPN Firewall Rules")
