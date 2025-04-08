@@ -867,7 +867,7 @@ elif selected_tab == "🛡️ Rule Checker":
     with col5:
         protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
 
-    col_left, col_right, col_collapse = st.columns(2)
+    col_left, col_right, col_collapse = st.columns(3)
     with col_right:
         filter_toggle = st.checkbox("✅ Show only matching rules", value=False)
     with col_left:
