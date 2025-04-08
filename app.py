@@ -527,7 +527,7 @@ with st.sidebar.expander("☁️ Connect to Meraki Dashboard"):
         progress_text.empty()
 
 
-with st.sidebar.expanderst.sidebar.header("📤 Data Import"):
+with st.sidebar.expander("📤 Data Import"):
 # Upload Snapshot to restore everything
     uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
     if uploaded_snapshot:
