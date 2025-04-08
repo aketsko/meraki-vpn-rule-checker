@@ -916,8 +916,8 @@ elif selected_tab == "🛡️ Rule Checker":
             st.info("⚠️ Source and destination belong to different locations. VPN rules will be used.")
             generate_rule_table(
                 rules=rules_data,
-                source_input=source_input,
-                destination_input=destination_input,
+                source_cidrs=source_cidrs,
+                destination_cidrs=destination_cidrs,
                 source_port_input=source_port_input,
                 port_input=port_input,
                 protocol=protocol,
@@ -925,9 +925,12 @@ elif selected_tab == "🛡️ Rule Checker":
                 object_map=object_map,
                 group_map=group_map,
                 highlight_colors=highlight_colors,
+                skip_src_check=skip_src_check,
+                skip_dst_check=skip_dst_check,
                 title_prefix="🌐 VPN Firewall Rules",
                 key="vpn_grid"
             )
+
             st.stop()
 
     # ❌ Case 2: No usable object_location_map or only one side mapped
