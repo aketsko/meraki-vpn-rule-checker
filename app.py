@@ -181,8 +181,10 @@ def generate_rule_table(
         enable_enterprise_modules=False,
         fit_columns_on_grid_load=True,
         use_container_width=True,
-        allow_unsafe_jscode=True
+        allow_unsafe_jscode=True,
+        key=f"aggrid_{title_prefix}_{hash(str(df_to_show))}"
     )
+
 
 
 
