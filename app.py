@@ -866,6 +866,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
     extended_data = st.session_state["extended_data"]
 
     src_locs = set()
+    source_cidrs = resolve_search_input(source_input) if 'source_input' in locals() else []
     for cidr in source_cidrs:
         src_locs.update(obj_loc_map.get(cidr, []))
     dst_locs = set()
