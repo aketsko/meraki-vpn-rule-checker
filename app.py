@@ -64,8 +64,8 @@ def generate_rule_table(
     highlight_colors,
     title_prefix="VPN Firewall Rules"
 ):
-    source_cidrs = resolve_to_cidrs(source_input)
-    destination_cidrs = resolve_to_cidrs(destination_input)
+    source_cidrs = resolve_to_cidrs(source_input, object_map=object_map, group_map=group_map)
+    destination_cidrs = resolve_to_cidrs(destination_input, object_map=object_map, group_map=group_map)
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
 
