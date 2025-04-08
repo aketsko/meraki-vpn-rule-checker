@@ -1004,33 +1004,6 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
         )
 
 
-# 🧠 Only show VPN rules if:
-# - No shared locations, OR
-# - Multiple shared locations (we want to show VPN fallback too)
-if not local_rule_rendered or len(shared_locations) > 1:
-    st.subheader("🌐 VPN Firewall Rules")
-    generate_rule_table(
-        rules=rules_data,
-        source_input=source_input,
-        destination_input=destination_input,
-        source_port_input=source_port_input,
-        port_input=port_input,
-        protocol=protocol,
-        filter_toggle=filter_toggle,
-        object_map=object_map,
-        group_map=group_map,
-        highlight_colors=highlight_colors
-    )
-
-
-
-
-
-
-
-
-
-
 
 
 
