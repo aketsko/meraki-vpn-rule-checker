@@ -163,10 +163,21 @@ def generate_rule_table(rules,
             True if skip_dst_check and "0.0.0.0/0" in resolved_dst_cidrs
             else all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
         )
-        exact_ports = skip_dport_check or set(matched_ports_list) == set(dports_to_loop)
+        # Destination Port check
+        input_dports_set = set(p.strip() for p in dports_to_loop if p.strip())
+        exact_ports = skip_dport_check or (set(rule_dports) == input_dports_set)
+
+        # Source Port check
+        input_sports_set = set(p.strip() for p in source_port_input.split(",") if p.strip()) if not skip_sport_check else {"any"}
+        rule_sports_set = set(rule_sports)
+        exact_sports = skip_sport_check or (rule_sports_set == input_sports_set)
+
+        # Protocol check
         exact_proto = skip_proto_check or rule_protocol == protocol.lower()
 
-        is_exact = full_match and exact_src and exact_dst and exact_ports and exact_proto
+
+        is_exact = full_match and exact_src and exact_dst and exact_ports and exact_sports and exact_proto
+
 
         if full_match:
             rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
