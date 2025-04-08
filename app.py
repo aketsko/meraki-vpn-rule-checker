@@ -229,7 +229,7 @@ def generate_rule_table(rules,
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     grid_options = gb.build()
 
-    st.markdown(f"### 🌐 {title_prefix}")
+    st.markdown(f"")
     AgGrid(
         df_to_show,
         gridOptions=grid_options,
