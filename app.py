@@ -874,6 +874,7 @@ elif selected_tab == "🛡️ Rule Checker":
 
         shared_locations = sorted(src_locs & dst_locs)
 
+
     # --------- Use Local Firewall if shared location(s) ---------
     if shared_locations:
         for location in shared_locations:
