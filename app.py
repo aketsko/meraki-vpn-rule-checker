@@ -376,7 +376,7 @@ if uploaded_snapshot:
 
         snapshot_msg = st.sidebar.empty()
         snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
-        time.sleep(10)
+        #time.sleep(10)
         snapshot_msg.empty()
 
     except Exception as e:
