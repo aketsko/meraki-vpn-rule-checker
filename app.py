@@ -670,8 +670,6 @@ elif selected_tab == "🛡️ Rule Checker":
 
         
     def generate_rule_table(rules, 
-        source_input,
-        destination_input,
         source_port_input,
         port_input,
         protocol,
@@ -894,8 +892,6 @@ if shared_locations:
         st.subheader(f"🏠 Local Firewall - `{location}`")
         generate_rule_table(
             rules=local_rules,
-            source_input=source_input,
-            destination_input=destination_input,
             source_port_input=source_port_input,
             port_input=port_input,
             protocol=protocol,
@@ -981,8 +977,6 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
             st.subheader(f"🏠 Local Firewall - `{location}`")
             generate_rule_table(
                 rules=local_rules,
-                source_input=source_input,
-                destination_input=destination_input,
                 source_port_input=source_port_input,
                 port_input=port_input,
                 protocol=protocol,
@@ -1006,8 +1000,6 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
         st.subheader("🌐 VPN Firewall Rules")
         generate_rule_table(
             rules=local_rules,
-            source_input=source_input,
-            destination_input=destination_input,
             source_port_input=source_port_input,
             port_input=port_input,
             protocol=protocol,
