@@ -118,7 +118,8 @@ def generate_rule_table(rules,
     filter_toggle,
     object_map,
     group_map,
-    highlight_colors,title_prefix="VPN Firewall Rules"):
+    highlight_colors,
+    title_prefix):
     rule_rows = []
     matched_ports = {}
     rule_match_ports = {}
