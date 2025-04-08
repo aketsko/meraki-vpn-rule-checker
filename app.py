@@ -981,7 +981,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
                 filter_toggle=filter_toggle,
                 object_map=object_map,
                 group_map=group_map,
-                highlight_colors=highlight_colors
+                highlight_colors=highlight_colors,
                 title_prefix="🏠 Local Firewall - `{location}`"
             )
             local_rule_rendered = True
@@ -1003,7 +1003,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
             filter_toggle=filter_toggle,
             object_map=object_map,
             group_map=group_map,
-            highlight_colors=highlight_colors
+            highlight_colors=highlight_colors,
             title_prefix="🌐 VPN Firewall Rules"
         )
 
