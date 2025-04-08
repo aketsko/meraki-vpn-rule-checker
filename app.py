@@ -863,31 +863,31 @@ elif selected_tab == "🛡️ Rule Checker":
     skip_dst_check = destination_input.strip().lower() == "any"
 
     # --------------- Location-aware logic ---------------
-shared_locations = []
-if "object_location_map" in st.session_state and "extended_data" in st.session_state:
-    obj_loc_map = st.session_state["object_location_map"]
-    extended_data = st.session_state["extended_data"]
+    shared_locations = []
+    if "object_location_map" in st.session_state and "extended_data" in st.session_state:
+        obj_loc_map = st.session_state["object_location_map"]
+        extended_data = st.session_state["extended_data"]
 
-    src_locs = set()
-    for cidr in source_cidrs:
-        src_locs.update(obj_loc_map.get(cidr, []))
-    dst_locs = set()
-    for cidr in destination_cidrs:
-        dst_locs.update(obj_loc_map.get(cidr, []))
+        src_locs = set()
+        for cidr in source_cidrs:
+            src_locs.update(obj_loc_map.get(cidr, []))
+        dst_locs = set()
+        for cidr in destination_cidrs:
+            dst_locs.update(obj_loc_map.get(cidr, []))
 
-    shared_locations = sorted(src_locs & dst_locs)
+        shared_locations = sorted(src_locs & dst_locs)
 
-if shared_locations:
-    for location in shared_locations:
-        local_rules = []
-        for net_id, info in extended_data.get("network_details", {}).items():
-            if info.get("network_name") == location:
-                local_rules = info.get("firewall_rules", [])
-                break
+    if shared_locations:
+        for location in shared_locations:
+            local_rules = []
+            for net_id, info in extended_data.get("network_details", {}).items():
+                if info.get("network_name") == location:
+                    local_rules = info.get("firewall_rules", [])
+                    break
 
-        if not local_rules:
-            st.warning(f"⚠️ No local firewall rules found for `{location}`.")
-            continue
+            if not local_rules:
+                st.warning(f"⚠️ No local firewall rules found for `{location}`.")
+                continue
 
         st.subheader(f"🏠 Local Firewall - `{location}`")
         generate_rule_table(
