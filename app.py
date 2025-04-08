@@ -999,7 +999,7 @@ elif selected_tab == "🧠 Optimization Insights":
     if insight_rows:
         for msg, rule_indexes in insight_rows:
             st.markdown(msg)
-            show_rule_summary(rule_indexes)
+            show_rule_summary(rule_indexes, rules_data)
 
         st.download_button("📥 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
     else:
