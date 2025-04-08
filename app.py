@@ -118,8 +118,7 @@ def generate_rule_table(rules,
     filter_toggle,
     object_map,
     group_map,
-    highlight_colors,
-    title_prefix):
+    highlight_colors):
     rule_rows = []
     matched_ports = {}
     rule_match_ports = {}
@@ -887,7 +886,7 @@ if shared_locations:
             st.warning(f"⚠️ No local firewall rules found for `{location}`.")
             continue
 
-        st.subheader(f"")
+        st.subheader(f"🏠 Local Firewall - `{location}`")
         generate_rule_table(
             rules=local_rules,
             source_input=source_input,
@@ -898,8 +897,7 @@ if shared_locations:
             filter_toggle=filter_toggle,
             object_map=object_map,
             group_map=group_map,
-            highlight_colors=highlight_colors,
-            title_prefix="🏠 Local Firewall - `{location}`"
+            highlight_colors=highlight_colors
         )
 
     # Only show VPN rules if no shared location
@@ -970,7 +968,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
                 st.warning(f"⚠️ No local firewall rules found for `{location}`.")
                 continue
 
-            st.subheader(f"")
+            st.subheader(f"🏠 Local Firewall - `{location}`")
             generate_rule_table(
                 rules=local_rules,
                 source_input=source_input,
@@ -981,8 +979,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
                 filter_toggle=filter_toggle,
                 object_map=object_map,
                 group_map=group_map,
-                highlight_colors=highlight_colors,
-                title_prefix="🏠 Local Firewall - `{location}`"
+                highlight_colors=highlight_colors
             )
             local_rule_rendered = True
 
@@ -992,7 +989,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
 
 # ----------- Fallback to VPN rules (only if needed) -----------
     if not local_rule_rendered:
-        st.subheader("")
+        st.subheader("🌐 VPN Firewall Rules")
         generate_rule_table(
             rules=rules_data,
             source_input=source_input,
@@ -1003,8 +1000,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
             filter_toggle=filter_toggle,
             object_map=object_map,
             group_map=group_map,
-            highlight_colors=highlight_colors,
-            title_prefix="🌐 VPN Firewall Rules"
+            highlight_colors=highlight_colors
         )
 
 
