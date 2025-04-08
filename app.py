@@ -937,8 +937,8 @@ elif selected_tab == "🛡️ Rule Checker":
     if not local_rule_rendered:
         generate_rule_table(
             rules=rules_data,
-            source_input=source_input,
-            destination_input=destination_input,
+            source_cidrs=source_cidrs,
+            destination_cidrs=destination_cidrs,
             source_port_input=source_port_input,
             port_input=port_input,
             protocol=protocol,
