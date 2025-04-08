@@ -894,6 +894,32 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
 
         shared_locs = src_locs & dst_locs
+    # If destination has no location match and is not 'any', only evaluate local rules based on source
+        dst_not_found = not dst_locs and destination_input.strip().lower() != "any"
+        if dst_not_found and src_locs:
+            st.info("📍 Destination not found in any network. Evaluating Local Firewall rules based on Source location only.")
+            for location in sorted(src_locs):
+                for net_id, info in extended_data.get("network_details", {}).items():
+                    if info.get("network_name") == location:
+                        with st.expander(f"🏠 Local Firewall Rules - `{location}`", expanded=expand_all_local):
+                            generate_rule_table(
+                                rules=info.get("firewall_rules", []),
+                                source_port_input=source_port_input,
+                                port_input=port_input,
+                                protocol=protocol,
+                                filter_toggle=filter_toggle,
+                                object_map=object_map,
+                                group_map=group_map,
+                                highlight_colors=highlight_colors,
+                                source_cidrs=source_cidrs,
+                                destination_cidrs=destination_cidrs,
+                                skip_src_check=skip_src_check,
+                                skip_dst_check=skip_dst_check,
+                                key=f"local_{location}_fallback"
+                            )
+            st.stop()
+
+
         fully_inside_same_location = len(shared_locs) == 1 and \
             src_locs.issubset(shared_locs) and dst_locs.issubset(shared_locs)
 

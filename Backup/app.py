@@ -122,12 +122,12 @@ def generate_rule_table(rules,
     title_prefix="Rules",
     key="default_grid"
 ):
+    rule_rows = []
+    rule_match_ports = {}
+    matched_ports = {}
+    found_partial_match = False
+    first_exact_match_index = None
 
-    rule_rows = []  # Initialize rule_rows as an empty list
-    rule_match_ports = {}  # Initialize rule_match_ports as an empty dictionary
-    matched_ports = {}  # Initialize matched_ports as an empty dictionary
-    found_partial_match = False  # Initialize found_partial_match as False
-    first_exact_match_index = None  # Initialize first_exact_match_index as None
     for idx, rule in enumerate(rules):
         rule_protocol = rule["protocol"].lower()
         rule_dports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
@@ -140,15 +140,22 @@ def generate_rule_table(rules,
 
         src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
         dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
+
         skip_proto_check = protocol.strip().lower() == "any"
-        proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
+        if skip_proto_check:
+            proto_match = rule_protocol == "any"
+            exact_proto = rule_protocol == "any"
+        else:
+            proto_match = rule_protocol == protocol.lower() or rule_protocol == "any"
+            exact_proto = rule_protocol == protocol.lower()
 
         dports_to_loop = port_input.split(",") if port_input.strip().lower() != "any" else ["any"]
         skip_dport_check = port_input.strip().lower() == "any"
         matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
+
         skip_sport_check = source_port_input.strip().lower() == "any"
-        matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
-        matched_sports_list = [p.strip() for p in matched_sports_list if p in rule_sports or "any" in rule_sports]
+        src_ports_input_list = source_port_input.split(",") if not skip_sport_check else ["any"]
+        matched_sports_list = [p.strip() for p in src_ports_input_list if p.strip() in rule_sports or "any" in rule_sports]
 
         sport_match = len(matched_sports_list) > 0
         port_match = len(matched_ports_list) > 0 and sport_match
@@ -163,10 +170,16 @@ def generate_rule_table(rules,
             True if skip_dst_check and "0.0.0.0/0" in resolved_dst_cidrs
             else all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
         )
-        exact_ports = skip_dport_check or set(matched_ports_list) == set(dports_to_loop)
-        exact_proto = skip_proto_check or rule_protocol == protocol.lower()
 
-        is_exact = full_match and exact_src and exact_dst and exact_ports and exact_proto
+        input_dports_set = set(p.strip() for p in dports_to_loop if p.strip())
+        rule_dports_set = set(rule_dports)
+        exact_ports = (rule_dports_set == {"any"}) if skip_dport_check else (rule_dports_set == input_dports_set)
+
+        input_sports_set = set(p.strip() for p in src_ports_input_list if p.strip())
+        rule_sports_set = set(rule_sports)
+        exact_sports = (rule_sports_set == {"any"}) if skip_sport_check else (rule_sports_set == input_sports_set)
+
+        is_exact = full_match and exact_src and exact_dst and exact_ports and exact_sports and exact_proto
 
         if full_match:
             rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
@@ -242,6 +255,7 @@ def generate_rule_table(rules,
         allow_unsafe_jscode=True,
         key=key
     )
+
 
 
 
@@ -623,7 +637,7 @@ with st.container():
     # LEFT: Label + Selectbox
     with col_left:
         st.markdown(" 🔎-🛡️-🧠 Choose the module:")
-        tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
+        tab_names = ["🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
 
         if "active_tab" not in st.session_state:
             st.session_state.active_tab = tab_names[0]  # Default
@@ -654,7 +668,7 @@ with st.container():
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
 
-if selected_tab == "🔎 Object & Group Search":
+if selected_tab == "🔎 Search Object or Group":
     from utils.match_logic import build_object_location_map  # Ensure this is imported
 
     # Build location map if extended data and not already available
@@ -801,7 +815,17 @@ if selected_tab == "🔎 Object & Group Search":
 
 
 
-elif selected_tab == "🛡️ Rule Checker":
+elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
+    
+    def get_all_locations_for_cidrs(cidrs, location_map):
+        locations = set()
+        for cidr in cidrs:
+            mapped = location_map.get(cidr, [])
+            if isinstance(mapped, str):
+                locations.add(mapped)
+            elif isinstance(mapped, list):
+                locations.update(mapped)
+        return locations
 
     # --- Search input helpers ---
     def custom_search(term: str):
@@ -843,114 +867,112 @@ elif selected_tab == "🛡️ Rule Checker":
     with col5:
         protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
 
-    col_left, col_right = st.columns(2)
+    col_left, col_right, col_collapse = st.columns(3)
     with col_right:
         filter_toggle = st.checkbox("✅ Show only matching rules", value=False)
     with col_left:
         dynamic_mode = st.checkbox("🛠️ Dynamic update", value=False)
+    with col_collapse:
+        expand_all_local = st.checkbox("🧩 Expand Local Firewall Rule sections", value=False)
 
     if not dynamic_mode:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
         st.stop()
 
-    # --- Resolve inputs ---
-    source_input = source_input or "any"
-    destination_input = destination_input or "any"
+    # ---- Resolve Inputs ----
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
+
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
 
-    local_rule_rendered = False
-    shared_locations = []
+    obj_loc_map = st.session_state.get("object_location_map", {})
+    extended_data = st.session_state.get("extended_data", {})
 
-    # 🧠 Case 1: Check if object_location_map exists
-    if "object_location_map" in st.session_state and "extended_data" in st.session_state:
-        obj_loc_map = st.session_state["object_location_map"]
-        extended_data = st.session_state["extended_data"]
+    if obj_loc_map and extended_data:
+        src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
+        dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
 
-        src_locs = set()
-        dst_locs = set()
+        shared_locs = src_locs & dst_locs
+        fully_inside_same_location = len(shared_locs) == 1 and \
+            src_locs.issubset(shared_locs) and dst_locs.issubset(shared_locs)
 
-        for cidr in source_cidrs:
-            src_locs.update(obj_loc_map.get(cidr, []))
-        for cidr in destination_cidrs:
-            dst_locs.update(obj_loc_map.get(cidr, []))
+        show_local_only = fully_inside_same_location
+        show_local_and_vpn = not fully_inside_same_location and shared_locs
+        show_vpn_only = not shared_locs
 
-        shared_locations = sorted(src_locs & dst_locs)
-
-        # 🔸 A & B: Shared locations exist
-        if shared_locations:
-            for location in shared_locations:
-                network_id = st.session_state["extended_data"]["network_map"].get(location)
-                if not network_id:
-                    continue
-                local_rules = extended_data["network_details"].get(network_id, {}).get("firewall_rules", [])
-
-                if not local_rules:
-                    st.warning(f"⚠️ No local firewall rules found for `{location}`.")
-                    continue
-
-                generate_rule_table(
-                    rules=local_rules,
-                    source_cidrs=source_cidrs,
-                    destination_cidrs=destination_cidrs,
-                    source_port_input=source_port_input,
-                    port_input=port_input,
-                    protocol=protocol,
-                    filter_toggle=filter_toggle,
-                    object_map=object_map,
-                    group_map=group_map,
-                    highlight_colors=highlight_colors,
-                    skip_src_check=skip_src_check,
-                    skip_dst_check=skip_dst_check,
-                    title_prefix=f"🏠 Local Firewall Rules - {location}",
-                    key=f"local_grid_{location}"
-                )
-                local_rule_rendered = True
-
-            if len(shared_locations) == 1:
-                st.info("🔒 Local rules fully evaluated based on single shared location. VPN rules skipped.")
-                st.stop()
-
-        # 🔸 C: Source and destination are in different locations → skip local, show VPN only
-        elif src_locs and dst_locs and not shared_locations:
-            st.info("⚠️ Source and destination belong to different locations. VPN rules will be used.")
-            generate_rule_table(
-                rules=rules_data,
-                source_cidrs=source_cidrs,
-                destination_cidrs=destination_cidrs,
-                source_port_input=source_port_input,
-                port_input=port_input,
-                protocol=protocol,
-                filter_toggle=filter_toggle,
-                object_map=object_map,
-                group_map=group_map,
-                highlight_colors=highlight_colors,
-                skip_src_check=skip_src_check,
-                skip_dst_check=skip_dst_check,
-                title_prefix="🌐 VPN Firewall Rules",
-                key="vpn_grid"
-            )
-
+        # ---------- LOCAL ONLY ----------
+        if show_local_only:
+            location = list(shared_locs)[0]
+            st.subheader(f"🏠 Local Firewall Rules - `{location}`")
+            for net_id, info in extended_data.get("network_details", {}).items():
+                if info.get("network_name") == location:
+                    generate_rule_table(
+                        rules=info.get("firewall_rules", []),
+                        source_port_input=source_port_input,
+                        port_input=port_input,
+                        protocol=protocol,
+                        filter_toggle=filter_toggle,
+                        object_map=object_map,
+                        group_map=group_map,
+                        highlight_colors=highlight_colors,
+                        source_cidrs=source_cidrs,
+                        destination_cidrs=destination_cidrs,
+                        skip_src_check=skip_src_check,
+                        skip_dst_check=skip_dst_check,
+                        key=f"local_{location}"
+                    )
+                    break
+            st.info("🟩 Local rules fully evaluated based on single shared location. VPN rules skipped.")
             st.stop()
+            
+        # ---------- LOCAL + VPN ----------
+        elif show_local_and_vpn:
+            count = len(shared_locs)
+            st.subheader(f"🏠 Local Firewall Rules in {count} Networks")
+            with st.expander(f"Collapse - `{count}`", expanded=expand_all_local):
+                for location in sorted(shared_locs):
+                    for net_id, info in extended_data.get("network_details", {}).items():
+                        if info.get("network_name") == location:
+                            st.subheader(f"🏠 Local Firewall Rules - `{location}`")
+                            generate_rule_table(
+                                rules=info.get("firewall_rules", []),
+                                source_port_input=source_port_input,
+                                port_input=port_input,
+                                protocol=protocol,
+                                filter_toggle=filter_toggle,
+                                object_map=object_map,
+                                group_map=group_map,
+                                highlight_colors=highlight_colors,
+                                source_cidrs=source_cidrs,
+                                destination_cidrs=destination_cidrs,
+                                skip_src_check=skip_src_check,
+                                skip_dst_check=skip_dst_check,
+                                key=f"local_{location}"
+                            )
+                st.info("🟡 Some local rules evaluated. VPN rules also shown below.")
 
-    # ❌ Case 2: No usable object_location_map or only one side mapped
-    if not local_rule_rendered:
-        generate_rule_table(
-            rules=rules_data,
-            source_cidrs=source_cidrs,
-            destination_cidrs=destination_cidrs,
-            source_port_input=source_port_input,
-            port_input=port_input,
-            protocol=protocol,
-            filter_toggle=filter_toggle,
-            object_map=object_map,
-            group_map=group_map,
-            highlight_colors=highlight_colors,
-            title_prefix="🌐 VPN Firewall Rules",
-            key="vpn_grid"
-        )
+        # ---------- VPN ONLY ----------
+        elif show_vpn_only:
+            st.info("⚠️ Source and destination belong to different locations. VPN rules will be used.")
+
+    # ---------- Fallback: VPN Firewall ----------
+    st.subheader("🌐 VPN Firewall Rules")
+    generate_rule_table(
+        rules=rules_data,
+        source_port_input=source_port_input,
+        port_input=port_input,
+        protocol=protocol,
+        filter_toggle=filter_toggle,
+        object_map=object_map,
+        group_map=group_map,
+        highlight_colors=highlight_colors,
+        source_cidrs=source_cidrs,
+        destination_cidrs=destination_cidrs,
+        skip_src_check=skip_src_check,
+        skip_dst_check=skip_dst_check,
+        key="vpn_table"
+    )
 
 
 
