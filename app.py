@@ -873,7 +873,7 @@ elif selected_tab == "🛡️ Rule Checker":
     with col_left:
         dynamic_mode = st.checkbox("🛠️ Dynamic update", value=False)
     with col_collapse:
-        expand_all_local = st.checkbox("🧩 Expand all Local Firewall Rule sections", value=True)
+        expand_all_local = st.checkbox("🧩 Expand Local Firewall Rule sections", value=False)
 
     if not dynamic_mode:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
@@ -925,13 +925,14 @@ elif selected_tab == "🛡️ Rule Checker":
                     break
             st.info("🟩 Local rules fully evaluated based on single shared location. VPN rules skipped.")
             st.stop()
-
+            count = len(shared_locs)
         # ---------- LOCAL + VPN ----------
         elif show_local_and_vpn:
-            for location in sorted(shared_locs):
-                for net_id, info in extended_data.get("network_details", {}).items():
-                    if info.get("network_name") == location:
-                        with st.expander(f"🏠 Local Firewall Rules - `{location}`", expanded=expand_all_local):
+            with st.expander(f"🏠 Local Firewall Rules - `{count}`", expanded=expand_all_local):
+                for location in sorted(shared_locs):
+                    for net_id, info in extended_data.get("network_details", {}).items():
+                        if info.get("network_name") == location:
+                            st.subheader(f"🏠 Local Firewall Rules - `{location}`")
                             generate_rule_table(
                                 rules=info.get("firewall_rules", []),
                                 source_port_input=source_port_input,
@@ -947,7 +948,7 @@ elif selected_tab == "🛡️ Rule Checker":
                                 skip_dst_check=skip_dst_check,
                                 key=f"local_{location}"
                             )
-            st.info("🟡 Some local rules evaluated. VPN rules also shown below.")
+                st.info("🟡 Some local rules evaluated. VPN rules also shown below.")
 
         # ---------- VPN ONLY ----------
         elif show_vpn_only:
