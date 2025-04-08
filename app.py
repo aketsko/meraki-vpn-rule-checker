@@ -109,7 +109,16 @@ st.markdown("""
 
 
 
-def generate_rule_table(rules, title_prefix="VPN Firewall Rules"):
+def generate_rule_table(rules, 
+    source_input,
+    destination_input,
+    source_port_input,
+    port_input,
+    protocol,
+    filter_toggle,
+    object_map,
+    group_map,
+    highlight_colors,title_prefix="VPN Firewall Rules"):
     rule_rows = []
     matched_ports = {}
     rule_match_ports = {}
