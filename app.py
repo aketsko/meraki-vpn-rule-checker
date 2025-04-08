@@ -925,9 +925,10 @@ elif selected_tab == "🛡️ Rule Checker":
                     break
             st.info("🟩 Local rules fully evaluated based on single shared location. VPN rules skipped.")
             st.stop()
-            count = len(shared_locs)
+            
         # ---------- LOCAL + VPN ----------
         elif show_local_and_vpn:
+            count = len(shared_locs)
             with st.expander(f"🏠 Local Firewall Rules - `{count}`", expanded=expand_all_local):
                 for location in sorted(shared_locs):
                     for net_id, info in extended_data.get("network_details", {}).items():
