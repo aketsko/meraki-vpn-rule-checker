@@ -898,7 +898,8 @@ if shared_locations:
             filter_toggle=filter_toggle,
             object_map=object_map,
             group_map=group_map,
-            highlight_colors=highlight_colors
+            highlight_colors=highlight_colors,
+            title_prefix="🏠 Local Firewall - `{location}`"
         )
 
     # Only show VPN rules if no shared location
@@ -981,6 +982,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
                 object_map=object_map,
                 group_map=group_map,
                 highlight_colors=highlight_colors
+                title_prefix="🏠 Local Firewall - `{location}`"
             )
             local_rule_rendered = True
 
@@ -988,21 +990,22 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
         if local_rule_rendered and len(shared_locations) == 1:
             st.stop()
 
-# # ----------- Fallback to VPN rules (only if needed) -----------
-#     if not local_rule_rendered:
-#         st.subheader("🌐 Fsallback VPN Firewall Rules")
-#         generate_rule_table(
-#             rules=rules_data,
-#             source_input=source_input,
-#             destination_input=destination_input,
-#             source_port_input=source_port_input,
-#             port_input=port_input,
-#             protocol=protocol,
-#             filter_toggle=filter_toggle,
-#             object_map=object_map,
-#             group_map=group_map,
-#             highlight_colors=highlight_colors
-#         )
+# ----------- Fallback to VPN rules (only if needed) -----------
+    if not local_rule_rendered:
+        st.subheader("🌐 VPN Firewall Rules")
+        generate_rule_table(
+            rules=rules_data,
+            source_input=source_input,
+            destination_input=destination_input,
+            source_port_input=source_port_input,
+            port_input=port_input,
+            protocol=protocol,
+            filter_toggle=filter_toggle,
+            object_map=object_map,
+            group_map=group_map,
+            highlight_colors=highlight_colors
+            title_prefix="🌐 VPN Firewall Rules"
+        )
 
 
 
