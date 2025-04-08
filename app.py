@@ -867,11 +867,13 @@ elif selected_tab == "🛡️ Rule Checker":
     with col5:
         protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
 
-    col_left, col_right = st.columns(2)
+    col_left, col_right, col_collapse = st.columns(2)
     with col_right:
         filter_toggle = st.checkbox("✅ Show only matching rules", value=False)
     with col_left:
         dynamic_mode = st.checkbox("🛠️ Dynamic update", value=False)
+    with col_collapse:
+        expand_all_local = st.checkbox("🧩 Expand all Local Firewall Rule sections", value=True)
 
     if not dynamic_mode:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
@@ -929,22 +931,22 @@ elif selected_tab == "🛡️ Rule Checker":
             for location in sorted(shared_locs):
                 for net_id, info in extended_data.get("network_details", {}).items():
                     if info.get("network_name") == location:
-                        st.subheader(f"🏠 Local Firewall Rules - `{location}`")
-                        generate_rule_table(
-                            rules=info.get("firewall_rules", []),
-                            source_port_input=source_port_input,
-                            port_input=port_input,
-                            protocol=protocol,
-                            filter_toggle=filter_toggle,
-                            object_map=object_map,
-                            group_map=group_map,
-                            highlight_colors=highlight_colors,
-                            source_cidrs=source_cidrs,
-                            destination_cidrs=destination_cidrs,
-                            skip_src_check=skip_src_check,
-                            skip_dst_check=skip_dst_check,
-                            key=f"local_{location}"
-                        )
+                        with st.expander(f"🏠 Local Firewall Rules - `{location}`", expanded=expand_all_local):
+                            generate_rule_table(
+                                rules=info.get("firewall_rules", []),
+                                source_port_input=source_port_input,
+                                port_input=port_input,
+                                protocol=protocol,
+                                filter_toggle=filter_toggle,
+                                object_map=object_map,
+                                group_map=group_map,
+                                highlight_colors=highlight_colors,
+                                source_cidrs=source_cidrs,
+                                destination_cidrs=destination_cidrs,
+                                skip_src_check=skip_src_check,
+                                skip_dst_check=skip_dst_check,
+                                key=f"local_{location}"
+                            )
             st.info("🟡 Some local rules evaluated. VPN rules also shown below.")
 
         # ---------- VPN ONLY ----------
