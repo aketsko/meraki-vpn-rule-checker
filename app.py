@@ -806,8 +806,8 @@ elif selected_tab == "🛡️ Rule Checker":
     # Resolve inputs
     source_input = source_input or "any"
     destination_input = destination_input or "any"
-    source_cidrs = resolve_to_cidrs(source_input)
-    destination_cidrs = resolve_to_cidrs(destination_input)
+    source_cidrs = resolve_to_cidrs(source_input, object_map=object_map, group_map=group_map)
+    destination_cidrs = resolve_to_cidrs(destination_input, object_map=object_map, group_map=group_map)
 
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
