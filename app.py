@@ -109,14 +109,14 @@ st.markdown("""
 
 
 
-def generate_rule_table(rules_to_check, title_prefix="VPN Firewall Rules"):
+def generate_rule_table(rules, title_prefix="VPN Firewall Rules"):
     rule_rows = []
     matched_ports = {}
     rule_match_ports = {}
     found_partial_match = False
     first_exact_match_index = None
 
-    for idx, rule in enumerate(rules_to_check):
+    for idx, rule in enumerate(rules):
         rule_protocol = rule["protocol"].lower()
         rule_dports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
         rule_sports = [p.strip() for p in rule.get("srcPort", "").split(",")] if rule.get("srcPort", "").lower() != "any" else ["any"]
@@ -166,7 +166,7 @@ def generate_rule_table(rules_to_check, title_prefix="VPN Firewall Rules"):
             elif not is_exact:
                 found_partial_match = True
 
-    for idx, rule in enumerate(rules_to_check):
+    for idx, rule in enumerate(rules):
         matched_ports_for_rule = rule_match_ports.get(idx, [])
         matched_any = len(matched_ports_for_rule) > 0
         is_exact_match = idx == first_exact_match_index
