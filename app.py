@@ -906,7 +906,41 @@ elif selected_tab == "🛡️ Rule Checker":
         if len(shared_locations) == 1:
             st.stop()
 
-    # ----------- Fallback to VPN rules (default) -----------
+    # ----------- Show Local if any shared location -----------
+
+local_rule_rendered = False
+
+if shared_locations:
+    for location in shared_locations:
+        local_rules = []
+        for net_id, info in extended_data.get("network_details", {}).items():
+            if info.get("network_name") == location:
+                local_rules = info.get("firewall_rules", [])
+                break
+
+        if not local_rules:
+            st.warning(f"⚠️ No local firewall rules found for `{location}`.")
+            continue
+
+        st.subheader(f"🏠 Local Firewall - `{location}`")
+        generate_rule_table(
+            rules=local_rules,
+            source_input=source_input,
+            destination_input=destination_input,
+            source_port_input=source_port_input,
+            port_input=port_input,
+            protocol=protocol,
+            filter_toggle=filter_toggle,
+            object_map=object_map,
+            group_map=group_map,
+            highlight_colors=highlight_colors
+        )
+        local_rule_rendered = True
+
+# 🧠 Only show VPN rules if:
+# - No shared locations, OR
+# - Multiple shared locations (we want to show VPN fallback too)
+if not local_rule_rendered or len(shared_locations) > 1:
     st.subheader("🌐 VPN Firewall Rules")
     generate_rule_table(
         rules=rules_data,
@@ -920,6 +954,7 @@ elif selected_tab == "🛡️ Rule Checker":
         group_map=group_map,
         highlight_colors=highlight_colors
     )
+
 
 
 
