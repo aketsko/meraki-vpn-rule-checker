@@ -879,7 +879,6 @@ elif selected_tab == "🛡️ Rule Checker":
                 continue
 
             st.subheader(f"🏠 Local Firewall - `{location}`")
-            from utils.helpers import generate_rule_table  # Assuming you modularized this
 
             generate_rule_table(
                 rules=local_rules,
