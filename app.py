@@ -239,7 +239,7 @@ def generate_rule_table(rules,
         enable_enterprise_modules=False,
         fit_columns_on_grid_load=True,
         use_container_width=True,
-        allow_unsafe_jscode=True
+        allow_unsafe_jscode=True,
         key=key
     )
 
