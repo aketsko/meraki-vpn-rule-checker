@@ -929,8 +929,7 @@ elif selected_tab == "🛡️ Rule Checker":
         # ---------- LOCAL + VPN ----------
         elif show_local_and_vpn:
             count = len(shared_locs)
-            with st.expander(f"🏠 **Local Firewall Rules - {count}**", expanded=expand_all_local):
-                st.markdown("", unsafe_allow_html=True)
+            with st.expander(f"<h4 style='margin-bottom: 0; font-size: 22px;'>🏠 Local Firewall Rules - `{count}`</h4>", unsafe_allow_html=True, expanded=expand_all_local):
                 for location in sorted(shared_locs):
                     for net_id, info in extended_data.get("network_details", {}).items():
                         if info.get("network_name") == location:
