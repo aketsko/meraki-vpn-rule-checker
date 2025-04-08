@@ -887,7 +887,7 @@ if shared_locations:
             st.warning(f"⚠️ No local firewall rules found for `{location}`.")
             continue
 
-        st.subheader(f"🏠 Local Firewall - `{location}`")
+        st.subheader(f"")
         generate_rule_table(
             rules=local_rules,
             source_input=source_input,
@@ -970,7 +970,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
                 st.warning(f"⚠️ No local firewall rules found for `{location}`.")
                 continue
 
-            st.subheader(f"🏠 Local Firewall - `{location}`")
+            st.subheader(f"")
             generate_rule_table(
                 rules=local_rules,
                 source_input=source_input,
@@ -992,7 +992,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
 
 # ----------- Fallback to VPN rules (only if needed) -----------
     if not local_rule_rendered:
-        st.subheader("🌐 VPN Firewall Rules")
+        st.subheader("")
         generate_rule_table(
             rules=rules_data,
             source_input=source_input,
