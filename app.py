@@ -107,122 +107,149 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-def generate_rule_table(rules, 
-    source_input,
-    destination_input,
-    source_port_input,
-    port_input,
-    protocol,
-    filter_toggle,
-    object_map,
-    group_map,
-    highlight_colors):
-    rule_rows = []
-    matched_ports = {}
-    rule_match_ports = {}
-    found_partial_match = False
-    first_exact_match_index = None
-    for idx, rule in enumerate(rules):
-        rule_protocol = rule["protocol"].lower()
-        rule_dports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
-        rule_sports = [p.strip() for p in rule.get("srcPort", "").split(",")] if rule.get("srcPort", "").lower() != "any" else ["any"]
-        src_ids = rule["srcCidr"].split(",") if rule["srcCidr"] != "Any" else ["Any"]
-        dst_ids = rule["destCidr"].split(",") if rule["destCidr"] != "Any" else ["Any"]
-        resolved_src_cidrs = resolve_to_cidrs(src_ids, object_map, group_map)
-        resolved_dst_cidrs = resolve_to_cidrs(dst_ids, object_map, group_map)
-        src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
-        dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
-        skip_proto_check = protocol.strip().lower() == "any"
-        proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
-        dports_to_loop = port_input.split(",") if port_input.strip().lower() != "any" else ["any"]
-        skip_dport_check = port_input.strip().lower() == "any"
-        matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
-        skip_sport_check = source_port_input.strip().lower() == "any"
-        matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
-        matched_sports_list = [p.strip() for p in matched_sports_list if p in rule_sports or "any" in rule_sports]
-        sport_match = len(matched_sports_list) > 0
-        port_match = len(matched_ports_list) > 0 and sport_match
-        full_match = src_match and dst_match and proto_match and port_match
-        exact_src = (
-            True if skip_src_check and "0.0.0.0/0" in resolved_src_cidrs
-            else all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
-        )
-        exact_dst = (
-            True if skip_dst_check and "0.0.0.0/0" in resolved_dst_cidrs
-            else all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
-        )
-        exact_ports = skip_dport_check or set(matched_ports_list) == set(dports_to_loop)
-        exact_proto = skip_proto_check or rule_protocol == protocol.lower()
-        is_exact = full_match and exact_src and exact_dst and exact_ports and exact_proto
-        if full_match:
-            rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
-            for port in matched_ports_list:
-                if port not in matched_ports:
-                    matched_ports[port] = idx
-            if is_exact and not found_partial_match and first_exact_match_index is None:
-                first_exact_match_index = idx
-            elif not is_exact:
-                found_partial_match = True
-    for idx, rule in enumerate(rules):
-        matched_ports_for_rule = rule_match_ports.get(idx, [])
-        matched_any = len(matched_ports_for_rule) > 0
-        is_exact_match = idx == first_exact_match_index
-        is_partial_match = matched_any and not is_exact_match
-        source_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["srcCidr"].split(",")]
-        dest_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["destCidr"].split(",")]
-        rule_rows.append({
-            "Rule Index": idx + 1,
-            "Action": rule["policy"].upper(),
-            "Comment": rule.get("comment", ""),
-            "Source": ", ".join(source_names),
-            "Source Port": rule.get("srcPort", ""),
-            "Destination": ", ".join(dest_names),
-            "Ports": rule["destPort"],
-            "Protocol": rule["protocol"],
-            "Matched Ports": ", ".join(matched_ports_for_rule),
-            "Matched ✅": matched_any,
-            "Exact Match ✅": is_exact_match,
-            "Partial Match 🔶": is_partial_match
-        })
-    df = pd.DataFrame(rule_rows)
-    df_to_show = df[df["Matched ✅"]] if filter_toggle else df
-    row_style_js = JsCode(f"""
-    function(params) {{
-        if (params.data["Exact Match ✅"] === true) {{
-            return {{
-                backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
-                color: 'white',
-                fontWeight: 'bold'
-            }};
-        }}
-        if (params.data["Partial Match 🔶"] === true) {{
-            return {{
-                backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
-                fontWeight: 'bold'
-            }};
-        }}
-        return {{}};
-    }}
-    """)
-    gb = GridOptionsBuilder.from_dataframe(df_to_show)
-    gb.configure_column("Comment", wrapText=True, autoHeight=True)
-    gb.configure_column("Source", wrapText=True, autoHeight=True)
-    gb.configure_column("Destination", wrapText=True, autoHeight=True)
-    gb.configure_column("Protocol", wrapText=True, autoHeight=True)
-    gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
-    grid_options = gb.build()
-    st.markdown(f"")
-    AgGrid(
-        df_to_show,
-        gridOptions=grid_options,
-        enable_enterprise_modules=False,
-        fit_columns_on_grid_load=True,
-        use_container_width=True,
-        allow_unsafe_jscode=True
-    )
 
 
 
+
+# ------------------ SIDEBAR FILE UPLOAD ------------------
+st.sidebar.header("📡 Connect to Meraki Dashboard")
+
+fetched_from_api = st.session_state.get("fetched_from_api", False)
+with st.sidebar.expander("🔒 API Access", expanded=not (st.session_state.get("fetched_from_api") or (st.session_state.get("rules_data") and st.session_state.get("objects_data") and st.session_state.get("groups_data")))):
+    
+    org_id = st.text_input("🏢 Enter your Organization ID", value="")
+    api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
+    
+
+
+# ------------------ API CONFIG ------------------
+def get_api_headers(api_key, org_id):
+    return {
+        "X-Cisco-Meraki-API-Key": api_key,
+        "Content-Type": "application/json",
+        "X-Cisco-Meraki-Organization-ID": org_id
+    }
+
+def fetch_meraki_data(api_key, org_id):
+    try:
+        headers = get_api_headers(api_key, org_id)
+        rules_url = f"https://api.meraki.com/api/v1/organizations/{org_id}/appliance/vpn/vpnFirewallRules"
+        objects_url = f"https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects"
+        groups_url = f"https://api.meraki.com/api/v1/organizations/{org_id}/policyObjects/groups"
+
+        rules_resp = requests.get(rules_url, headers=headers)
+        objects_resp = requests.get(objects_url, headers=headers)
+        groups_resp = requests.get(groups_url, headers=headers)
+
+        if rules_resp.ok and objects_resp.ok and groups_resp.ok:
+            return (
+                rules_resp.json().get("rules", []),
+                objects_resp.json(),
+                groups_resp.json(),
+                True
+            )
+        else:
+            return [], [], [], False
+    except Exception as e:
+        st.warning(f"API fetch error: {e}")
+        return [], [], [], False
+
+def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, base_url="https://api.meraki.com/api/v1"):
+    headers = {
+        "X-Cisco-Meraki-API-Key": api_key,
+        "Content-Type": "application/json",
+    }
+
+    try:
+        with st.spinner("🔄 Fetching network list..."):
+            networks_url = f"{base_url}/organizations/{org_id}/networks"
+            networks_resp = requests.get(networks_url, headers=headers)
+            networks = networks_resp.json() if networks_resp.ok else []
+            if not networks:
+                raise Exception("No networks retrieved")
+
+        network_map = {net["name"]: net["id"] for net in networks}
+        extended_data = {}
+        location_map = {}
+
+        progress_bar = st.progress(0)
+        total = len(networks)
+
+        for i, net in enumerate(networks, start=1):
+            if update_progress:
+                update_progress(i, total, net["name"])
+            if st.session_state.get("cancel_extended_fetch"):
+                raise Exception("Fetch cancelled by user.")
+
+            network_id = net["id"]
+            network_name = net["name"]
+
+            vpn_url = f"{base_url}/networks/{network_id}/appliance/vpn/siteToSiteVpn"
+            rules_url = f"{base_url}/networks/{network_id}/appliance/firewall/l3FirewallRules"
+
+            vpn_resp = requests.get(vpn_url, headers=headers)
+            rules_resp = requests.get(rules_url, headers=headers)
+
+            vpn_data = vpn_resp.json() if vpn_resp.ok else {}
+            rules_data = rules_resp.json() if rules_resp.ok else {}
+
+            extended_data[network_id] = {
+                "network_name": network_name,
+                "vpn_settings": vpn_data,
+                "firewall_rules": rules_data.get("rules", [])
+            }
+
+        # Build location mapping
+        obj_map = st.session_state.get("object_map", {})
+        grp_map = st.session_state.get("group_map", {})
+        location_map = {}
+
+        for network_id, data in extended_data.items():
+            subnets = [s.get("localSubnet") for s in data.get("vpn_settings", {}).get("subnets", []) if "localSubnet" in s]
+            network_name = data.get("network_name")
+
+            for obj_id, obj in obj_map.items():
+                if "cidr" in obj:
+                    try:
+                        ip = ipaddress.ip_network(obj["cidr"], strict=False)
+                        for subnet in subnets:
+                            net = ipaddress.ip_network(subnet, strict=False)
+                            if ip.subnet_of(net) or ip == net:
+                                location_map.setdefault(f"OBJ({obj_id})", []).append(network_name)
+                    except:
+                        continue
+
+            for grp_id, group in grp_map.items():
+                members = group.get("objectIds", [])
+                for m in members:
+                    member_obj = obj_map.get(m)
+                    if member_obj and "cidr" in member_obj:
+                        try:
+                            ip = ipaddress.ip_network(member_obj["cidr"], strict=False)
+                            for subnet in subnets:
+                                net = ipaddress.ip_network(subnet, strict=False)
+                                if ip.subnet_of(net) or ip == net:
+                                    location_map.setdefault(f"GRP({grp_id})", []).append(network_name)
+                        except:
+                            continue
+
+        progress_bar.empty()
+        return {
+            "networks": networks,
+            "network_map": network_map,
+            "network_details": extended_data,
+            "location_map": location_map
+        }
+
+    except Exception as e:
+        st.error(f"❌ Error: {e}")
+        return {
+            "error": str(e),
+            "networks": [],
+            "network_map": {},
+            "network_details": {},
+            "location_map": {}
+        }
     
 
 # Try auto-fetch if session not set
@@ -642,6 +669,136 @@ if selected_tab == "🔎 Object & Group Search":
 elif selected_tab == "🛡️ Rule Checker":
 
         
+    def generate_rule_table(rules, 
+        source_input,
+        destination_input,
+        source_port_input,
+        port_input,
+        protocol,
+        filter_toggle,
+        object_map,
+        group_map,
+        highlight_colors):
+        rule_rows = []
+        matched_ports = {}
+        rule_match_ports = {}
+        found_partial_match = False
+        first_exact_match_index = None
+
+        for idx, rule in enumerate(rules):
+            rule_protocol = rule["protocol"].lower()
+            rule_dports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
+            rule_sports = [p.strip() for p in rule.get("srcPort", "").split(",")] if rule.get("srcPort", "").lower() != "any" else ["any"]
+
+            src_ids = rule["srcCidr"].split(",") if rule["srcCidr"] != "Any" else ["Any"]
+            dst_ids = rule["destCidr"].split(",") if rule["destCidr"] != "Any" else ["Any"]
+            resolved_src_cidrs = resolve_to_cidrs(src_ids, object_map, group_map)
+            resolved_dst_cidrs = resolve_to_cidrs(dst_ids, object_map, group_map)
+
+            src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
+            dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
+            skip_proto_check = protocol.strip().lower() == "any"
+            proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
+
+            dports_to_loop = port_input.split(",") if port_input.strip().lower() != "any" else ["any"]
+            skip_dport_check = port_input.strip().lower() == "any"
+            matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
+            skip_sport_check = source_port_input.strip().lower() == "any"
+            matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
+            matched_sports_list = [p.strip() for p in matched_sports_list if p in rule_sports or "any" in rule_sports]
+
+            sport_match = len(matched_sports_list) > 0
+            port_match = len(matched_ports_list) > 0 and sport_match
+
+            full_match = src_match and dst_match and proto_match and port_match
+
+            exact_src = (
+                True if skip_src_check and "0.0.0.0/0" in resolved_src_cidrs
+                else all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
+            )
+            exact_dst = (
+                True if skip_dst_check and "0.0.0.0/0" in resolved_dst_cidrs
+                else all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
+            )
+            exact_ports = skip_dport_check or set(matched_ports_list) == set(dports_to_loop)
+            exact_proto = skip_proto_check or rule_protocol == protocol.lower()
+
+            is_exact = full_match and exact_src and exact_dst and exact_ports and exact_proto
+
+            if full_match:
+                rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
+                for port in matched_ports_list:
+                    if port not in matched_ports:
+                        matched_ports[port] = idx
+                if is_exact and not found_partial_match and first_exact_match_index is None:
+                    first_exact_match_index = idx
+                elif not is_exact:
+                    found_partial_match = True
+
+        for idx, rule in enumerate(rules):
+            matched_ports_for_rule = rule_match_ports.get(idx, [])
+            matched_any = len(matched_ports_for_rule) > 0
+            is_exact_match = idx == first_exact_match_index
+            is_partial_match = matched_any and not is_exact_match
+
+            source_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["srcCidr"].split(",")]
+            dest_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["destCidr"].split(",")]
+
+            rule_rows.append({
+                "Rule Index": idx + 1,
+                "Action": rule["policy"].upper(),
+                "Comment": rule.get("comment", ""),
+                "Source": ", ".join(source_names),
+                "Source Port": rule.get("srcPort", ""),
+                "Destination": ", ".join(dest_names),
+                "Ports": rule["destPort"],
+                "Protocol": rule["protocol"],
+                "Matched Ports": ", ".join(matched_ports_for_rule),
+                "Matched ✅": matched_any,
+                "Exact Match ✅": is_exact_match,
+                "Partial Match 🔶": is_partial_match
+            })
+
+        df = pd.DataFrame(rule_rows)
+        df_to_show = df[df["Matched ✅"]] if filter_toggle else df
+
+        row_style_js = JsCode(f"""
+        function(params) {{
+            if (params.data["Exact Match ✅"] === true) {{
+                return {{
+                    backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
+                    color: 'white',
+                    fontWeight: 'bold'
+                }};
+            }}
+            if (params.data["Partial Match 🔶"] === true) {{
+                return {{
+                    backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
+                    fontWeight: 'bold'
+                }};
+            }}
+            return {{}};
+        }}
+        """)
+
+        gb = GridOptionsBuilder.from_dataframe(df_to_show)
+        gb.configure_column("Comment", wrapText=True, autoHeight=True)
+        gb.configure_column("Source", wrapText=True, autoHeight=True)
+        gb.configure_column("Destination", wrapText=True, autoHeight=True)
+        gb.configure_column("Protocol", wrapText=True, autoHeight=True)
+        gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
+        grid_options = gb.build()
+
+        st.markdown(f"")
+        AgGrid(
+            df_to_show,
+            gridOptions=grid_options,
+            enable_enterprise_modules=False,
+            fit_columns_on_grid_load=True,
+            use_container_width=True,
+            allow_unsafe_jscode=True
+        )
+
 
 
     # ---------------------- Search boxes ----------------------
@@ -706,31 +863,31 @@ elif selected_tab == "🛡️ Rule Checker":
     skip_dst_check = destination_input.strip().lower() == "any"
 
     # --------------- Location-aware logic ---------------
-    shared_locations = []
-    if "object_location_map" in st.session_state and "extended_data" in st.session_state:
-        obj_loc_map = st.session_state["object_location_map"]
-        extended_data = st.session_state["extended_data"]
+shared_locations = []
+if "object_location_map" in st.session_state and "extended_data" in st.session_state:
+    obj_loc_map = st.session_state["object_location_map"]
+    extended_data = st.session_state["extended_data"]
 
-        src_locs = set()
-        for cidr in source_cidrs:
-            src_locs.update(obj_loc_map.get(cidr, []))
-        dst_locs = set()
-        for cidr in destination_cidrs:
-            dst_locs.update(obj_loc_map.get(cidr, []))
+    src_locs = set()
+    for cidr in source_cidrs:
+        src_locs.update(obj_loc_map.get(cidr, []))
+    dst_locs = set()
+    for cidr in destination_cidrs:
+        dst_locs.update(obj_loc_map.get(cidr, []))
 
-        shared_locations = sorted(src_locs & dst_locs)
+    shared_locations = sorted(src_locs & dst_locs)
 
-    if shared_locations:
-        for location in shared_locations:
-            local_rules = []
-            for net_id, info in extended_data.get("network_details", {}).items():
-                if info.get("network_name") == location:
-                    local_rules = info.get("firewall_rules", [])
-                    break
+if shared_locations:
+    for location in shared_locations:
+        local_rules = []
+        for net_id, info in extended_data.get("network_details", {}).items():
+            if info.get("network_name") == location:
+                local_rules = info.get("firewall_rules", [])
+                break
 
-            if not local_rules:
-                st.warning(f"⚠️ No local firewall rules found for `{location}`.")
-                continue
+        if not local_rules:
+            st.warning(f"⚠️ No local firewall rules found for `{location}`.")
+            continue
 
         st.subheader(f"🏠 Local Firewall - `{location}`")
         generate_rule_table(
@@ -743,11 +900,7 @@ elif selected_tab == "🛡️ Rule Checker":
             filter_toggle=filter_toggle,
             object_map=object_map,
             group_map=group_map,
-            highlight_colors=highlight_colors,
-            source_cidrs=source_cidrs,
-            destination_cidrs=destination_cidrs,
-            skip_src_check=skip_src_check,
-            skip_dst_check=skip_dst_check
+            highlight_colors=highlight_colors
         )
 
     # Only show VPN rules if no shared location
@@ -755,43 +908,39 @@ elif selected_tab == "🛡️ Rule Checker":
         st.stop()
 
 
-    # --------- Use Local Firewall if shared location(s) ---------
-    if shared_locations:
-        for location in shared_locations:
-            local_rules = []
-            for net_id, info in extended_data.get("network_details", {}).items():
-                if info.get("network_name") == location:
-                    local_rules = info.get("firewall_rules", [])
-                    break
+    # # --------- Use Local Firewall if shared location(s) ---------
+    # if shared_locations:
+    #     for location in shared_locations:
+    #         local_rules = []
+    #         for net_id, info in extended_data.get("network_details", {}).items():
+    #             if info.get("network_name") == location:
+    #                 local_rules = info.get("firewall_rules", [])
+    #                 break
 
-            if not local_rules:
-                st.warning(f"⚠️ No local firewall rules found for `{location}`.")
-                continue
+    #         if not local_rules:
+    #             st.warning(f"⚠️ No local firewall rules found for `{location}`.")
+    #             continue
 
-            st.subheader(f"🏠 Local Firewall - `{location}`")
+    #         st.subheader(f"🏠 Local Firewall - `{location}`")
 
-            generate_rule_table(
-                rules=local_rules,
-                source_input=source_input,
-                destination_input=destination_input,
-                source_port_input=source_port_input,
-                port_input=port_input,
-                protocol=protocol,
-                filter_toggle=filter_toggle,
-                object_map=object_map,
-                group_map=group_map,
-                highlight_colors=highlight_colors,
-                source_cidrs=source_cidrs,
-                destination_cidrs=destination_cidrs,
-                skip_src_check=skip_src_check,
-                skip_dst_check=skip_dst_check
-            )
+    #         generate_rule_table(
+    #             rules=local_rules,
+    #             source_input=source_input,
+    #             destination_input=destination_input,
+    #             source_port_input=source_port_input,
+    #             port_input=port_input,
+    #             protocol=protocol,
+    #             filter_toggle=filter_toggle,
+    #             object_map=object_map,
+    #             group_map=group_map,
+    #             highlight_colors=highlight_colors
+    #         )
 
-        # Only show VPN rules if no shared location
-        if len(shared_locations) == 1:
-            st.stop()
+    #     # Only show VPN rules if no shared location
+    #     if len(shared_locations) == 1:
+    #         st.stop()
 
-    # ----------- Show Local if any shared location ----------- """
+    # # ----------- Show Local if any shared location ----------- """
 
 
 local_rule_rendered = False
@@ -833,11 +982,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
                 filter_toggle=filter_toggle,
                 object_map=object_map,
                 group_map=group_map,
-                highlight_colors=highlight_colors,
-                source_cidrs=source_cidrs,
-                destination_cidrs=destination_cidrs,
-                skip_src_check=skip_src_check,
-                skip_dst_check=skip_dst_check
+                highlight_colors=highlight_colors
             )
             local_rule_rendered = True
 
@@ -849,7 +994,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
     if not local_rule_rendered:
         st.subheader("🌐 VPN Firewall Rules")
         generate_rule_table(
-            rules=local_rules,
+            rules=rules_data,
             source_input=source_input,
             destination_input=destination_input,
             source_port_input=source_port_input,
@@ -858,11 +1003,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
             filter_toggle=filter_toggle,
             object_map=object_map,
             group_map=group_map,
-            highlight_colors=highlight_colors,
-            source_cidrs=source_cidrs,
-            destination_cidrs=destination_cidrs,
-            skip_src_check=skip_src_check,
-            skip_dst_check=skip_dst_check
+            highlight_colors=highlight_colors
         )
 
 
