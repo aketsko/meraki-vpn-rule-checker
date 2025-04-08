@@ -901,22 +901,22 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             for location in sorted(src_locs):
                 for net_id, info in extended_data.get("network_details", {}).items():
                     if info.get("network_name") == location:
-                        with st.expander(f"🏠 Local Firewall Rules - `{location}`", expanded=expand_all_local):
-                            generate_rule_table(
-                                rules=info.get("firewall_rules", []),
-                                source_port_input=source_port_input,
-                                port_input=port_input,
-                                protocol=protocol,
-                                filter_toggle=filter_toggle,
-                                object_map=object_map,
-                                group_map=group_map,
-                                highlight_colors=highlight_colors,
-                                source_cidrs=source_cidrs,
-                                destination_cidrs=destination_cidrs,
-                                skip_src_check=skip_src_check,
-                                skip_dst_check=skip_dst_check,
-                                key=f"local_{location}_fallback"
-                            )
+                        st.subheader(f"🏠 Local Firewall Rules - `{location}`"):
+                        generate_rule_table(
+                            rules=info.get("firewall_rules", []),
+                            source_port_input=source_port_input,
+                            port_input=port_input,
+                            protocol=protocol,
+                            filter_toggle=filter_toggle,
+                            object_map=object_map,
+                            group_map=group_map,
+                            highlight_colors=highlight_colors,
+                            source_cidrs=source_cidrs,
+                            destination_cidrs=destination_cidrs,
+                            skip_src_check=skip_src_check,
+                            skip_dst_check=skip_dst_check,
+                            key=f"local_{location}_fallback"
+                        )
             st.stop()
 
 
