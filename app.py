@@ -932,6 +932,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             show_local_only = False
             show_local_and_vpn = True
             show_vpn_only = False
+            shared_locs = src_locs
         else:
             show_local_only = fully_inside_same_location
             show_local_and_vpn = not fully_inside_same_location and shared_locs
@@ -940,6 +941,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         if is_dst_any:
             st.info("🌍 Destination is set to `any`. Evaluating local rules based on source location(s) and all VPN rules.")
+
         # ---------- LOCAL ONLY ----------
         if show_local_only:
             location = list(shared_locs)[0]
