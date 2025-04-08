@@ -637,7 +637,7 @@ with st.container():
     # LEFT: Label + Selectbox
     with col_left:
         st.markdown(" 🔎-🛡️-🧠 Choose the module:")
-        tab_names = ["🔎 Object & Group Search", "🛡️ Rule Checker", "🧠 Optimization Insights"]
+        tab_names = ["🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
 
         if "active_tab" not in st.session_state:
             st.session_state.active_tab = tab_names[0]  # Default
@@ -668,7 +668,7 @@ with st.container():
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
 
-if selected_tab == "🔎 Object & Group Search":
+if selected_tab == "🔎 Search Object or Group":
     from utils.match_logic import build_object_location_map  # Ensure this is imported
 
     # Build location map if extended data and not already available
@@ -815,7 +815,7 @@ if selected_tab == "🔎 Object & Group Search":
 
 
 
-elif selected_tab == "🛡️ Rule Checker":
+elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     
     def get_all_locations_for_cidrs(cidrs, location_map):
         locations = set()
@@ -929,7 +929,7 @@ elif selected_tab == "🛡️ Rule Checker":
         # ---------- LOCAL + VPN ----------
         elif show_local_and_vpn:
             count = len(shared_locs)
-            st.subheader(f"🏠 Local Firewall Rules - {shared_locs}")
+            st.subheader(f"🏠 Local Firewall Rules in {count} Networks")
             with st.expander(f"Collapse - `{count}`", expanded=expand_all_local):
                 for location in sorted(shared_locs):
                     for net_id, info in extended_data.get("network_details", {}).items():
