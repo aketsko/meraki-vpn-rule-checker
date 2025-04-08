@@ -565,7 +565,7 @@ group_map = st.session_state.get("group_map", {})
 # ------------------ SIDEBAR TOOLBOX ------------------
 
 # 🧰 Toolbox inside a collapsible section
-with st.sidebar.expander("🎨 Rule Highlighting Colors", expanded=False):
+with st.sidebar.expander("🎨 Dedinition Colors", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
     def color_slider(label, key, default_hex):
@@ -873,7 +873,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     with col_left:
         dynamic_mode = st.checkbox("🛠️ Dynamic update", value=False)
     with col_collapse:
-        expand_all_local = st.checkbox("🧩 Expand Local Firewall Rule sections", value=False)
+        expand_all_local = st.checkbox("🏠 Expand Local Firewall Rule sections", value=False)
 
     if not dynamic_mode:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
