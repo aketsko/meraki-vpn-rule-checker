@@ -504,7 +504,7 @@ with st.container():
 
     # RIGHT: Metrics
     with col_right:
-        col_b, col_r, col_o, col_g, col_n = st.columns(5)
+        col_b, col_n, col_o, col_g, col_r = st.columns(5)
         col_b.text("")
         col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
