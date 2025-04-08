@@ -412,6 +412,7 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
+st.sidebar.header("")
 with st.sidebar.expanderst.sidebar.header("☁️ Connect to Meraki Dashboard"):
 
     fetched_from_api = st.session_state.get("fetched_from_api", False)
