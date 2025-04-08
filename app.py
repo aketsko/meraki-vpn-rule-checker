@@ -926,7 +926,7 @@ elif selected_tab == "🛡️ Rule Checker":
                 group_map=group_map,
                 highlight_colors=highlight_colors,
                 title_prefix="🌐 VPN Firewall Rules",
-    k           ey="vpn_grid"
+                key="vpn_grid"
             )
             st.stop()
 
