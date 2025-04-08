@@ -908,8 +908,8 @@ elif selected_tab == "🛡️ Rule Checker":
             
 
         # Only show VPN rules if no shared location
-        if len(shared_locations) == 1:
-            st.stop()
+        # if len(shared_locations) == 1:
+        #     st.stop()
 
 
 
