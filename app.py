@@ -893,9 +893,9 @@ elif selected_tab == "🛡️ Rule Checker":
 
                 generate_rule_table(
                     rules=local_rules,
-                    source_input=source_input,
-                    source_cidrs=source_cidrs,
                     destination_cidrs=destination_cidrs,
+                    source_port_input=source_port_input,
+                    source_port_input=source_port_input,
                     port_input=port_input,
                     protocol=protocol,
                     filter_toggle=filter_toggle,
