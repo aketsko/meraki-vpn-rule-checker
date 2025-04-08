@@ -683,6 +683,9 @@ elif selected_tab == "🛡️ Rule Checker":
         skip_dst_check
     ):
 
+        rule_rows = []  # Initialize rule_rows as an empty list
+        rule_match_ports = {}  # Initialize rule_match_ports as an empty dictionary
+        matched_ports = {}  # Initialize matched_ports as an empty dictionary
         for idx, rule in enumerate(rules):
             rule_protocol = rule["protocol"].lower()
             rule_dports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
