@@ -119,7 +119,8 @@ def generate_rule_table(rules,
     destination_cidrs,
     skip_src_check,
     skip_dst_check,
-    title_prefix
+    title_prefix="Rules",
+    key="default_grid"
 ):
 
     rule_rows = []  # Initialize rule_rows as an empty list
@@ -239,6 +240,7 @@ def generate_rule_table(rules,
         fit_columns_on_grid_load=True,
         use_container_width=True,
         allow_unsafe_jscode=True
+        key=key
     )
 
 
@@ -900,7 +902,8 @@ elif selected_tab == "🛡️ Rule Checker":
                     object_map=object_map,
                     group_map=group_map,
                     highlight_colors=highlight_colors,
-                    title_prefix=f"Local Firewall Rules - {location}"
+                    title_prefix=f"🏠 Local Firewall Rules - {location}",
+                    key=f"local_grid_{location}"
                 )
                 local_rule_rendered = True
 
@@ -922,7 +925,8 @@ elif selected_tab == "🛡️ Rule Checker":
                 object_map=object_map,
                 group_map=group_map,
                 highlight_colors=highlight_colors,
-                title_prefix="VPN Firewall Rules"
+                title_prefix="🌐 VPN Firewall Rules",
+    k           ey="vpn_grid"
             )
             st.stop()
 
@@ -939,7 +943,8 @@ elif selected_tab == "🛡️ Rule Checker":
             object_map=object_map,
             group_map=group_map,
             highlight_colors=highlight_colors,
-            title_prefix="VPN Firewall Rules"
+            title_prefix="🌐 VPN Firewall Rules",
+            key="vpn_grid"
         )
 
 
