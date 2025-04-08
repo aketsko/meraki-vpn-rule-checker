@@ -893,7 +893,7 @@ if shared_locations:
 
         st.subheader(f"🏠 Local Firewall - `{location}`")
         generate_rule_table(
-            rules=local_rules,
+            rules=rules_data,
             source_input=source_input,
             destination_input=destination_input,
             source_port_input=source_port_input,
@@ -902,8 +902,8 @@ if shared_locations:
             filter_toggle=filter_toggle,
             object_map=object_map,
             group_map=group_map,
-            highlight_colors=highlight_colors
-        )
+            highlight_colors=highlight_colors)
+          
 
     # Only show VPN rules if no shared location
     if len(shared_locations) == 1:
