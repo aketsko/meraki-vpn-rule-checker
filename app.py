@@ -905,7 +905,7 @@ if shared_locations:
         st.stop()
 
 
-
+""" 
     # --------- Use Local Firewall if shared location(s) ---------
     if shared_locations:
         for location in shared_locations:
@@ -938,7 +938,7 @@ if shared_locations:
         if len(shared_locations) == 1:
             st.stop()
 
-    # ----------- Show Local if any shared location -----------
+    # ----------- Show Local if any shared location ----------- """
 
 local_rule_rendered = False
 
@@ -989,7 +989,7 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
 
 # ----------- Fallback to VPN rules (only if needed) -----------
     if not local_rule_rendered:
-        st.subheader("🌐 VPN Firewall Rules")
+        st.subheader("🌐 VPN Firewall Rules FB")
         generate_rule_table(
             rules=rules_data,
             source_input=source_input,
