@@ -140,8 +140,14 @@ def generate_rule_table(rules,
 
         src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
         dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
+
         skip_proto_check = protocol.strip().lower() == "any"
-        proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
+        if skip_proto_check:
+            proto_match = rule_protocol == "any"
+            exact_proto = rule_protocol == "any"
+        else:
+            proto_match = rule_protocol == protocol.lower() or rule_protocol == "any"
+            exact_proto = rule_protocol == protocol.lower()
 
         dports_to_loop = port_input.split(",") if port_input.strip().lower() != "any" else ["any"]
         skip_dport_check = port_input.strip().lower() == "any"
@@ -167,13 +173,11 @@ def generate_rule_table(rules,
 
         input_dports_set = set(p.strip() for p in dports_to_loop if p.strip())
         rule_dports_set = set(rule_dports)
-        exact_ports = skip_dport_check or (rule_dports_set == input_dports_set)
+        exact_ports = (rule_dports_set == {"any"}) if skip_dport_check else (rule_dports_set == input_dports_set)
 
         input_sports_set = set(p.strip() for p in src_ports_input_list if p.strip())
         rule_sports_set = set(rule_sports)
-        exact_sports = skip_sport_check or (rule_sports_set == input_sports_set)
-
-        exact_proto = skip_proto_check or rule_protocol == protocol.lower()
+        exact_sports = (rule_sports_set == {"any"}) if skip_sport_check else (rule_sports_set == input_sports_set)
 
         is_exact = full_match and exact_src and exact_dst and exact_ports and exact_sports and exact_proto
 
@@ -251,6 +255,7 @@ def generate_rule_table(rules,
         allow_unsafe_jscode=True,
         key=key
     )
+
 
 
 
