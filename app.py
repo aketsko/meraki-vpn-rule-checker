@@ -667,9 +667,8 @@ if selected_tab == "🔎 Object & Group Search":
 
 
 
-
 elif selected_tab == "🛡️ Rule Checker":
-    from utils.match_logic import object_location_map  # Ensure this import matches your setup
+    object_location_map = st.session_state.get("object_location_map", {})
 
     def custom_search(term: str):
         term = term.strip()
@@ -854,13 +853,15 @@ elif selected_tab == "🛡️ Rule Checker":
 
     if use_local_firewall:
         for loc in sorted(shared_locs):
-            net_id = next((nid for nid, v in st.session_state.get("extended_data", {}).get("network_details", {}).items() if v.get("network_name") == loc), None)
+            extended_data = st.session_state.get("extended_data", {})
+            net_id = next((nid for nid, v in extended_data.get("network_details", {}).items() if v.get("network_name") == loc), None)
             if net_id:
-                local_rules = st.session_state["extended_data"]["network_details"][net_id].get("firewall_rules", [])
+                local_rules = extended_data["network_details"][net_id].get("firewall_rules", [])
                 if local_rules:
                     evaluate_rule_block(local_rules, f"Local Firewall - {loc}")
     else:
         evaluate_rule_block(rules_data, "VPN Firewall Rules")
+
 
 
 elif selected_tab == "🧠 Optimization Insights":
