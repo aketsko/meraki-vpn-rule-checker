@@ -74,3 +74,54 @@ def find_object_locations(cidr_list, extended_data):
 
     return sorted(locations)
 
+
+def build_object_location_map(objects_data, groups_data, extended_data):
+    object_location_map = {}
+    vpn_subnets_per_network = {}
+
+    # 1. Collect VPN subnets per network
+    for net_id, details in extended_data.get("network_details", {}).items():
+        network_name = details.get("network_name", "")
+        subnets = details.get("vpn_settings", {}).get("subnets", [])
+        cidrs = [s.get("localSubnet", "") for s in subnets if "localSubnet" in s]
+        vpn_subnets_per_network[network_name] = cidrs
+
+    # 2. Map each object CIDR to networks
+    for obj in objects_data:
+        cidr = obj.get("cidr")
+        if not cidr:
+            continue
+        try:
+            obj_net = ipaddress.ip_network(cidr, strict=False)
+        except Exception:
+            continue
+
+        matching_networks = []
+        for net_name, vpn_subnets in vpn_subnets_per_network.items():
+            for subnet in vpn_subnets:
+                try:
+                    vpn_net = ipaddress.ip_network(subnet, strict=False)
+                    if obj_net.subnet_of(vpn_net) or obj_net == vpn_net:
+                        matching_networks.append(net_name)
+                        break
+                except:
+                    continue
+        if matching_networks:
+            object_location_map[cidr] = sorted(set(matching_networks))
+
+    # 3. Map each group (by ID) to networks via member CIDRs
+    for group in groups_data:
+        group_id = group.get("id")
+        member_ids = group.get("objectIds", [])
+        group_key = f"GRP({group_id})"
+
+        locations = set()
+        for mid in member_ids:
+            obj = next((o for o in objects_data if o.get("id") == mid), None)
+            if obj and "cidr" in obj and obj["cidr"] in object_location_map:
+                locations.update(object_location_map[obj["cidr"]])
+
+        if locations:
+            object_location_map[group_key] = sorted(locations)
+
+    return object_location_map

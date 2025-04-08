@@ -2,11 +2,12 @@ import streamlit as st
 import pandas as pd
 import requests
 import json
+import ipaddress
 from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
-from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, find_object_locations
+from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, find_object_locations, build_object_location_map
 from streamlit_searchbox import st_searchbox
 #from utils.API import fetch_meraki_data_extended
 
@@ -289,19 +290,26 @@ progress_bar = st.sidebar.empty()
 progress_text = st.sidebar.empty()
 extended_status = st.sidebar.empty()
 
-# Place the cancel button first to register the cancel intent early
-if st.sidebar.button("❌ Cancel Fetch"):
-    st.session_state["cancel_extended_fetch"] = True
-    extended_status.info("⛔ Fetch cancelled by user.")
+# Sidebar placeholders
+cancel_button_placeholder = st.sidebar.empty()
+progress_bar = st.sidebar.empty()
+progress_text = st.sidebar.empty()
+extended_status = st.sidebar.empty()
 
-# Then check for the extended fetch button
+# Cancel button - only shown while fetching is in progress
+if st.session_state.get("fetching_extended", False):
+    if cancel_button_placeholder.button("❌ Cancel Fetch"):
+        st.session_state["cancel_extended_fetch"] = True
+        extended_status.info("⛔ Fetch cancelled by user.")
+
+# Extended fetch button
 if st.sidebar.button("📡 Get Extended API Data"):
     st.session_state["cancel_extended_fetch"] = False
-
+    st.session_state["fetching_extended"] = True
 
     def update_progress(current, total, name):
         ratio = current / total if total else 0
-        ratio = min(max(ratio, 0.0), 1.0)  # Ensure it's between 0.0 and 1.0
+        ratio = min(max(ratio, 0.0), 1.0)
         try:
             progress_bar.progress(ratio)
             progress_text.markdown(
@@ -309,31 +317,44 @@ if st.sidebar.button("📡 Get Extended API Data"):
                 unsafe_allow_html=True
             )
         except:
-            pass  # Streamlit isn't ready yet or race condition — silently skip
+            pass
 
+    try:
+        extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
 
-    with st.spinner("Fetching extended Meraki data (networks, VPN settings, rules)..."):
-        try:
-            extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
-
-            # Check for cancellation
-            if st.session_state.get("cancel_extended_fetch"):
-                extended_status.info("⛔ Fetch cancelled before completion.")
-                st.session_state["extended_data"] = None
-
-            elif "error" in extended_result:
-                extended_status.error(f"❌ Error: {extended_result['error']}")
-                st.session_state["extended_data"] = None
-
-            else:
-                st.session_state["extended_data"] = extended_result
-                extended_status.success("✅ Extended data successfully retrieved.")
-
-        except Exception as e:
-            extended_status.error(f"❌ Exception: {e}")
+        if st.session_state.get("cancel_extended_fetch"):
+            extended_status.info("⛔ Fetch cancelled before completion.")
             st.session_state["extended_data"] = None
-        st.write("DEBUG: extended_result", extended_result)
+            st.session_state["object_location_map"] = {}
+        elif "error" in extended_result:
+            extended_status.error(f"❌ Error: {extended_result['error']}")
+            st.session_state["extended_data"] = None
+            st.session_state["object_location_map"] = {}
+        else:
+            st.session_state["extended_data"] = extended_result
 
+            # ✅ Notify success BEFORE building location map
+            extended_status.success("✅ Extended Meraki data has been fetched successfully!")
+
+            # 🔄 Build object-location map
+            with st.spinner("🧠 Mapping objects to VPN locations..."):
+                location_map = build_object_location_map(
+                    st.session_state["objects_data"],
+                    st.session_state["groups_data"],
+                    extended_result
+                )
+                st.session_state["object_location_map"] = location_map
+
+    except Exception as e:
+        extended_status.error(f"❌ Exception: {e}")
+        st.session_state["extended_data"] = None
+        st.session_state["object_location_map"] = {}
+
+    # Clean up
+    st.session_state["fetching_extended"] = False
+    cancel_button_placeholder.empty()
+    progress_bar.empty()
+    progress_text.empty()
 
 # Upload Snapshot to restore everything
 uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
@@ -346,32 +367,20 @@ if uploaded_snapshot:
         st.session_state["groups_data"] = snapshot.get("groups_data", [])
         st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
         st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
+        st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
+        st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Додано
+        st.session_state["fetched_from_api"] = True  # Emulate success
 
-        # Extended data
-        extended_data = snapshot.get("extended_api_data", {})
-        st.session_state["extended_data"] = extended_data
-        st.session_state["fetched_from_api"] = True  # Emulate fetch success
+        network_count = len(st.session_state["extended_data"].get("network_map", {}))
+        import time
 
-        # Optional: Show metric feedback
-        network_count = len(extended_data.get("network_map", {}))
-        st.sidebar.success(f"📦 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
+        snapshot_msg = st.sidebar.empty()
+        snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
+        time.sleep(10)
+        snapshot_msg.empty()
 
     except Exception as e:
         st.error(f"❌ Failed to load snapshot: {e}")
-
-
-# File override only for rules if API was used
-st.sidebar.header("💾 Upload Data Files")
-
-if st.session_state.get("fetched_from_api", False):
-    uploaded_rules_file = st.sidebar.file_uploader("📄 Upload alternative Rules.json", type="json", key="rules_upload")
-    if uploaded_rules_file:
-        uploaded_rules_file.seek(0)
-        try:
-            rules_json = load_json_file(uploaded_rules_file)
-            st.session_state["rules_data"] = rules_json.get("rules", [])
-        except Exception as e:
-            st.error(f"❌ Failed to load Rules.json: {e}")
 
 # Full manual upload fallback
 
@@ -427,33 +436,47 @@ highlight_colors = {
 st.sidebar.markdown("---")
 
 # Save & Download all API data
-def prepare_snapshot():
+
+def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, object_location_map):
     snapshot = {
-        "rules_data": st.session_state.get("rules_data", []),
-        "objects_data": st.session_state.get("objects_data", []),
-        "groups_data": st.session_state.get("groups_data", []),
-        "extended_api_data": st.session_state.get("extended_api_data", {}),
-        "location_map": st.session_state.get("location_map", {})
+        "rules_data": rules_data,
+        "objects_data": objects_data,
+        "groups_data": groups_data,
+        "extended_api_data": extended_data or {},
+        "location_map": object_location_map or {}
     }
 
-    # In snapshot loading:
-    st.session_state["rules_data"] = snapshot.get("rules_data", [])
-    st.session_state["objects_data"] = snapshot.get("objects_data", [])
-    st.session_state["groups_data"] = snapshot.get("groups_data", [])
-    st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
-    st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-    st.session_state["extended_api_data"] = snapshot.get("extended_api_data", {})
-    st.session_state["location_map"] = snapshot.get("location_map", {})
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"meraki_snapshot_{timestamp}.json"
+
+    return json.dumps(snapshot, indent=2), filename
+
+
+
 
 # Trigger the snapshot and download immediately
-if st.sidebar.button("💾 Save API Snapshot"):
-    snapshot_str, snapshot_filename = prepare_snapshot()
-    st.sidebar.download_button(
-        label="Download Started...",
-        data=snapshot_str,
-        file_name=snapshot_filename,
-        mime="application/json"
-    )
+if st.sidebar.button("💾 Create API Snapshot"):
+    try:
+        snapshot_str, snapshot_filename = prepare_snapshot(
+            st.session_state.get("rules_data", []),
+            st.session_state.get("objects_data", []),
+            st.session_state.get("groups_data", []),
+            st.session_state.get("extended_data", {}),
+            st.session_state.get("object_location_map", {})
+        )
+
+        # Trigger download immediately using download_button and then hide it
+        st.sidebar.download_button(
+            label="📥 Download API Snapshot",
+            data=snapshot_str,
+            file_name=snapshot_filename,
+            mime="application/json",
+            key="auto_snapshot_download"
+        )
+
+    except Exception as e:
+        st.sidebar.error(f"❌ Snapshot error: {e}")
+
 
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
@@ -493,106 +516,113 @@ with st.container():
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
 
-import ipaddress
-
-#--------------------New---------------------------------
-
-def get_matching_network_names(cidrs, extended_data):
-    matching_networks = set()
-
-    if not extended_data:
-        return ""
-
-    for net_id, data in extended_data.get("network_details", {}).items():
-        network_name = data.get("network_name", f"(unnamed: {net_id})")
-        vpn_settings = data.get("vpn_settings", {})
-        local_subnets = vpn_settings.get("subnets", [])
-
-        for obj_cidr in cidrs:
-            try:
-                obj_net = ipaddress.ip_network(obj_cidr, strict=False)
-            except ValueError:
-                continue
-
-            for subnet in local_subnets:
-                try:
-                    vpn_net = ipaddress.ip_network(subnet.get("localSubnet", ""), strict=False)
-                    if obj_net.subnet_of(vpn_net) or obj_net == vpn_net or vpn_net.subnet_of(obj_net):
-                        matching_networks.add(network_name)
-                except ValueError:
-                    continue
-
-    return ", ".join(sorted(matching_networks))
-
-#--------------------Cose New---------------------------------
-
-
-location_map = st.session_state.get("location_map", {})
-
-# -------- Render based on selected_tab ----------
 if selected_tab == "🔎 Object & Group Search":
+    from utils.match_logic import build_object_location_map  # Ensure this is imported
 
-    search_term = st.text_input("Search by name or CIDR:", "").lower()
+    # Build location map if extended data and not already available
+    if "object_location_map" not in st.session_state and "extended_data" in st.session_state and st.session_state["extended_data"]:
+        with st.spinner("🧠 Mapping objects to VPN locations..."):
+            st.session_state["object_location_map"] = build_object_location_map(
+                st.session_state["objects_data"],
+                st.session_state["groups_data"],
+                st.session_state["extended_data"]
+            )
+
+    location_map = st.session_state.get("object_location_map", {})
+
+    # --- Search Fields ---
+    col1, col2 = st.columns([2, 2])
+
+    with col1:
+        search_term = st.text_input("Search by name or CIDR:", "").lower()
+
+    with col2:
+        location_term = None
+
+        if location_map:
+            def location_search(term: str):
+                term = term.strip().lower()
+                locations = set()
+                for entry in location_map.values():
+                    if isinstance(entry, list):
+                        locations.update(entry)
+                    elif isinstance(entry, str):
+                        locations.add(entry)
+                return [(loc, loc) for loc in sorted(locations) if term in loc.lower()]
+
+            location_term = st_searchbox(
+                location_search,
+                placeholder="🔍 Filter by location (optional)",
+                label="VPN Location",
+                key="location_searchbox"
+            )
 
     def match_object(obj, term):
         return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
 
-    extended = st.session_state.get("extended_data", {})
-    network_details = extended.get("network_details", {}) if isinstance(extended, dict) else {}
-
-    def find_locations_for_cidr(cidr):
-        matches = []
-        for net_id, details in network_details.items():
-            subnets = details.get("vpn_settings", {}).get("subnets", [])
-            for s in subnets:
-                subnet_cidr = s.get("localSubnet", "")
-                if match_input_to_rule([subnet_cidr], cidr):
-                    matches.append(details.get("network_name", net_id))
-        return ", ".join(sorted(set(matches)))
-
-    def find_locations_for_group(group):
-        all_cidrs = []
-        for obj_id in group.get("objectIds", []):
-            obj = object_map.get(str(obj_id))
-            if obj and "cidr" in obj:
-                all_cidrs.append(obj["cidr"])
-        locations = set()
-        for cidr in all_cidrs:
-            locations.update(find_locations_for_cidr(cidr).split(", "))
-        return ", ".join(sorted(locations))
-
     filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
     filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
+
+    if location_term:
+        def obj_matches_location(o):
+            obj_id = o.get("id", "")
+            cidr = o.get("cidr", "")
+            return (
+                location_term in location_map.get(f"OBJ({obj_id})", []) or
+                location_term in location_map.get(cidr, [])
+            )
+
+        def grp_matches_location(g):
+            grp_id = g.get("id", "")
+            return location_term in location_map.get(f"GRP({grp_id})", [])
+
+        filtered_objs = [o for o in filtered_objs if obj_matches_location(o)]
+        filtered_grps = [g for g in filtered_grps if grp_matches_location(g)]
 
     st.subheader("🔹 Matching Network Objects")
     object_rows = []
     for o in filtered_objs:
-        oid = f"OBJ({o['id']})"
+        cidr = o.get("cidr", "")
+        location = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({o.get('id')})", []))
         object_rows.append({
             "ID": o.get("id", ""),
             "Name": o.get("name", ""),
-            "CIDR": o.get("cidr", ""),
+            "CIDR": cidr,
             "FQDN": o.get("fqdn", ""),
             "Group IDs": o.get("groupIds", []),
-            "Location": ", ".join(location_map.get(oid, [])),
-            "Network IDs": o.get("networkIds", [])
+            "Network IDs": o.get("networkIds", []),
+            "Location": location
         })
-        
     st.dataframe(safe_dataframe(object_rows))
 
     st.subheader("🔸 Matching Object Groups")
     group_rows = []
     for g in filtered_grps:
-        gid = f"GRP({g['id']})"
+        group_id = str(g.get("id", ""))
+        group_name = str(g.get("name", ""))
+        group_objects = g.get("objectIds", [])
+        group_locations = set()
+
+        for obj_id in group_objects:
+            obj = object_map.get(obj_id)
+            if obj:
+                cidr = obj.get("cidr", "")
+                loc = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({obj.get('id')})", []))
+                if loc:
+                    if isinstance(loc, str):
+                        group_locations.update(loc.split(", "))
+                    elif isinstance(loc, list):
+                        group_locations.update(loc)
+
+        group_locations.update(location_map.get(f"GRP({group_id})", []))
         group_rows.append({
-            "ID": str(g.get("id", "")),
-            "Name": str(g.get("name", "")),
+            "ID": group_id,
+            "Name": group_name,
             "Type": str(g.get("category", "")),
-            "Object Count": str(len(g.get("objectIds", []))),
-            "Location": ", ".join(location_map.get(gid, [])),
-            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else ""
-            
-       })
+            "Object Count": str(len(group_objects)),
+            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
+            "Location": ", ".join(sorted(group_locations)) if group_locations else ""
+        })
     st.dataframe(safe_dataframe(group_rows))
 
     if filtered_grps:
@@ -612,12 +642,13 @@ if selected_tab == "🔎 Object & Group Search":
             member_data = []
             for o in member_objs:
                 cidr = o.get("cidr", "")
+                location = location_map.get(cidr, "")
                 member_data.append({
                     "Object ID": o.get("id", ""),
                     "Name": o.get("name", ""),
                     "CIDR": cidr,
                     "FQDN": o.get("fqdn", ""),
-                    "Location": find_locations_for_cidr(cidr)
+                    "Location": location
                 })
 
             if member_data:
@@ -626,10 +657,6 @@ if selected_tab == "🔎 Object & Group Search":
                 st.info("This group has no valid or displayable objects.")
     else:
         st.info("No groups match the current search.")
-
-
-
-
 
 
 
