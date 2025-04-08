@@ -261,12 +261,12 @@ def generate_rule_table(rules,
 
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
-st.sidebar.header("📡 Connect to Meraki Dashboard")
+st.sidebar.header("☁️ Connect to Meraki Dashboard")
 
 fetched_from_api = st.session_state.get("fetched_from_api", False)
 with st.sidebar.expander("🔒 API Access", expanded=not (st.session_state.get("fetched_from_api") or (st.session_state.get("rules_data") and st.session_state.get("objects_data") and st.session_state.get("groups_data")))):
     
-    org_id = st.text_input("🏢 Enter your Organization ID", value="")
+    org_id = st.text_input("🆔 Enter your Organization ID", value="")
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
     
 
@@ -873,7 +873,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     with col_left:
         dynamic_mode = st.checkbox("🛠️ Dynamic update", value=False)
     with col_collapse:
-        expand_all_local = st.checkbox("🏢 Expand Local Firewall Rule sections", value=False)
+        expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=False)
 
     if not dynamic_mode:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
@@ -901,7 +901,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             for location in sorted(src_locs):
                 for net_id, info in extended_data.get("network_details", {}).items():
                     if info.get("network_name") == location:
-                        st.subheader(f"🏢 Local Firewall Rules - `{location}`")
+                        st.subheader(f"🧱 Local Firewall Rules - `{location}`")
                         generate_rule_table(
                             rules=info.get("firewall_rules", []),
                             source_port_input=source_port_input,
@@ -945,7 +945,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         # ---------- LOCAL ONLY ----------
         if show_local_only:
             location = list(shared_locs)[0]
-            st.subheader(f"🏢 Local Firewall Rules - `{location}`")
+            st.subheader(f"🧱 Local Firewall Rules - `{location}`")
             for net_id, info in extended_data.get("network_details", {}).items():
                 if info.get("network_name") == location:
                     generate_rule_table(
@@ -964,18 +964,18 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         key=f"local_{location}"
                     )
                     break
-            st.info("🏢 Local rules fully evaluated based on single shared location. VPN rules skipped.")
+            st.info("🧱 Local rules fully evaluated based on single shared location. VPN rules skipped.")
             st.stop()
             
         # ---------- LOCAL + VPN ----------
         elif show_local_and_vpn:
             count = len(shared_locs)
-            st.subheader(f"🏢 Local Firewall Rules in {count} Networks")
+            st.subheader(f"🧱 Local Firewall Rules")
             with st.expander(f"Collapse - `{count}`", expanded=expand_all_local):
                 for location in sorted(shared_locs):
                     for net_id, info in extended_data.get("network_details", {}).items():
                         if info.get("network_name") == location:
-                            st.subheader(f"🏢 Local Firewall Rules - `{location}`")
+                            st.subheader(f"🧱 Local Firewall Rules - `{location}`")
                             generate_rule_table(
                                 rules=info.get("firewall_rules", []),
                                 source_port_input=source_port_input,
