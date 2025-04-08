@@ -850,45 +850,69 @@ elif selected_tab == "🛡️ Rule Checker":
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
         st.stop()
 
-    # --------------- Resolve Inputs ---------------
+# ----------- Local & VPN Rules Logic -----------
+
+    # Ensure these are computed once
     source_input = source_input or "any"
     destination_input = destination_input or "any"
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
-
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
 
-    # --------------- Location-aware logic ---------------
-shared_locations = []
-if "object_location_map" in st.session_state and "extended_data" in st.session_state:
-    obj_loc_map = st.session_state["object_location_map"]
-    extended_data = st.session_state["extended_data"]
+    local_rule_rendered = False
+    shared_locations = []
 
-    src_locs = set()
-    for cidr in source_cidrs:
-        src_locs.update(obj_loc_map.get(cidr, []))
-    dst_locs = set()
-    for cidr in destination_cidrs:
-        dst_locs.update(obj_loc_map.get(cidr, []))
+    # Check for shared locations
+    if "object_location_map" in st.session_state and "extended_data" in st.session_state:
+        obj_loc_map = st.session_state["object_location_map"]
+        extended_data = st.session_state["extended_data"]
 
-    shared_locations = sorted(src_locs & dst_locs)
+        src_locs = set()
+        for cidr in source_cidrs:
+            src_locs.update(obj_loc_map.get(cidr, []))
+        dst_locs = set()
+        for cidr in destination_cidrs:
+            dst_locs.update(obj_loc_map.get(cidr, []))
 
-if shared_locations:
-    for location in shared_locations:
-        local_rules = []
-        for net_id, info in extended_data.get("network_details", {}).items():
-            if info.get("network_name") == location:
-                local_rules = info.get("firewall_rules", [])
-                break
+        shared_locations = sorted(src_locs & dst_locs)
 
-        if not local_rules:
-            st.warning(f"⚠️ No local firewall rules found for `{location}`.")
-            continue
+        if shared_locations:
+            for location in shared_locations:
+                local_rules = []
+                for net_id, info in extended_data.get("network_details", {}).items():
+                    if info.get("network_name") == location:
+                        local_rules = info.get("firewall_rules", [])
+                        break
 
-        st.subheader(f"🏠 Local Firewall - `{location}`")
+                if not local_rules:
+                    st.warning(f"⚠️ No local firewall rules found for `{location}`.")
+                    continue
+
+                st.subheader(f"🏠 Local Firewall - `{location}`")
+                generate_rule_table(
+                    rules=local_rules,
+                    source_input=source_input,
+                    destination_input=destination_input,
+                    source_port_input=source_port_input,
+                    port_input=port_input,
+                    protocol=protocol,
+                    filter_toggle=filter_toggle,
+                    object_map=object_map,
+                    group_map=group_map,
+                    highlight_colors=highlight_colors
+                )
+                local_rule_rendered = True
+
+            # If exactly one local match rendered, skip VPN fallback
+            if local_rule_rendered and len(shared_locations) == 1:
+                st.stop()
+
+    # VPN rules fallback (only if no exclusive local rules matched)
+    if not local_rule_rendered:
+        st.subheader("🌐 VPN Firewall Rules")
         generate_rule_table(
-            rules=local_rules,
+            rules=rules_data,
             source_input=source_input,
             destination_input=destination_input,
             source_port_input=source_port_input,
@@ -899,110 +923,6 @@ if shared_locations:
             group_map=group_map,
             highlight_colors=highlight_colors
         )
-
-    # Only show VPN rules if no shared location
-    if len(shared_locations) == 1:
-        st.stop()
-
-
-
-    # --------- Use Local Firewall if shared location(s) ---------
-    if shared_locations:
-        for location in shared_locations:
-            local_rules = []
-            for net_id, info in extended_data.get("network_details", {}).items():
-                if info.get("network_name") == location:
-                    local_rules = info.get("firewall_rules", [])
-                    break
-
-            if not local_rules:
-                st.warning(f"⚠️ No local firewall rules found for `{location}`.")
-                continue
-
-            st.subheader(f"🏠 Local Firewall - `{location}`")
-
-            generate_rule_table(
-                rules=local_rules,
-                source_input=source_input,
-                destination_input=destination_input,
-                source_port_input=source_port_input,
-                port_input=port_input,
-                protocol=protocol,
-                filter_toggle=filter_toggle,
-                object_map=object_map,
-                group_map=group_map,
-                highlight_colors=highlight_colors
-            )
-
-        # Only show VPN rules if no shared location
-        if len(shared_locations) == 1:
-            st.stop()
-
-    # ----------- Show Local if any shared location -----------
-
-local_rule_rendered = False
-
-# --------- Use Local Firewall if shared location(s) ---------
-if "object_location_map" in st.session_state and "extended_data" in st.session_state:
-    obj_loc_map = st.session_state["object_location_map"]
-    extended_data = st.session_state["extended_data"]
-
-    src_locs = set()
-    for cidr in source_cidrs:
-        src_locs.update(obj_loc_map.get(cidr, []))
-    dst_locs = set()
-    for cidr in destination_cidrs:
-        dst_locs.update(obj_loc_map.get(cidr, []))
-
-    shared_locations = sorted(src_locs & dst_locs)
-
-    if shared_locations:
-        for location in shared_locations:
-            local_rules = []
-            for net_id, info in extended_data.get("network_details", {}).items():
-                if info.get("network_name") == location:
-                    local_rules = info.get("firewall_rules", [])
-                    break
-
-            if not local_rules:
-                st.warning(f"⚠️ No local firewall rules found for `{location}`.")
-                continue
-
-            st.subheader(f"🏠 Local Firewall - `{location}`")
-            generate_rule_table(
-                rules=local_rules,
-                source_input=source_input,
-                destination_input=destination_input,
-                source_port_input=source_port_input,
-                port_input=port_input,
-                protocol=protocol,
-                filter_toggle=filter_toggle,
-                object_map=object_map,
-                group_map=group_map,
-                highlight_colors=highlight_colors
-            )
-            local_rule_rendered = True
-
-        # If exactly one location matched, do NOT show VPN rules again
-        if local_rule_rendered and len(shared_locations) == 1:
-            st.stop()
-
-# ----------- Fallback to VPN rules (only if needed) -----------
-if not local_rule_rendered:
-    st.subheader("🌐 VPN Firewall Rules")
-    generate_rule_table(
-        rules=rules_data,
-        source_input=source_input,
-        destination_input=destination_input,
-        source_port_input=source_port_input,
-        port_input=port_input,
-        protocol=protocol,
-        filter_toggle=filter_toggle,
-        object_map=object_map,
-        group_map=group_map,
-        highlight_colors=highlight_colors
-    )
-
 
 
 
