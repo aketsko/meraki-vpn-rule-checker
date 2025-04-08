@@ -901,7 +901,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             for location in sorted(src_locs):
                 for net_id, info in extended_data.get("network_details", {}).items():
                     if info.get("network_name") == location:
-                        st.subheader(f"🏠 Local Firewall Rules - `{location}`"):
+                        st.subheader(f"🏠 Local Firewall Rules - `{location}`")
                         generate_rule_table(
                             rules=info.get("firewall_rules", []),
                             source_port_input=source_port_input,
