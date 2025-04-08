@@ -118,7 +118,8 @@ def generate_rule_table(rules,
     source_cidrs,
     destination_cidrs,
     skip_src_check,
-    skip_dst_check
+    skip_dst_check,
+    title_prefix
 ):
 
     rule_rows = []  # Initialize rule_rows as an empty list
@@ -230,7 +231,7 @@ def generate_rule_table(rules,
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     grid_options = gb.build()
 
-    st.markdown(f"")
+    st.markdown(title_prefix)
     AgGrid(
         df_to_show,
         gridOptions=grid_options,
@@ -800,7 +801,7 @@ if selected_tab == "🔎 Object & Group Search":
 
 elif selected_tab == "🛡️ Rule Checker":
 
-    # ---------------------- Search boxes ----------------------
+    # --- Search input helpers ---
     def custom_search(term: str):
         term = term.strip()
         results = []
@@ -825,22 +826,20 @@ elif selected_tab == "🛡️ Rule Checker":
 
     def passthrough_port(term: str):
         term = term.strip()
-        if not term:
-            return []
-        return [(f"Use: {term}", term)]
+        return [(f"Use: {term}", term)] if term else []
 
-    # -------------------- Input UI --------------------
+    # --- Input UI ---
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        source_input = st_searchbox(custom_search, placeholder="Source (Object, Group, CIDR, or 'any')", label="Source (SRC)", key="src_searchbox", default="any")
+        source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
     with col2:
-        source_port_input = st_searchbox(passthrough_port, placeholder="e.g. 80,443 or any", label="Source Port(s)", key="srcport_searchbox", default="any")
+        source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
     with col3:
-        destination_input = st_searchbox(custom_search, placeholder="Destination (Object, Group, CIDR, or 'any')", label="Destination (DST)", key="dst_searchbox", default="any")
+        destination_input = st_searchbox(custom_search, label="Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
     with col4:
-        port_input = st_searchbox(passthrough_port, placeholder="e.g. 1000-2000,443", label="Destination Port(s)", key="dstport_searchbox", default="any")
+        port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
     with col5:
-        protocol = st_searchbox(search_protocol, placeholder="Protocol", label="Protocol", key="protocol_searchbox", default="any")
+        protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
 
     col_left, col_right = st.columns(2)
     with col_right:
@@ -852,98 +851,48 @@ elif selected_tab == "🛡️ Rule Checker":
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
         st.stop()
 
-    # --------------- Resolve Inputs ---------------
+    # --- Resolve inputs ---
     source_input = source_input or "any"
     destination_input = destination_input or "any"
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
-
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
 
-    # --------------- Location-aware logic ---------------
-    shared_locations = []
-    if "object_location_map" in st.session_state and "extended_data" in st.session_state:
-        obj_loc_map = st.session_state["object_location_map"]
-        extended_data = st.session_state["extended_data"]
-
-        src_locs = set()
-        source_cidrs = source_cidrs if 'source_cidrs' in locals() else []
-        for cidr in source_cidrs:
-            src_locs.update(obj_loc_map.get(cidr, []))
-        destination_cidrs = destination_cidrs if 'destination_cidrs' in locals() else []
-        dst_locs = set()
-        for cidr in destination_cidrs:
-            dst_locs.update(obj_loc_map.get(cidr, []))
-
-        shared_locations = sorted(src_locs & dst_locs)
-
-    if shared_locations:
-        for location in shared_locations:
-            local_rules = []
-            for net_id, info in extended_data.get("network_details", {}).items():
-                if info.get("network_name") == location:
-                    local_rules = info.get("firewall_rules", [])
-                    break
-
-            if not local_rules:
-                st.warning(f"⚠️ No local firewall rules found for `{location}`.")
-                continue
-
-            st.subheader(f"🏠 Local Firewall - `{location}`")
-            generate_rule_table(
-                rules=local_rules,
-                source_port_input=source_port_input,
-                port_input=port_input,
-                protocol=protocol,
-                filter_toggle=filter_toggle,
-                object_map=object_map,
-                group_map=group_map,
-                highlight_colors=highlight_colors,
-                source_cidrs=source_cidrs,
-                destination_cidrs=destination_cidrs,
-                skip_src_check=skip_src_check,
-                skip_dst_check=skip_dst_check
-            )
-            
-
-        # Only show VPN rules if no shared location
-        # if len(shared_locations) == 1:
-        #     st.stop()
-
-
-
     local_rule_rendered = False
+    shared_locations = []
 
-    # --------- Use Local Firewall if shared location(s) ---------
+    # 🧠 Case 1: Check if object_location_map exists
     if "object_location_map" in st.session_state and "extended_data" in st.session_state:
         obj_loc_map = st.session_state["object_location_map"]
         extended_data = st.session_state["extended_data"]
 
         src_locs = set()
+        dst_locs = set()
+
         for cidr in source_cidrs:
             src_locs.update(obj_loc_map.get(cidr, []))
-        dst_locs = set()
         for cidr in destination_cidrs:
             dst_locs.update(obj_loc_map.get(cidr, []))
 
         shared_locations = sorted(src_locs & dst_locs)
 
+        # 🔸 A & B: Shared locations exist
         if shared_locations:
             for location in shared_locations:
-                local_rules = []
-                for net_id, info in extended_data.get("network_details", {}).items():
-                    if info.get("network_name") == location:
-                        local_rules = info.get("firewall_rules", [])
-                        break
+                network_id = st.session_state["extended_data"]["network_map"].get(location)
+                if not network_id:
+                    continue
+                local_rules = extended_data["network_details"].get(network_id, {}).get("firewall_rules", [])
 
                 if not local_rules:
                     st.warning(f"⚠️ No local firewall rules found for `{location}`.")
                     continue
 
-                st.subheader(f"🏠 Local Firewall - `{location}`")
                 generate_rule_table(
                     rules=local_rules,
+                    source_input=source_input,
+                    destination_input=destination_input,
                     source_port_input=source_port_input,
                     port_input=port_input,
                     protocol=protocol,
@@ -951,22 +900,21 @@ elif selected_tab == "🛡️ Rule Checker":
                     object_map=object_map,
                     group_map=group_map,
                     highlight_colors=highlight_colors,
-                    source_cidrs=source_cidrs,
-                    destination_cidrs=destination_cidrs,
-                    skip_src_check=skip_src_check,
-                    skip_dst_check=skip_dst_check
+                    title_prefix=f"Local Firewall Rules - {location}"
                 )
                 local_rule_rendered = True
 
-            # If exactly one location matched, do NOT show VPN rules again
-            if local_rule_rendered and len(shared_locations) == 1:
+            if len(shared_locations) == 1:
+                st.info("🔒 Local rules fully evaluated based on single shared location. VPN rules skipped.")
                 st.stop()
 
-    # ----------- Fallback to VPN rules (only if needed) -----------
-        if not local_rule_rendered:
-            st.subheader("🌐 VPN Firewall Rules")
+        # 🔸 C: Source and destination are in different locations → skip local, show VPN only
+        elif src_locs and dst_locs and not shared_locations:
+            st.info("⚠️ Source and destination belong to different locations. VPN rules will be used.")
             generate_rule_table(
                 rules=rules_data,
+                source_input=source_input,
+                destination_input=destination_input,
                 source_port_input=source_port_input,
                 port_input=port_input,
                 protocol=protocol,
@@ -974,11 +922,25 @@ elif selected_tab == "🛡️ Rule Checker":
                 object_map=object_map,
                 group_map=group_map,
                 highlight_colors=highlight_colors,
-                source_cidrs=source_cidrs,
-                destination_cidrs=destination_cidrs,
-                skip_src_check=skip_src_check,
-                skip_dst_check=skip_dst_check
+                title_prefix="VPN Firewall Rules"
             )
+            st.stop()
+
+    # ❌ Case 2: No usable object_location_map or only one side mapped
+    if not local_rule_rendered:
+        generate_rule_table(
+            rules=rules_data,
+            source_input=source_input,
+            destination_input=destination_input,
+            source_port_input=source_port_input,
+            port_input=port_input,
+            protocol=protocol,
+            filter_toggle=filter_toggle,
+            object_map=object_map,
+            group_map=group_map,
+            highlight_colors=highlight_colors,
+            title_prefix="VPN Firewall Rules"
+        )
 
 
 
