@@ -128,9 +128,13 @@ def generate_rule_table(rules_to_check, title_prefix="VPN Firewall Rules"):
 
         src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
         dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
+        skip_proto_check = protocol.strip().lower() == "any"
         proto_match = True if skip_proto_check else (rule_protocol == "any" or rule_protocol == protocol.lower())
 
+        dports_to_loop = port_input.split(",") if port_input.strip().lower() != "any" else ["any"]
+        skip_dport_check = port_input.strip().lower() == "any"
         matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
+        skip_sport_check = source_port_input.strip().lower() == "any"
         matched_sports_list = source_port_input.split(",") if not skip_sport_check else ["any"]
         matched_sports_list = [p.strip() for p in matched_sports_list if p in rule_sports or "any" in rule_sports]
 
