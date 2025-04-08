@@ -988,20 +988,20 @@ if "object_location_map" in st.session_state and "extended_data" in st.session_s
             st.stop()
 
 # ----------- Fallback to VPN rules (only if needed) -----------
-if not local_rule_rendered:
-    st.subheader("🌐 VPN Firewall Rules")
-    generate_rule_table(
-        rules=rules_data,
-        source_input=source_input,
-        destination_input=destination_input,
-        source_port_input=source_port_input,
-        port_input=port_input,
-        protocol=protocol,
-        filter_toggle=filter_toggle,
-        object_map=object_map,
-        group_map=group_map,
-        highlight_colors=highlight_colors
-    )
+    if not local_rule_rendered:
+        st.subheader("🌐 VPN Firewall Rules")
+        generate_rule_table(
+            rules=rules_data,
+            source_input=source_input,
+            destination_input=destination_input,
+            source_port_input=source_port_input,
+            port_input=port_input,
+            protocol=protocol,
+            filter_toggle=filter_toggle,
+            object_map=object_map,
+            group_map=group_map,
+            highlight_colors=highlight_colors
+        )
 
 
 # 🧠 Only show VPN rules if:
