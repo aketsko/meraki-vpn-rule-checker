@@ -668,7 +668,7 @@ if selected_tab == "🔎 Object & Group Search":
 
 
 elif selected_tab == "🛡️ Rule Checker":
-    object_location_map = st.session_state.get("object_location_map", {})
+    from utils.match_logic import build_object_location_map
 
     def custom_search(term: str):
         term = term.strip()
@@ -696,41 +696,40 @@ elif selected_tab == "🛡️ Rule Checker":
 
     def passthrough_port(term: str):
         term = term.strip()
-        if not term:
-            return []
-        return [(f"Use: {term}", term)]
+        return [(f"Use: {term}", term)] if term else []
 
     col1, col2, col3, col4, col5 = st.columns(5)
-
     with col1:
-        source_input = st_searchbox(custom_search, placeholder="Source", label="Source (SRC)", key="src_searchbox", default="any")
+        source_input = st_searchbox(custom_search, "Source (SRC)", "Source (Object, Group, CIDR, or 'any')", key="src_searchbox", default="any")
     with col2:
-        source_port_input = st_searchbox(passthrough_port, placeholder="e.g. 80,443", label="Source Port(s)", key="srcport_searchbox", default="any")
+        source_port_input = st_searchbox(passthrough_port, "Source Port(s)", "e.g. 80,443 or any", key="srcport_searchbox", default="any")
     with col3:
-        destination_input = st_searchbox(custom_search, placeholder="Destination", label="Destination (DST)", key="dst_searchbox", default="any")
+        destination_input = st_searchbox(custom_search, "Destination (DST)", "Destination (Object, Group, CIDR, or 'any')", key="dst_searchbox", default="any")
     with col4:
-        port_input = st_searchbox(passthrough_port, placeholder="e.g. 1000-2000,443", label="Destination Port(s)", key="dstport_searchbox", default="any")
+        port_input = st_searchbox(passthrough_port, "Destination Port(s)", "e.g. 1000-2000,443", key="dstport_searchbox", default="any")
     with col5:
-        protocol = st_searchbox(search_protocol, placeholder="Protocol", label="Protocol", key="protocol_searchbox", default="any")
+        protocol = st_searchbox(search_protocol, "Protocol", "Protocol", key="protocol_searchbox", default="any")
 
     col_left, col_right = st.columns(2)
-    with col_left:
-        dynamic_mode = st.checkbox("🛠️ Dynamic update", value=False)
     with col_right:
         filter_toggle = st.checkbox("✅ Show only matching rules", value=False)
+    with col_left:
+        dynamic_mode = st.checkbox("🛠️ Dynamic update", value=False)
 
     if not dynamic_mode:
-        st.info("Dynamic update is disabled. Enable it to evaluate rules.")
+        st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
         st.stop()
 
     source_input = source_input or "any"
     destination_input = destination_input or "any"
-    protocol = protocol or "any"
-    port_input = port_input or "any"
-    source_port_input = source_port_input or "any"
-
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
+
+    # Attempt to match locations from object_location_map
+    object_location_map = st.session_state.get("object_location_map", {})
+    src_locs = set(loc for cidr in source_cidrs for loc in object_location_map.get(cidr, []))
+    dst_locs = set(loc for cidr in destination_cidrs for loc in object_location_map.get(cidr, []))
+    shared_locs = src_locs.intersection(dst_locs)
 
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
@@ -741,13 +740,7 @@ elif selected_tab == "🛡️ Rule Checker":
     dports_to_check = [] if skip_dport_check else [p.strip() for p in port_input.split(",") if p.strip()]
     dports_to_loop = ["any"] if skip_dport_check else dports_to_check
 
-    src_locs = set(object_location_map.get(cidr, None) for cidr in source_cidrs)
-    dst_locs = set(object_location_map.get(cidr, None) for cidr in destination_cidrs)
-
-    shared_locs = src_locs & dst_locs
-    use_local_firewall = object_location_map and shared_locs and "0.0.0.0/0" not in shared_locs
-
-    def evaluate_rule_block(rule_set, title_prefix):
+    def evaluate_rules(rule_set):
         matched_ports = {}
         rule_match_ports = {}
         found_partial_match = False
@@ -773,14 +766,12 @@ elif selected_tab == "🛡️ Rule Checker":
 
             sport_match = len(matched_sports_list) > 0
             port_match = len(matched_ports_list) > 0 and sport_match
-
             full_match = src_match and dst_match and proto_match and port_match
 
-            exact_src = True if skip_src_check and "0.0.0.0/0" in resolved_src_cidrs else all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
-            exact_dst = True if skip_dst_check and "0.0.0.0/0" in resolved_dst_cidrs else all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
+            exact_src = skip_src_check or all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
+            exact_dst = skip_dst_check or all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
             exact_ports = skip_dport_check or set(matched_ports_list) == set(dports_to_loop)
             exact_proto = skip_proto_check or rule_protocol == protocol.lower()
-
             is_exact = full_match and exact_src and exact_dst and exact_ports and exact_proto
 
             if full_match:
@@ -818,49 +809,79 @@ elif selected_tab == "🛡️ Rule Checker":
                 "Partial Match 🔶": is_partial_match
             })
 
-        df = pd.DataFrame(rule_rows)
-        df_to_show = df[df["Matched ✅"]] if filter_toggle else df
+        return pd.DataFrame(rule_rows)
 
-        row_style_js = JsCode(f"""
-        function(params) {{
-            if (params.data["Exact Match ✅"] === true) {{
-                return {{
-                    backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
-                    color: 'white',
-                    fontWeight: 'bold'
-                }};
+    if shared_locs and st.session_state.get("extended_data"):
+        for loc in shared_locs:
+            local_rules = next((v["firewall_rules"] for k, v in st.session_state["extended_data"]["network_details"].items() if v["network_name"] == loc), [])
+            if not local_rules:
+                continue
+            st.markdown(f"### 📍 Local Firewall - `{loc}`")
+            df = evaluate_rules(local_rules)
+            df_to_show = df[df["Matched ✅"]] if filter_toggle else df
+
+            row_style_js = JsCode(f"""
+            function(params) {{
+                if (params.data["Exact Match ✅"] === true) {{
+                    return {{
+                        backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
+                        color: 'white',
+                        fontWeight: 'bold'
+                    }};
+                }}
+                if (params.data["Partial Match 🔶"] === true) {{
+                    return {{
+                        backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
+                        fontWeight: 'bold'
+                    }};
+                }}
+                return {{}};
             }}
-            if (params.data["Partial Match 🔶"] === true) {{
-                return {{
-                    backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
-                    fontWeight: 'bold'
-                }};
-            }}
-            return {{}};
+            """)
+
+            gb = GridOptionsBuilder.from_dataframe(df_to_show)
+            gb.configure_column("Comment", wrapText=True, autoHeight=True)
+            gb.configure_column("Source", wrapText=True, autoHeight=True)
+            gb.configure_column("Destination", wrapText=True, autoHeight=True)
+            gb.configure_column("Protocol", wrapText=True, autoHeight=True)
+            gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
+            AgGrid(df_to_show, gridOptions=gb.build(), use_container_width=True, allow_unsafe_jscode=True)
+
+        if len(shared_locs) == 1:
+            st.stop()
+
+    # Fallback to default VPN rules if no shared location or multiple different
+    st.markdown("### 🌐 VPN Firewall Rules")
+    df = evaluate_rules(rules_data)
+    df_to_show = df[df["Matched ✅"]] if filter_toggle else df
+
+    gb = GridOptionsBuilder.from_dataframe(df_to_show)
+    gb.configure_column("Comment", wrapText=True, autoHeight=True)
+    gb.configure_column("Source", wrapText=True, autoHeight=True)
+    gb.configure_column("Destination", wrapText=True, autoHeight=True)
+    gb.configure_column("Protocol", wrapText=True, autoHeight=True)
+
+    row_style_js = JsCode(f"""
+    function(params) {{
+        if (params.data["Exact Match ✅"] === true) {{
+            return {{
+                backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
+                color: 'white',
+                fontWeight: 'bold'
+            }};
         }}
-        """)
+        if (params.data["Partial Match 🔶"] === true) {{
+            return {{
+                backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
+                fontWeight: 'bold'
+            }};
+        }}
+        return {{}};
+    }}
+    """)
+    gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
+    AgGrid(df_to_show, gridOptions=gb.build(), use_container_width=True, allow_unsafe_jscode=True)
 
-        gb = GridOptionsBuilder.from_dataframe(df_to_show)
-        gb.configure_column("Comment", wrapText=True, autoHeight=True)
-        gb.configure_column("Source", wrapText=True, autoHeight=True)
-        gb.configure_column("Destination", wrapText=True, autoHeight=True)
-        gb.configure_column("Protocol", wrapText=True, autoHeight=True)
-        gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
-        grid_options = gb.build()
-
-        st.subheader(title_prefix)
-        AgGrid(df_to_show, gridOptions=grid_options, enable_enterprise_modules=False, fit_columns_on_grid_load=True, use_container_width=True, allow_unsafe_jscode=True)
-
-    if use_local_firewall:
-        for loc in sorted(shared_locs):
-            extended_data = st.session_state.get("extended_data", {})
-            net_id = next((nid for nid, v in extended_data.get("network_details", {}).items() if v.get("network_name") == loc), None)
-            if net_id:
-                local_rules = extended_data["network_details"][net_id].get("firewall_rules", [])
-                if local_rules:
-                    evaluate_rule_block(local_rules, f"Local Firewall - {loc}")
-    else:
-        evaluate_rule_block(rules_data, "VPN Firewall Rules")
 
 
 
