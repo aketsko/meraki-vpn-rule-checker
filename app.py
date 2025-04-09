@@ -625,15 +625,12 @@ highlight_colors = {
 with st.container():
     st.markdown('<div class="sticky-tabs-container">', unsafe_allow_html=True)
 
-    col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
-
-    # LEFT: Label + Selectbox
+    col_left, col_right = st.columns([3, 5])
     with col_left:
         st.markdown(" 🔎-🛡️-🧠 Choose the module:")
         tab_names = ["🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
-
         if "active_tab" not in st.session_state:
-            st.session_state.active_tab = tab_names[0]  # Default
+            st.session_state.active_tab = tab_names[0]
 
         def on_tab_change():
             st.session_state.active_tab = st.session_state["selected_tab"]
@@ -647,7 +644,6 @@ with st.container():
             label_visibility="collapsed"
         )
 
-    # RIGHT: Metrics
     with col_right:
         col_b, col_n, col_o, col_g, col_r = st.columns(5)
         col_b.text("")
@@ -658,6 +654,7 @@ with st.container():
         col_n.metric("🏢 Networks", network_count)
 
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
