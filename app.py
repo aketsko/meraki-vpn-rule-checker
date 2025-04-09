@@ -413,7 +413,7 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 # ------------------ SIDEBAR FILE UPLOAD ------------------
 st.sidebar.header("")
-with st.sidebar.expander("☁️ Connect to Meraki Dashboard"):
+with st.sidebar.expander("☁️ Connect to Meraki Dashboard", expanded=True):
 
     fetched_from_api = st.session_state.get("fetched_from_api", False)
     with st.sidebar.expander("🔒 API Access", expanded=not (st.session_state.get("fetched_from_api") or (st.session_state.get("rules_data") and st.session_state.get("objects_data") and st.session_state.get("groups_data")))):
@@ -527,7 +527,7 @@ with st.sidebar.expander("☁️ Connect to Meraki Dashboard"):
         progress_text.empty()
 
 
-with st.sidebar.expander("📤 Data Import"):
+with st.sidebar.expander("📤 Data Import", expanded=True):
 # Upload Snapshot to restore everything
     uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
     if uploaded_snapshot:
@@ -624,6 +624,8 @@ with st.sidebar.expander("🟢🟡🔴 Dedinition Colors", expanded=False):
     color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
     color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
     color_slider("Described traffic is partially DENIED. This rule can affect the traffic. To investigate further, make the search more specific.", key="partial_deny", default_hex="#F7EF81")
+
+
 
 # Reconstruct highlight_colors from session state
 highlight_colors = {
