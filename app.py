@@ -589,8 +589,8 @@ with st.container():
 
     # LEFT: Label + Selectbox
     with col_left:
-        st.markdown(" 🔎-🛡️-🧠 Choose the module:")
-        tab_names = ["🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
+        st.markdown(" 📘-🔎-🛡️-🧠 Choose the module:")
+        tab_names = ["📘 Overview", "🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
 
         if "active_tab" not in st.session_state:
             st.session_state.active_tab = tab_names[0]  # Default
@@ -633,11 +633,79 @@ with st.container():
 selected_tab = st.session_state.active_tab
 
 
+if selected_tab == "📘 Overview":
+    data_loaded = (
+        st.session_state.get("rules_data")
+        and st.session_state.get("objects_data")
+        and st.session_state.get("extended_data")
+    )
+
+    if not data_loaded:
+        with st.expander("📘 Introduction", expanded=True):
+            st.markdown("""
+            ## Welcome to the Meraki Network Toolkit
+
+            This app helps you analyze and understand Meraki firewall and VPN configurations.
+            
+            ### Tabs Overview:
+            - 🔎 **Search Object or Group**: Browse and filter network objects/groups and view their metadata and location.
+            - 🛡️ **Firewall & VPN Rules**: Check how specific traffic is handled based on source, destination, ports, and protocol.
+            - 🧠 **Optimization Insights**: Get tips on improving your rulebase (e.g., shadowed, duplicate, or broad rules).
+            
+            👉 **Start by connecting to Meraki or uploading your JSON snapshot in the sidebar.**
+            """)
+    else:
+        with st.expander("📘 Introduction", expanded=False):
+            st.markdown("✅ Data loaded successfully. Use the dropdown below to explore network details.")
+
+        extended_data = st.session_state["extended_data"]
+        objects_data = st.session_state["objects_data"]
+
+        networks = {
+            info["network_name"]: net_id
+            for net_id, info in extended_data.get("network_details", {}).items()
+        }
+
+        selected_network_name = st.selectbox("🏢 Select a Network", sorted(networks.keys()))
+        selected_net_id = networks[selected_network_name]
+        network_info = extended_data["network_details"][selected_net_id]
+        subnets = network_info.get("vpn_settings", {}).get("subnets", [])
+
+        st.markdown(f"### 🌐 Network: `{selected_network_name}`")
+
+        for subnet in subnets:
+            cidr = subnet["localSubnet"]
+            use_vpn = subnet.get("useVpn", "Unknown")
+            st.markdown(f"**🔹 Subnet:** `{cidr}` — **Use VPN:** `{use_vpn}`")
+
+            # Match against objects
+            from ipaddress import ip_network
+
+            matches = []
+            try:
+                subnet_net = ip_network(cidr, strict=False)
+                for obj in objects_data:
+                    obj_cidr = obj.get("cidr")
+                    if obj_cidr:
+                        try:
+                            obj_net = ip_network(obj_cidr, strict=False)
+                            if obj_net == subnet_net:
+                                matches.append(obj)
+                        except:
+                            continue
+            except:
+                continue
+
+            if matches:
+                for obj in matches:
+                    st.markdown(f"- 🧱 **{obj['name']}** — `{obj['cidr']}` — {obj.get('fqdn', '')}")
+            else:
+                st.markdown("*No matching objects found.*")
 
 
 
 
-if selected_tab == "🔎 Search Object or Group":
+elif selected_tab == "🔎 Search Object or Group":
 
     from utils.match_logic import build_object_location_map  # Ensure this is imported
 
@@ -830,7 +898,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
    
         protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
-        st.markdown("### ⚙️ Search Settings")
+        st.markdown("### ⚙️ View Settings")
         dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
         expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
