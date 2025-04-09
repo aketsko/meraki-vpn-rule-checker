@@ -433,7 +433,7 @@ with st.sidebar.expander("🔽", expanded=True):
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
 
 
-    if st.button("🔄 Basic Data"):
+    if st.button("📦 Basic Data"):
         if api_key and org_id:
             rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
             if fetched:
@@ -451,7 +451,7 @@ with st.sidebar.expander("🔽", expanded=True):
             st.error("❌ Please enter both API key and Org ID.")
 
    
-    if st.button("📡 Extended Data"):
+    if st.button("➕ Extended Data"):
         st.session_state["cancel_extended_fetch"] = False
         st.session_state["fetching_extended"] = True
 
@@ -502,9 +502,8 @@ with st.sidebar.expander("🔽", expanded=True):
         progress_text.empty()
 
 
-
-with st.sidebar.expander("📤 Data Import", expanded=True):
-    st.markdown("")
+st.sidebar.markdown("📤 Data Import")
+with st.sidebar.expander("🔽", expanded=True):
 
     # Upload Snapshot to restore everything
     uploaded_snapshot = st.file_uploader("📤 Load Snapshot (.json)", type="json")
@@ -584,7 +583,8 @@ with st.sidebar.expander("📤 Data Import", expanded=True):
 # ------------------ SIDEBAR TOOLBOX ------------------
 
 # 🧰 Toolbox inside a collapsible section
-with st.sidebar.expander("🟢🟡🔴 Dedinition Colors", expanded=False):
+st.sidebar.markdown(🔘Dedinition Colors")
+with st.sidebar.expander("🟢🟡🔴 ", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
     def color_slider(label, key, default_hex):
