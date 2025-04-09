@@ -747,10 +747,9 @@ if selected_tab == "📘 Overview":
 
             vpn_info = network_details[selected_net_id].get("vpn_settings", {})
             vpn_subnets = vpn_info.get("subnets", [])
-            use_vpn_enabled_subnets = {
-                s["localSubnet"] for s in vpn_subnets
-                if str(s.get("useVpn", "")).lower() == "yes"
-}
+            use_vpn_enabled_subnets = {s["localSubnet"] for s in vpn_subnets if s.get("useVpn") is True}
+
+
 
 
             # Build rows
