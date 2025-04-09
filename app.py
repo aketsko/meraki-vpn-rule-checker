@@ -112,22 +112,15 @@ st.markdown("""
         font-size: 20px !important;
         font-weight: bold;
     }
-     /* Make top container sticky */
-    .sticky-tabs-container {
-        position: -webkit-sticky;
+        .sticky-tabs-wrapper {
         position: sticky;
         top: 0;
-        background-color: #f0f2f6;
-        z-index: 999;
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid #d6d6d6;
-        backdrop-filter: blur(10px);
-    }
-
-    /* Prevent excessive margin in selectbox container */
-    .sticky-tabs-container > div {
-        margin-bottom: 0 !important;
+        z-index: 1000;
+        background: #f0f2f6;
+        padding: 0.5rem 1rem 0.5rem 1rem;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.1);
+        border-bottom: 1px solid #ccc;
+        margin-bottom: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -623,7 +616,7 @@ highlight_colors = {
 
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
-    st.markdown('<div class="sticky-tabs-container">', unsafe_allow_html=True)
+    st.markdown('<div class="sticky-tabs-wrapper">', unsafe_allow_html=True)
 
     col_left, col_right = st.columns([3, 5])
     with col_left:
