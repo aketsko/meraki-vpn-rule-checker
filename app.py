@@ -725,7 +725,7 @@ if selected_tab == "📘 Overview":
 
         
         extended_data = st.session_state["extended_data"]
-        objects_data = st.session_state["objects_data"]
+        objects_data = st.session_state.get("objects_data",{})
         network_map = extended_data.get("network_map", {})
         network_details = extended_data.get("network_details", {})
         network_names = sorted([v["network_name"] for v in network_details.values()])
