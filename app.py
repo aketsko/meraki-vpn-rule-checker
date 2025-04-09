@@ -607,13 +607,14 @@ with st.container():
 
     # RIGHT: Metrics
     with col_right:
-        col_b, col_n, col_o, col_g, col_r = st.columns(5)
-        col_b.text("")
-        col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
-        col_o.metric("🌐 Objects", f"{len(objects_data)}")
-        col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-        network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
-        col_n.metric("🏢 Networks", network_count)
+        if st.session_state.get("extended_data") or st.session_state.get("rules_data"):
+            col_b, col_n, col_o, col_g, col_r = st.columns(5)
+            col_b.text("")
+            col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
+            col_o.metric("🌐 Objects", f"{len(objects_data)}")
+            col_g.metric("🗃️ Groups", f"{len(groups_data)}")
+            network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
+            col_n.metric("🏢 Networks", network_count)
 
 
 # Update active_tab variable
