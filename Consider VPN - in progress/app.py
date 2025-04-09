@@ -725,7 +725,7 @@ if selected_tab == "📘 Overview":
 
         
         extended_data = st.session_state["extended_data"]
-        objects_data = st.session_state["objects_data"]
+        objects_data = st.session_state.get("objects_data",{})
         network_map = extended_data.get("network_map", {})
         network_details = extended_data.get("network_details", {})
         network_names = sorted([v["network_name"] for v in network_details.values()])
@@ -860,7 +860,11 @@ elif selected_tab == "🔎 Search Object or Group":
     object_rows = []
     for o in filtered_objs:
         cidr = o.get("cidr", "")
-        location = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({o.get('id')})", []))
+        entries = location_map.get(cidr, []) or location_map.get(f"OBJ({o.get('id')})", [])
+        if isinstance(entries, list) and all(isinstance(e, dict) for e in entries):
+            location = ", ".join(sorted({e["network"] for e in entries}))
+        else:
+            location = ", ".join(entries) if isinstance(entries, list) else entries
         object_rows.append({
             "ID": o.get("id", ""),
             "Name": o.get("name", ""),
@@ -945,8 +949,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             if isinstance(mapped, str):
                 locations.add(mapped)
             elif isinstance(mapped, list):
-                locations.update(mapped)
+                for entry in mapped:
+                    if isinstance(entry, dict) and "location" in entry:
+                        locations.add(entry["location"])
+                    elif isinstance(entry, str):
+                        locations.add(entry)
         return locations
+
 
     # --- Search input helpers ---
     def custom_search(term: str):
@@ -1025,11 +1034,25 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     # ---- Resolve Inputs ----
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
+
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
 
     obj_loc_map = st.session_state.get("object_location_map", {})
     extended_data = st.session_state.get("extended_data", {})
+   
+    def filter_vpn_cidrs(cidr_list, extended_data):
+        vpn_enabled_subnets = set()
+        for net in extended_data.get("network_details", {}).values():
+            subnets = net.get("vpn_settings", {}).get("subnets", [])
+            for s in subnets:
+                if s.get("useVpn", False):
+                    vpn_enabled_subnets.add(s.get("localSubnet"))
+        return [cidr for cidr in cidr_list if any(ipaddress.ip_network(cidr).subnet_of(ipaddress.ip_network(vpn)) or ipaddress.ip_network(cidr) == ipaddress.ip_network(vpn) for vpn in vpn_enabled_subnets)]
+
+    vpn_source_cidrs = filter_vpn_cidrs(source_cidrs, extended_data)
+    vpn_destination_cidrs = filter_vpn_cidrs(destination_cidrs, extended_data)
+
 
     if obj_loc_map and extended_data:
         src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
@@ -1167,8 +1190,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         object_map=object_map,
         group_map=group_map,
         highlight_colors=highlight_colors,
-        source_cidrs=source_cidrs,
-        destination_cidrs=destination_cidrs,
+        source_cidrs=vpn_source_cidrs,
+        destination_cidrs=vpn_destination_cidrs,
         skip_src_check=skip_src_check,
         skip_dst_check=skip_dst_check,
         key="vpn_table"
