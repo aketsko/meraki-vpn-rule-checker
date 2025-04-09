@@ -1025,6 +1025,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     # ---- Resolve Inputs ----
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
+
+    skip_src_check = source_input.strip().lower() == "any"
+    skip_dst_check = destination_input.strip().lower() == "any"
+
+    obj_loc_map = st.session_state.get("object_location_map", {})
+    extended_data = st.session_state.get("extended_data", {})
+   
     def filter_vpn_cidrs(cidr_list, extended_data):
         vpn_enabled_subnets = set()
         for net in extended_data.get("network_details", {}).values():
@@ -1037,11 +1044,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     vpn_source_cidrs = filter_vpn_cidrs(source_cidrs, extended_data)
     vpn_destination_cidrs = filter_vpn_cidrs(destination_cidrs, extended_data)
 
-    skip_src_check = source_input.strip().lower() == "any"
-    skip_dst_check = destination_input.strip().lower() == "any"
-
-    obj_loc_map = st.session_state.get("object_location_map", {})
-    extended_data = st.session_state.get("extended_data", {})
 
     if obj_loc_map and extended_data:
         src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
