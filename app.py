@@ -250,38 +250,43 @@ def generate_rule_table(rules,
         return {{}};
     }}
     """)
-    # Drop "Matched" column if present
-    # Drop "Matched" if present
-    if "Matched" in df_to_show.columns:
-        df_to_show = df_to_show.drop(columns=["Matched"])
+    
 
-    # Build grid options using the same dataframe
-    gb = GridOptionsBuilder.from_dataframe(df_to_show)
+    gb = GridOptionsBuilder.from_dataframe(df)  # Initialize GridOptionsBuilder with a DataFrame
     gb.configure_default_column(
         resizable=True,
         wrapText=True,
         autoHeight=True,
         minWidth=50,
-        flex=1
+        flex=1  # This ensures columns scale equally to fit the container width
     )
-    # Give more space to selected columns
     for col in ["Comment", "Source", "Destination"]:
-        gb.configure_column(col, flex=2)
-
+        gb.configure_column(col, flex=2, minWidth=150, wrapText=True, autoHeight=True)
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     grid_options = gb.build()
 
-    # Render grid
+
+
+
+    # gb = GridOptionsBuilder.from_dataframe(df_to_show)
+    # gb.configure_column("Comment", wrapText=True, autoHeight=True)
+    # gb.configure_column("Source", wrapText=True, autoHeight=True)
+    # gb.configure_column("Destination", wrapText=True, autoHeight=True)
+    # gb.configure_column("Protocol", wrapText=True, autoHeight=True)
+    # gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
+    # grid_options = gb.build()
+
+
     st.markdown(title_prefix)
     AgGrid(
         df_to_show,
         gridOptions=grid_options,
         enable_enterprise_modules=False,
+    #    fit_columns_on_grid_load=True,
         use_container_width=True,
         allow_unsafe_jscode=True,
         key=key
     )
-
 
 # ------------------ API CONFIG ------------------
 def get_api_headers(api_key, org_id):
