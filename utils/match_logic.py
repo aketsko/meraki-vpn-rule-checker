@@ -68,17 +68,67 @@ def find_object_locations(cidr_list, extended_data):
 
 import ipaddress
 
+# def build_object_location_map(objects_data, groups_data, extended_data):
+#     object_location_map = {}
+#     vpn_subnets_per_network = {}
+
+#     for net_id, details in extended_data.get("network_details", {}).items():
+#         network_name = details.get("network_name", "")
+#         subnets = details.get("vpn_settings", {}).get("subnets", [])
+#         cidrs = [s.get("localSubnet", "") for s in subnets if "localSubnet" in s]
+#         vpn_subnets_per_network[network_name] = cidrs
+
+#     # Map object CIDRs to all matching networks (bidirectional containment logic)
+#     for obj in objects_data:
+#         cidr = obj.get("cidr")
+#         if not cidr:
+#             continue
+#         try:
+#             obj_net = ipaddress.ip_network(cidr, strict=False)
+#         except Exception:
+#             continue
+
+#         matching_networks = set()
+#         for net_name, vpn_subnets in vpn_subnets_per_network.items():
+#             for subnet in vpn_subnets:
+#                 try:
+#                     vpn_net = ipaddress.ip_network(subnet, strict=False)
+#                     # Match if object is inside VPN subnet, VPN is inside object subnet, or exactly equal
+#                     if obj_net.subnet_of(vpn_net) or vpn_net.subnet_of(obj_net) or obj_net == vpn_net:
+#                         matching_networks.add(net_name)
+#                         break
+#                 except:
+#                     continue
+#         if matching_networks:
+#             object_location_map[cidr] = sorted(matching_networks)
+
+#     # Map each group to networks via member CIDRs
+#     for group in groups_data:
+#         group_id = group.get("id")
+#         member_ids = group.get("objectIds", [])
+#         group_key = f"GRP({group_id})"
+#         locations = set()
+#         for mid in member_ids:
+#             obj = next((o for o in objects_data if o.get("id") == mid), None)
+#             if obj and "cidr" in obj and obj["cidr"] in object_location_map:
+#                 locations.update(object_location_map[obj["cidr"]])
+#         if locations:
+#             object_location_map[group_key] = sorted(locations)
+
+#     return object_location_map
+
 def build_object_location_map(objects_data, groups_data, extended_data):
     object_location_map = {}
     vpn_subnets_per_network = {}
 
+    # Build per-network VPN subnet list with useVpn info
     for net_id, details in extended_data.get("network_details", {}).items():
         network_name = details.get("network_name", "")
         subnets = details.get("vpn_settings", {}).get("subnets", [])
-        cidrs = [s.get("localSubnet", "") for s in subnets if "localSubnet" in s]
-        vpn_subnets_per_network[network_name] = cidrs
+        subnet_entries = [(s.get("localSubnet", ""), s.get("useVpn", False)) for s in subnets if "localSubnet" in s]
+        vpn_subnets_per_network[network_name] = subnet_entries
 
-    # Map object CIDRs to all matching networks (bidirectional containment logic)
+    # Map object CIDRs to matching networks and include useVpn
     for obj in objects_data:
         cidr = obj.get("cidr")
         if not cidr:
@@ -88,31 +138,38 @@ def build_object_location_map(objects_data, groups_data, extended_data):
         except Exception:
             continue
 
-        matching_networks = set()
-        for net_name, vpn_subnets in vpn_subnets_per_network.items():
-            for subnet in vpn_subnets:
+        matches = []
+        for net_name, subnet_entries in vpn_subnets_per_network.items():
+            for subnet, use_vpn in subnet_entries:
                 try:
                     vpn_net = ipaddress.ip_network(subnet, strict=False)
-                    # Match if object is inside VPN subnet, VPN is inside object subnet, or exactly equal
                     if obj_net.subnet_of(vpn_net) or vpn_net.subnet_of(obj_net) or obj_net == vpn_net:
-                        matching_networks.add(net_name)
-                        break
+                        matches.append({"network": net_name, "useVpn": use_vpn})
+                        break  # Stop after first match in this network
                 except:
                     continue
-        if matching_networks:
-            object_location_map[cidr] = sorted(matching_networks)
+        if matches:
+            object_location_map[cidr] = matches
 
-    # Map each group to networks via member CIDRs
+    # Map each group to matching locations and aggregate useVpn info
     for group in groups_data:
         group_id = group.get("id")
         member_ids = group.get("objectIds", [])
         group_key = f"GRP({group_id})"
-        locations = set()
+        location_entries = []
+        seen = set()
+
         for mid in member_ids:
             obj = next((o for o in objects_data if o.get("id") == mid), None)
-            if obj and "cidr" in obj and obj["cidr"] in object_location_map:
-                locations.update(object_location_map[obj["cidr"]])
-        if locations:
-            object_location_map[group_key] = sorted(locations)
+            cidr = obj.get("cidr") if obj else None
+            if cidr and cidr in object_location_map:
+                for entry in object_location_map[cidr]:
+                    tup = (entry["network"], entry["useVpn"])
+                    if tup not in seen:
+                        location_entries.append({"network": entry["network"], "useVpn": entry["useVpn"]})
+                        seen.add(tup)
+
+        if location_entries:
+            object_location_map[group_key] = location_entries
 
     return object_location_map

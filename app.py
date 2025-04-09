@@ -1025,6 +1025,18 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     # ---- Resolve Inputs ----
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
+    def filter_vpn_cidrs(cidr_list, extended_data):
+        vpn_enabled_subnets = set()
+        for net in extended_data.get("network_details", {}).values():
+            subnets = net.get("vpn_settings", {}).get("subnets", [])
+            for s in subnets:
+                if s.get("useVpn", False):
+                    vpn_enabled_subnets.add(s.get("localSubnet"))
+        return [cidr for cidr in cidr_list if any(ipaddress.ip_network(cidr).subnet_of(ipaddress.ip_network(vpn)) or ipaddress.ip_network(cidr) == ipaddress.ip_network(vpn) for vpn in vpn_enabled_subnets)]
+
+    vpn_source_cidrs = filter_vpn_cidrs(source_cidrs, extended_data)
+    vpn_destination_cidrs = filter_vpn_cidrs(destination_cidrs, extended_data)
+
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
 
@@ -1052,8 +1064,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                             object_map=object_map,
                             group_map=group_map,
                             highlight_colors=highlight_colors,
-                            source_cidrs=source_cidrs,
-                            destination_cidrs=destination_cidrs,
+                            source_cidrs=vpn_source_cidrs,
+                            destination_cidrs=vpn_destination_cidrs,
                             skip_src_check=skip_src_check,
                             skip_dst_check=skip_dst_check,
                             key=f"local_{location}_fallback"
@@ -1093,8 +1105,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         object_map=object_map,
                         group_map=group_map,
                         highlight_colors=highlight_colors,
-                        source_cidrs=source_cidrs,
-                        destination_cidrs=destination_cidrs,
+                        source_cidrs=vpn_source_cidrs,
+                        destination_cidrs=vpn_destination_cidrs,
                         skip_src_check=skip_src_check,
                         skip_dst_check=skip_dst_check,
                         key=f"local_{location}"
@@ -1145,8 +1157,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                     object_map=object_map,
                                     group_map=group_map,
                                     highlight_colors=highlight_colors,
-                                    source_cidrs=source_cidrs,
-                                    destination_cidrs=destination_cidrs,
+                                    source_cidrs=vpn_source_cidrs,
+                                    destination_cidrs=vpn_destination_cidrs,
                                     skip_src_check=skip_src_check,
                                     skip_dst_check=skip_dst_check,
                                     key=f"local_{location}"
@@ -1167,8 +1179,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         object_map=object_map,
         group_map=group_map,
         highlight_colors=highlight_colors,
-        source_cidrs=source_cidrs,
-        destination_cidrs=destination_cidrs,
+        source_cidrs=vpn_source_cidrs,
+        destination_cidrs=vpn_destination_cidrs,
         skip_src_check=skip_src_check,
         skip_dst_check=skip_dst_check,
         key="vpn_table"
