@@ -1042,7 +1042,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         if info.get("network_name") == location:
                             with st.container():
                                 # More compact header
-                                st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem; color: #20c997;'>🧱 {location}</h5>", unsafe_allow_html=True)
+                                st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location}</h5>", unsafe_allow_html=True)
                                 
                                 generate_rule_table(
                                     rules=info.get("firewall_rules", []),
