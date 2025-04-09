@@ -625,7 +625,7 @@ with st.container():
         col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-        network_count = len(st.session_state.get["extended_data"].get("network_map", {}))
+        network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
         col_n.metric("🏢 Networks", network_count)
 
 
