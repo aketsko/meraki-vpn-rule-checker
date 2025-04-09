@@ -423,15 +423,15 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 
 
-
 st.sidebar.header("☰ Menu")
 
+collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data"))
+
+# Connect to Meraki Dashboard
 st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
-with st.sidebar.expander("🔽", expanded=True):
-    
+with st.sidebar.expander("🔒 API Access", expanded=not collapse_expanders):
     org_id = st.text_input("🆔 Enter your Organization ID", value="")
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
-
 
     if st.button("📦 Basic Data"):
         if api_key and org_id:
@@ -450,21 +450,19 @@ with st.sidebar.expander("🔽", expanded=True):
         else:
             st.error("❌ Please enter both API key and Org ID.")
 
-   
     if st.button("➕ Extended Data"):
         st.session_state["cancel_extended_fetch"] = False
         st.session_state["fetching_extended"] = True
 
-        progress_bar = st.progress(0)  # Define progress_bar before using it
-        progress_text = st.empty()  # Define progress_text as an empty placeholder
+        progress_bar = st.progress(0)
+        progress_text = st.empty()
+
         def update_progress(current, total, name):
-            ratio = current / total if total else 0
-            ratio = min(max(ratio, 0.0), 1.0)
+            ratio = min(max(current / total if total else 0, 0.0), 1.0)
             try:
                 progress_bar.progress(ratio)
                 progress_text.markdown(
-                    f"🔄 **Processing network**: ({current}/{total})<br>`{name}`",
-                    unsafe_allow_html=True
+                    f"🔄 **Processing network**: ({current}/{total})<br>`{name}`", unsafe_allow_html=True
                 )
             except:
                 pass
@@ -489,58 +487,46 @@ with st.sidebar.expander("🔽", expanded=True):
                         extended_result
                     )
                     st.session_state["object_location_map"] = location_map
-
         except Exception as e:
             st.error(f"❌ Exception: {e}")
             st.session_state["extended_data"] = None
             st.session_state["object_location_map"] = {}
 
         st.session_state["fetching_extended"] = False
-        cancel_button_placeholder = st.empty()  # Define the placeholder
-        cancel_button_placeholder.empty()
         progress_bar.empty()
         progress_text.empty()
 
-
+# Data Import
 st.sidebar.markdown("📤 Data Import")
-with st.sidebar.expander("🔽", expanded=True):
-
-    # Upload Snapshot to restore everything
+with st.sidebar.expander("📤 Load / Save Snapshot", expanded=not collapse_expanders):
     uploaded_snapshot = st.file_uploader("📤 Load Snapshot (.json)", type="json")
     if uploaded_snapshot:
         try:
             snapshot = json.load(uploaded_snapshot)
-
             st.session_state["rules_data"] = snapshot.get("rules_data", [])
             st.session_state["objects_data"] = snapshot.get("objects_data", [])
             st.session_state["groups_data"] = snapshot.get("groups_data", [])
             st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
             st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
             st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
-            st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Added
-            st.session_state["fetched_from_api"] = True  # Emulate success
-
+            st.session_state["object_location_map"] = snapshot.get("location_map", {})
+            st.session_state["fetched_from_api"] = True
             network_count = len(st.session_state["extended_data"].get("network_map", {}))
             snapshot_msg = st.empty()
             snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
             snapshot_msg.empty()
-
         except Exception as e:
             st.error(f"❌ Failed to load snapshot: {e}")
 
-  
-    # Manual fallback file upload
     if not st.session_state.get("fetched_from_api", False):
         rules_file = st.file_uploader("Upload Rules.json", type="json")
         objects_file = st.file_uploader("Upload Objects.json", type="json")
         groups_file = st.file_uploader("Upload Object Groups.json", type="json")
-
         if all([rules_file, objects_file, groups_file]):
             try:
                 rules_file.seek(0)
                 objects_file.seek(0)
                 groups_file.seek(0)
-
                 st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
                 st.session_state["objects_data"] = load_json_file(objects_file)
                 st.session_state["groups_data"] = load_json_file(groups_file)
@@ -549,16 +535,6 @@ with st.sidebar.expander("🔽", expanded=True):
             except Exception as e:
                 st.error(f"❌ Failed to load one or more files: {e}")
 
-    # Update local variables from session
-    rules_data = st.session_state.get("rules_data", [])
-    objects_data = st.session_state.get("objects_data", [])
-    groups_data = st.session_state.get("groups_data", [])
-    object_map = st.session_state.get("object_map", {})
-    group_map = st.session_state.get("group_map", {})
-
-    
-
-    # Snapshot creation + download
     if st.button("💾 Create API Snapshot"):
         try:
             snapshot_str, snapshot_filename = prepare_snapshot(
@@ -568,7 +544,6 @@ with st.sidebar.expander("🔽", expanded=True):
                 st.session_state.get("extended_data", {}),
                 st.session_state.get("object_location_map", {})
             )
-
             st.download_button(
                 label="📥 Download API Snapshot",
                 data=snapshot_str,
@@ -579,8 +554,6 @@ with st.sidebar.expander("🔽", expanded=True):
         except Exception as e:
             st.error(f"❌ Snapshot error: {e}")
 
-
-# ------------------ SIDEBAR TOOLBOX ------------------
 
 # 🧰 Toolbox inside a collapsible section
 st.sidebar.markdown("🔘 Set Colors")
@@ -605,40 +578,6 @@ highlight_colors = {
     "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
     "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
