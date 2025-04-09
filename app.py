@@ -109,7 +109,7 @@ st.markdown("""
     }
     /* More reliable targeting of expander headers */
     details > summary {
-        font-size: 40px !important;
+        font-size: 20px !important;
         font-weight: bold;
     }
 
@@ -425,11 +425,10 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 
 
-# ------------------ SIDEBAR FILE UPLOAD ------------------
 
-# ------------------ SIDEBAR FILE UPLOAD & API ACCESS ------------------
-with st.sidebar.expander("☁️ Connect to Meraki Dashboard", expanded=True):
-    st.markdown("")
+st.markdown(""☁️ Connect to Meraki Dashboard"")
+with st.sidebar.expander("", expanded=True):
+    
     org_id = st.text_input("🆔 Enter your Organization ID", value="")
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
 
