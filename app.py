@@ -428,7 +428,7 @@ st.sidebar.header("☰ Menu")
 collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data"))
 
 st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
-with st.sidebar.expander("🔽", expanded=not collapse_expanders):
+with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not collapse_expanders):
     
     org_id = st.text_input("🆔 Enter your Organization ID", value="")
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
@@ -503,8 +503,8 @@ with st.sidebar.expander("🔽", expanded=not collapse_expanders):
         progress_text.empty()
 
 
-st.sidebar.markdown("📤 Data Import")
-with st.sidebar.expander("🔽", expanded=not collapse_expanders):
+st.sidebar.markdown("📤 Data Import and Export")
+with st.sidebar.expander("🔽 Upload prepared .json data or create and download it", expanded=not collapse_expanders):
 
     # Upload Snapshot to restore everything
     uploaded_snapshot = st.file_uploader("📤 Load Snapshot (.json)", type="json")
@@ -580,30 +580,6 @@ with st.sidebar.expander("🔽", expanded=not collapse_expanders):
         except Exception as e:
             st.error(f"❌ Snapshot error: {e}")
 
-
-# # 🧰 Toolbox inside a collapsible section
-# st.sidebar.markdown("🔘 Set Colors")
-# with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
-#     st.markdown("Adjust the colors used to highlight rule matches:")
-
-#     def color_slider(label, key, default_hex):
-#         return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
-
-    
-#     color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
-#     color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
-#     color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
-#     color_slider("Described traffic is partially DENIED. This rule can affect the traffic. To investigate further, make the search more specific.", key="partial_deny", default_hex="#F7EF81")
-
-
-
-# # Reconstruct highlight_colors from session state
-# highlight_colors = {
-#     "exact_allow": st.session_state.get("exact_allow", "#09BC8A"),
-#     "exact_deny": st.session_state.get("exact_deny", "#DA2C38"),
-#     "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
-#     "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
-# }
 
 
 # -------------- MANUAL TAB HANDLING ----------------
@@ -832,7 +808,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
     # --- Sidebar Controls (Tab-Specific) ---
     with st.sidebar:
-        st.markdown("### 🛡️ Traffic Flow")
+        st.markdown("### ↔️ Traffic Flow")
         source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
     
         source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
@@ -842,7 +818,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
    
         protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
-        st.markdown("### 🛡️ Search Settings")
+        st.markdown("### ⚙️ Search Settings")
         dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
         expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
