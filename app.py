@@ -102,14 +102,14 @@ st.markdown("""
     /* Sidebar file uploader text color */
     section[data-testid="stSidebar"] .stFileUploader label,
     section[data-testid="stSidebar"] .stFileUploader span {
-        color: black;
+        color: black !important;
     }
     .stButton > button {
         width: 100%;
     }
     /* Change expander title font size */
     .streamlit-expanderHeader {
-        font-size: 28px;
+        font-size: 28px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -981,7 +981,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 for location in sorted(shared_locs):
                     for net_id, info in extended_data.get("network_details", {}).items():
                         if info.get("network_name") == location:
-                            st.subheader(f"🧱 Local Firewall Rules - `{location}`")
+                            st.subheader(f"`{location}`")
                             generate_rule_table(
                                 rules=info.get("firewall_rules", []),
                                 source_port_input=source_port_input,
