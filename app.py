@@ -627,8 +627,26 @@ highlight_colors = {
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
     st.markdown("""
-        <div class="sticky-tabs">
+    <style>
+    /* Floating sticky tab bar */
+    #floating-tabs {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: white;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid #ccc;
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    body {
+        padding-top: 80px; /* push main content down to avoid overlap */
+    }
+    </style>
+    <div id="floating-tabs">
     """, unsafe_allow_html=True)
+
     col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
 
     # LEFT: Label + Selectbox
@@ -660,6 +678,7 @@ with st.container():
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
         network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
         col_n.metric("🏢 Networks", network_count)
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Update active_tab variable
