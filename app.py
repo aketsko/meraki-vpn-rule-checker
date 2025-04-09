@@ -112,25 +112,16 @@ st.markdown("""
         font-size: 20px !important;
         font-weight: bold;
     }
-
-    /* Optional: spacing and padding adjustments */
-    summary {
-        padding: 4px;
-        margin-bottom: 4px;
-    }
-             .sticky-tabs {
+    /* Sticky tab selector */
+    .sticky-tabs {
+        position: -webkit-sticky;
         position: sticky;
         top: 0;
-        background-color: white;
+        z-index: 999;
+        background-color: #f8f9fa;
         padding-top: 0.5rem;
         padding-bottom: 0.5rem;
-        z-index: 999;
-        border-bottom: 1px solid #DDD;
-    }
-
-    /* Prevent overlap with Streamlit sidebar and header spacing */
-    .main > div {
-        padding-top: 0 !important;
+        border-bottom: 1px solid #ddd;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -626,26 +617,7 @@ highlight_colors = {
 
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
-    st.markdown("""
-    <style>
-    /* Floating sticky tab bar */
-    #floating-tabs {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: white;
-        padding: 0.5rem 1rem;
-        border-bottom: 1px solid #ccc;
-        z-index: 1000;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    body {
-        padding-top: 80px; /* push main content down to avoid overlap */
-    }
-    </style>
-    <div id="floating-tabs">
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="sticky-tabs">', unsafe_allow_html=True)
 
     col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
 
@@ -679,7 +651,7 @@ with st.container():
         network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
         col_n.metric("🏢 Networks", network_count)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
