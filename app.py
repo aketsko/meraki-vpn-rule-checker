@@ -13,7 +13,7 @@ from streamlit_searchbox import st_searchbox
 
 # ------------------ PAGE SETUP ------------------
 st.set_page_config(
-    page_title="Meraki VPN Rule Checker",
+    page_title="Meraki Network Toolkit",
     layout="wide",
     page_icon="🛡️",
     initial_sidebar_state="expanded"
@@ -424,10 +424,10 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 
 
-
+st.sidebar.header("☰ Menu")
 
 st.markdown("☁️ Connect to Meraki Dashboard")
-with st.sidebar.expander("", expanded=True):
+with st.sidebar.expander("🔽", expanded=True):
     
     org_id = st.text_input("🆔 Enter your Organization ID", value="")
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
