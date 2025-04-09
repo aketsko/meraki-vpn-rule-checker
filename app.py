@@ -689,36 +689,6 @@ if selected_tab == "🔎 Search Object or Group":
             )
 
 
-
-
-
-    # # --- Search Fields ---
-    # col1, col2 = st.columns([2, 2])
-
-    # with col1:
-    #     search_term = st.text_input("Search by name or CIDR:", "").lower()
-
-    # with col2:
-    #     location_term = None
-
-    #     if location_map:
-    #         def location_search(term: str):
-    #             term = term.strip().lower()
-    #             locations = set()
-    #             for entry in location_map.values():
-    #                 if isinstance(entry, list):
-    #                     locations.update(entry)
-    #                 elif isinstance(entry, str):
-    #                     locations.add(entry)
-    #             return [(loc, loc) for loc in sorted(locations) if term in loc.lower()]
-
-    #         location_term = st_searchbox(
-    #             location_search,
-    #             placeholder="🔍 Filter by location (optional)",
-    #             label="VPN Location",
-    #             key="location_searchbox"
-    #         )
-
     def match_object(obj, term):
         return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
 
@@ -1037,7 +1007,30 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         key="vpn_table"
     )
 
+    # 🧰 Toolbox inside a collapsible section
+    with st.sidebar:
+        st.sidebar.markdown("🔘 Set Colors")
+        with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
+            st.markdown("Adjust the colors used to highlight rule matches:")
 
+            def color_slider(label, key, default_hex):
+                return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
+
+            
+            color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
+            color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
+            color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
+            color_slider("Described traffic is partially DENIED. This rule can affect the traffic. To investigate further, make the search more specific.", key="partial_deny", default_hex="#F7EF81")
+
+
+
+        # Reconstruct highlight_colors from session state
+        highlight_colors = {
+            "exact_allow": st.session_state.get("exact_allow", "#09BC8A"),
+            "exact_deny": st.session_state.get("exact_deny", "#DA2C38"),
+            "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
+            "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
+        }
 
 
 # elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
