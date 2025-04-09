@@ -754,23 +754,44 @@ if selected_tab == "📘 Overview":
 
             # Build rows
             rows = []
-            for subnet_entry in vpn_subnets:
-                cidr = subnet_entry.get("localSubnet")
-                name = subnet_entry.get("name", "(Unnamed)")
-                in_vpn = "✅" if cidr in use_vpn_enabled_subnets else "❌"
-                matched_objs = [o["name"] for o in objects_data if o.get("cidr") == cidr]
+            vpn_info = network_details[selected_net_id].get("vpn_settings", {})
+            vpn_subnets = vpn_info.get("subnets", [])
+
+            for s in vpn_subnets:
+                cidr = s.get("localSubnet")
+                use_vpn = s.get("useVpn", False)  # This is a Python boolean
+                if not cidr:
+                    continue
+
+                # Find matching objects
+                matched_objects = []
+                try:
+                    subnet_net = ipaddress.ip_network(cidr, strict=False)
+                    for obj in objects_data:
+                        obj_cidr = obj.get("cidr")
+                        if not obj_cidr:
+                            continue
+                        try:
+                            obj_net = ipaddress.ip_network(obj_cidr, strict=False)
+                            if obj_net == subnet_net or obj_net.subnet_of(subnet_net):
+                                matched_objects.append(obj["name"])
+                        except:
+                            continue
+                except:
+                    continue
+
                 rows.append({
-                    "Subnet Name": name,
+                    "Subnet Name": cidr,
                     "CIDR": cidr,
-                    "In VPN": in_vpn,
-                    "Objects": ", ".join(matched_objs) if matched_objs else "—"
+                    "In VPN": "✅" if use_vpn else "❌",
+                    "Objects": ", ".join(matched_objects) if matched_objects else "—"
                 })
 
             if rows:
                 df = pd.DataFrame(rows)
                 st.dataframe(df, use_container_width=True)
             else:
-                st.info("ℹ️ This network has no defined VPN subnets.")
+                st.info("No subnets found for this network.")
 
 
 elif selected_tab == "🔎 Search Object or Group":
