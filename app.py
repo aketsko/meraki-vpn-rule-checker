@@ -259,14 +259,11 @@ def generate_rule_table(rules,
         resizable=True,
         wrapText=True,
         autoHeight=True,
-        minWidth=100,
+        minWidth=50,
         flex=1  # This ensures columns scale equally to fit the container width
     )
-    for col in ["Comment", "Source", "Destination", "Protocol"]:
-        gb.configure_column(col, wrapText=True, autoHeight=True)
-    gb.configure_column("Comment", flex=2)
-    gb.configure_column("Source", flex=2)
-    gb.configure_column("Destination", flex=2)
+    for col in ["Comment", "Source", "Destination"]:
+        gb.configure_column(col, flex=2)
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     grid_options = gb.build()
 
