@@ -112,15 +112,11 @@ st.markdown("""
         font-size: 20px !important;
         font-weight: bold;
     }
-        .sticky-tabs-wrapper {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        background: #f0f2f6;
-        padding: 0.5rem 1rem 0.5rem 1rem;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.1);
-        border-bottom: 1px solid #ccc;
-        margin-bottom: 10px;
+
+    /* Optional: spacing and padding adjustments */
+    summary {
+        padding: 4px;
+        margin-bottom: 4px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -614,16 +610,52 @@ highlight_colors = {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
-    #st.markdown('<div class="sticky-tabs-wrapper">', unsafe_allow_html=True)
+    col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
 
-    col_left, col_right = st.columns([3, 5])
+    # LEFT: Label + Selectbox
     with col_left:
         st.markdown(" 🔎-🛡️-🧠 Choose the module:")
         tab_names = ["🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
+
         if "active_tab" not in st.session_state:
-            st.session_state.active_tab = tab_names[0]
+            st.session_state.active_tab = tab_names[0]  # Default
 
         def on_tab_change():
             st.session_state.active_tab = st.session_state["selected_tab"]
@@ -637,6 +669,7 @@ with st.container():
             label_visibility="collapsed"
         )
 
+    # RIGHT: Metrics
     with col_right:
         col_b, col_n, col_o, col_g, col_r = st.columns(5)
         col_b.text("")
@@ -645,8 +678,6 @@ with st.container():
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
         network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
         col_n.metric("🏢 Networks", network_count)
-
-    #st.markdown('</div>', unsafe_allow_html=True)
 
 
 # Update active_tab variable

@@ -66,6 +66,8 @@ def find_object_locations(cidr_list, extended_data):
                     continue
     return sorted(locations)
 
+import ipaddress
+
 def build_object_location_map(objects_data, groups_data, extended_data):
     object_location_map = {}
     vpn_subnets_per_network = {}
@@ -76,7 +78,7 @@ def build_object_location_map(objects_data, groups_data, extended_data):
         cidrs = [s.get("localSubnet", "") for s in subnets if "localSubnet" in s]
         vpn_subnets_per_network[network_name] = cidrs
 
-    # Map object CIDRs to all matching networks
+    # Map object CIDRs to all matching networks (bidirectional containment logic)
     for obj in objects_data:
         cidr = obj.get("cidr")
         if not cidr:
@@ -91,7 +93,8 @@ def build_object_location_map(objects_data, groups_data, extended_data):
             for subnet in vpn_subnets:
                 try:
                     vpn_net = ipaddress.ip_network(subnet, strict=False)
-                    if obj_net.subnet_of(vpn_net) or obj_net == vpn_net:
+                    # Match if object is inside VPN subnet, VPN is inside object subnet, or exactly equal
+                    if obj_net.subnet_of(vpn_net) or vpn_net.subnet_of(obj_net) or obj_net == vpn_net:
                         matching_networks.add(net_name)
                         break
                 except:
