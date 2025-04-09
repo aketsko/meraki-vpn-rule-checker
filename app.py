@@ -415,7 +415,7 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 # ------------------ SIDEBAR FILE UPLOAD & API ACCESS ------------------
 with st.sidebar.expander("☁️ Connect to Meraki Dashboard", expanded=True):
-    st.markdown("### 🔒 API Access")
+    st.markdown("")
     org_id = st.text_input("🆔 Enter your Organization ID", value="")
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
 
@@ -492,9 +492,10 @@ with st.sidebar.expander("☁️ Connect to Meraki Dashboard", expanded=True):
 
 
 with st.sidebar.expander("📤 Data Import", expanded=True):
-    st.markdown("###📤 Uploads")
-# Upload Snapshot to restore everything
-    uploaded_snapshot = st.sidebar.file_uploader("📤 Load API Snapshot (.json)", type="json")
+    st.markdown("")
+
+    # Upload Snapshot to restore everything
+    uploaded_snapshot = st.file_uploader("📤 Load API Snapshot (.json)", type="json")
     if uploaded_snapshot:
         try:
             snapshot = json.load(uploaded_snapshot)
@@ -505,26 +506,22 @@ with st.sidebar.expander("📤 Data Import", expanded=True):
             st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
             st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
             st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
-            st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Додано
+            st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Added
             st.session_state["fetched_from_api"] = True  # Emulate success
 
             network_count = len(st.session_state["extended_data"].get("network_map", {}))
-            import time
-
-            snapshot_msg = st.sidebar.empty()
+            snapshot_msg = st.empty()
             snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
-            #time.sleep(10)
             snapshot_msg.empty()
 
         except Exception as e:
             st.error(f"❌ Failed to load snapshot: {e}")
 
-    # Full manual upload fallback
-
+    # Manual fallback file upload
     if not st.session_state.get("fetched_from_api", False):
-        rules_file = st.sidebar.file_uploader("Upload Rules.json", type="json")
-        objects_file = st.sidebar.file_uploader("Upload Objects.json", type="json")
-        groups_file = st.sidebar.file_uploader("Upload Object Groups.json", type="json")
+        rules_file = st.file_uploader("Upload Rules.json", type="json")
+        objects_file = st.file_uploader("Upload Objects.json", type="json")
+        groups_file = st.file_uploader("Upload Object Groups.json", type="json")
 
         if all([rules_file, objects_file, groups_file]):
             try:
@@ -540,19 +537,17 @@ with st.sidebar.expander("📤 Data Import", expanded=True):
             except Exception as e:
                 st.error(f"❌ Failed to load one or more files: {e}")
 
-    # Load current data from session_state into local variables
+    # Update local variables from session
     rules_data = st.session_state.get("rules_data", [])
     objects_data = st.session_state.get("objects_data", [])
     groups_data = st.session_state.get("groups_data", [])
     object_map = st.session_state.get("object_map", {})
     group_map = st.session_state.get("group_map", {})
 
+    st.markdown("---")
 
-    st.sidebar.markdown("---")
-        # Save & Download all API data
-
-    # Trigger the snapshot and download immediately
-    if st.sidebar.button("💾 Create API Snapshot"):
+    # Snapshot creation + download
+    if st.button("💾 Create API Snapshot"):
         try:
             snapshot_str, snapshot_filename = prepare_snapshot(
                 st.session_state.get("rules_data", []),
@@ -562,17 +557,15 @@ with st.sidebar.expander("📤 Data Import", expanded=True):
                 st.session_state.get("object_location_map", {})
             )
 
-            # Trigger download immediately using download_button and then hide it
-            st.sidebar.download_button(
+            st.download_button(
                 label="📥 Download API Snapshot",
                 data=snapshot_str,
                 file_name=snapshot_filename,
                 mime="application/json",
                 key="auto_snapshot_download"
             )
-
         except Exception as e:
-            st.sidebar.error(f"❌ Snapshot error: {e}")
+            st.error(f"❌ Snapshot error: {e}")
 
 
 # ------------------ SIDEBAR TOOLBOX ------------------
