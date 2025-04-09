@@ -1075,8 +1075,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                             object_map=object_map,
                             group_map=group_map,
                             highlight_colors=highlight_colors,
-                            source_cidrs=vpn_source_cidrs,
-                            destination_cidrs=vpn_destination_cidrs,
+                            source_cidrs=source_cidrs,
+                            destination_cidrs=destination_cidrs,
                             skip_src_check=skip_src_check,
                             skip_dst_check=skip_dst_check,
                             key=f"local_{location}_fallback"
@@ -1116,8 +1116,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         object_map=object_map,
                         group_map=group_map,
                         highlight_colors=highlight_colors,
-                        source_cidrs=vpn_source_cidrs,
-                        destination_cidrs=vpn_destination_cidrs,
+                        source_cidrs=source_cidrs,
+                        destination_cidrs=destination_cidrs,
                         skip_src_check=skip_src_check,
                         skip_dst_check=skip_dst_check,
                         key=f"local_{location}"
@@ -1168,8 +1168,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                     object_map=object_map,
                                     group_map=group_map,
                                     highlight_colors=highlight_colors,
-                                    source_cidrs=vpn_source_cidrs,
-                                    destination_cidrs=vpn_destination_cidrs,
+                                    source_cidrs=source_cidrs,
+                                    destination_cidrs=destination_cidrs,
                                     skip_src_check=skip_src_check,
                                     skip_dst_check=skip_dst_check,
                                     key=f"local_{location}"
