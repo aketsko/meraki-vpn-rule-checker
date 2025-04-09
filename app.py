@@ -425,7 +425,8 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 
 st.sidebar.header("☰ Menu")
-collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data"))
+st.session_state["api_data_expander"] = False
+collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data") or st.session_state["api_data_expander"])
 
 st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
 with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not collapse_expanders):
@@ -560,7 +561,7 @@ with st.sidebar.expander("🔽 Upload prepared .json data or create and download
     
 
     # Snapshot creation + download
-    if st.button("💾 Create API Snapshot"):
+    if st.button("💾 Create Data Snapshot"):
         try:
             snapshot_str, snapshot_filename = prepare_snapshot(
                 st.session_state.get("rules_data", []),
@@ -605,6 +606,17 @@ with st.container():
             on_change=on_tab_change,
             label_visibility="collapsed"
         )
+
+    # Detect tab switch and collapse expanders if not on startup tab
+    if "last_active_tab" not in st.session_state:
+        st.session_state.last_active_tab = st.session_state.active_tab
+
+    # When user changes tab, collapse API/Data expanders
+    if st.session_state.active_tab != st.session_state.last_active_tab:
+        if st.session_state.active_tab != "☁️ API & Snapshot":
+            st.session_state["api_data_expander"] = False
+        st.session_state.last_active_tab = st.session_state.active_tab
+
 
     # RIGHT: Metrics
     with col_right:
