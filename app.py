@@ -109,7 +109,7 @@ st.markdown("""
     }
     /* Change expander title font size */
     .streamlit-expanderHeader {
-        font-size: 20px !important;
+        font-size: 28px !important;
     }
     </style>
 """, unsafe_allow_html=True)
