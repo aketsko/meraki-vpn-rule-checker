@@ -583,8 +583,8 @@ with st.sidebar.expander("🔽", expanded=True):
 # ------------------ SIDEBAR TOOLBOX ------------------
 
 # 🧰 Toolbox inside a collapsible section
-st.sidebar.markdown(🔘Dedinition Colors")
-with st.sidebar.expander("🟢🟡🔴 ", expanded=False):
+st.sidebar.markdown("🔘 Set Colors")
+with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
     st.markdown("Adjust the colors used to highlight rule matches:")
 
     def color_slider(label, key, default_hex):
