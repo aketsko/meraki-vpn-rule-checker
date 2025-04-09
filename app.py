@@ -104,13 +104,12 @@ st.markdown("""
     section[data-testid="stSidebar"] .stFileUploader span {
         color: black !important;
     }
-    </style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-    <style>
     .stButton > button {
         width: 100%;
+    }
+    /* Change expander title font size */
+    .streamlit-expanderHeader {
+        font-size: 20px !important;
     }
     </style>
 """, unsafe_allow_html=True)
