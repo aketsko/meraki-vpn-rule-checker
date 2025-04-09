@@ -426,7 +426,7 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 st.sidebar.header("☰ Menu")
 
-st.markdown("☁️ Connect to Meraki Dashboard")
+st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
 with st.sidebar.expander("🔽", expanded=True):
     
     org_id = st.text_input("🆔 Enter your Organization ID", value="")
