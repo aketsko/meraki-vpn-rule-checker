@@ -633,16 +633,15 @@ with st.container():
 selected_tab = st.session_state.active_tab
 
 
-if selected_tab == "📘 Introduction & VPN Overview":
-    st.markdown("## 📘 Introduction & VPN Overview")
+if selected_tab == "📘 Overview":
+    data_loaded = (
+        st.session_state.get("rules_data")
+        and st.session_state.get("objects_data")
+        and st.session_state.get("extended_data")
+    )
 
-    rules_data = st.session_state.get("rules_data")
-    extended_data = st.session_state.get("extended_data")
-    objects_data = st.session_state.get("objects_data")
-    object_map = st.session_state.get("object_map", {})
-
-    # Show welcome if no data yet
-    if not rules_data and not extended_data:
+    if not data_loaded:
+        with st.expander("📘 Introduction", expanded=True):
             st.markdown("""
             ## Welcome to the Meraki Network Toolkit
 
@@ -725,6 +724,8 @@ if selected_tab == "📘 Introduction & VPN Overview":
             """)
 
         
+        extended_data = st.session_state["extended_data"]
+        objects_data = st.session_state["objects_data"]
         network_map = extended_data.get("network_map", {})
         network_details = extended_data.get("network_details", {})
         network_names = sorted([v["network_name"] for v in network_details.values()])
@@ -746,7 +747,11 @@ if selected_tab == "📘 Introduction & VPN Overview":
 
             vpn_info = network_details[selected_net_id].get("vpn_settings", {})
             vpn_subnets = vpn_info.get("subnets", [])
-            use_vpn_enabled_subnets = {s["localSubnet"] for s in vpn_subnets if s.get("useVpn", "").lower() == "yes"}
+            use_vpn_enabled_subnets = {
+                s["localSubnet"] for s in vpn_subnets
+                if str(s.get("useVpn", "")).lower() == "yes"
+}
+
 
             # Build rows
             rows = []
