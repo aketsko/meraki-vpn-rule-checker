@@ -258,7 +258,7 @@ def generate_rule_table(rules,
         wrapText=True,
         autoHeight=True,
         minWidth=20,
-        maxWidth=150,
+        maxWidth=300,
         flex=3  # This ensures columns scale equally to fit the container width
     )
     # Configure specific columns to be wider
