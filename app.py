@@ -421,7 +421,7 @@ with st.sidebar.expander("☁️ Connect to Meraki Dashboard", expanded=True):
 
     col_api_btn1, col_api_btn2 = st.columns(2)
     with col_api_btn1:
-        if st.button("🔄 Refresh API Data"):
+        if st.button("🔄 Basic Data"):
             if api_key and org_id:
                 rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
                 if fetched:
@@ -439,7 +439,7 @@ with st.sidebar.expander("☁️ Connect to Meraki Dashboard", expanded=True):
                 st.error("❌ Please enter both API key and Org ID.")
 
     with col_api_btn2:
-        if st.button("📡 Get Extended API Data"):
+        if st.button("📡 Extended Data"):
             st.session_state["cancel_extended_fetch"] = False
             st.session_state["fetching_extended"] = True
 
@@ -495,7 +495,7 @@ with st.sidebar.expander("📤 Data Import", expanded=True):
     st.markdown("")
 
     # Upload Snapshot to restore everything
-    uploaded_snapshot = st.file_uploader("📤 Load API Snapshot (.json)", type="json")
+    uploaded_snapshot = st.file_uploader("📤 Load Snapshot (.json)", type="json")
     if uploaded_snapshot:
         try:
             snapshot = json.load(uploaded_snapshot)
@@ -517,6 +517,7 @@ with st.sidebar.expander("📤 Data Import", expanded=True):
         except Exception as e:
             st.error(f"❌ Failed to load snapshot: {e}")
 
+    st.markdown("---")
     # Manual fallback file upload
     if not st.session_state.get("fetched_from_api", False):
         rules_file = st.file_uploader("Upload Rules.json", type="json")
