@@ -265,12 +265,24 @@ def generate_rule_table(rules,
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     grid_options = gb.build()
 
+
+
+
+    # gb = GridOptionsBuilder.from_dataframe(df_to_show)
+    # gb.configure_column("Comment", wrapText=True, autoHeight=True)
+    # gb.configure_column("Source", wrapText=True, autoHeight=True)
+    # gb.configure_column("Destination", wrapText=True, autoHeight=True)
+    # gb.configure_column("Protocol", wrapText=True, autoHeight=True)
+    # gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
+    # grid_options = gb.build()
+
+
     st.markdown(title_prefix)
     AgGrid(
         df_to_show,
         gridOptions=grid_options,
         enable_enterprise_modules=False,
-        fit_columns_on_grid_load=True,
+    #    fit_columns_on_grid_load=True,
         use_container_width=True,
         allow_unsafe_jscode=True,
         key=key
@@ -419,6 +431,15 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
     filename = f"meraki_snapshot_{timestamp}.json"
 
     return json.dumps(snapshot, indent=2), filename
+
+
+
+
+
+
+
+
+
 
 
 st.sidebar.header("☰ Menu")
@@ -578,6 +599,10 @@ with st.sidebar.expander("🔽", expanded=not collapse_expanders):
             st.error(f"❌ Snapshot error: {e}")
 
 
+
+
+
+
 # 🧰 Toolbox inside a collapsible section
 st.sidebar.markdown("🔘 Set Colors")
 with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
@@ -601,6 +626,41 @@ highlight_colors = {
     "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
     "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # -------------- MANUAL TAB HANDLING ----------------
@@ -642,7 +702,6 @@ with st.container():
 selected_tab = st.session_state.active_tab
 
 if selected_tab == "🔎 Search Object or Group":
-
     from utils.match_logic import build_object_location_map  # Ensure this is imported
 
     # Build location map if extended data and not already available
