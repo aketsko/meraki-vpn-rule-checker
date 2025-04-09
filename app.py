@@ -945,8 +945,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             if isinstance(mapped, str):
                 locations.add(mapped)
             elif isinstance(mapped, list):
-                locations.update(mapped)
+                for entry in mapped:
+                    if isinstance(entry, dict) and "location" in entry:
+                        locations.add(entry["location"])
+                    elif isinstance(entry, str):
+                        locations.add(entry)
         return locations
+
 
     # --- Search input helpers ---
     def custom_search(term: str):
