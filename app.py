@@ -616,7 +616,7 @@ highlight_colors = {
 
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
-    st.markdown('<div class="sticky-tabs-wrapper">', unsafe_allow_html=True)
+    #st.markdown('<div class="sticky-tabs-wrapper">', unsafe_allow_html=True)
 
     col_left, col_right = st.columns([3, 5])
     with col_left:
@@ -646,7 +646,7 @@ with st.container():
         network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
         col_n.metric("🏢 Networks", network_count)
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    #st.markdown('</div>', unsafe_allow_html=True)
 
 
 # Update active_tab variable
