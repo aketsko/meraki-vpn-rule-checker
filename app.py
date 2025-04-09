@@ -860,7 +860,11 @@ elif selected_tab == "🔎 Search Object or Group":
     object_rows = []
     for o in filtered_objs:
         cidr = o.get("cidr", "")
-        location = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({o.get('id')})", []))
+        entries = location_map.get(cidr, []) or location_map.get(f"OBJ({o.get('id')})", [])
+        if isinstance(entries, list) and all(isinstance(e, dict) for e in entries):
+            location = ", ".join(sorted({e["network"] for e in entries}))
+        else:
+            location = ", ".join(entries) if isinstance(entries, list) else entries
         object_rows.append({
             "ID": o.get("id", ""),
             "Name": o.get("name", ""),
