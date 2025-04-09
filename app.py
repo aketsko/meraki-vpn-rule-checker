@@ -253,14 +253,14 @@ def generate_rule_table(rules,
     
 
     gb = GridOptionsBuilder.from_dataframe(df)  # Initialize GridOptionsBuilder with a DataFrame
-    gb.configure_default_column(
-        resizable=True,
-        wrapText=True,
-        autoHeight=True,
-        minWidth=20,
-        maxWidth=300,
-        flex=3  # This ensures columns scale equally to fit the container width
-    )
+    # gb.configure_default_column(
+    #     resizable=True,
+    #     wrapText=True,
+    #     autoHeight=True,
+    #     minWidth=20,
+    #     maxWidth=300,
+    #     flex=3  # This ensures columns scale equally to fit the container width
+    # )
     # Configure specific columns to be wider
     gb.configure_column("Comment", flex=3, minWidth=200, wrapText=True, autoHeight=True)
     gb.configure_column("Source", flex=3, minWidth=200, wrapText=True, autoHeight=True)
