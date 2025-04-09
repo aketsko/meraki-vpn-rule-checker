@@ -633,15 +633,16 @@ with st.container():
 selected_tab = st.session_state.active_tab
 
 
-if selected_tab == "📘 Overview":
-    data_loaded = (
-        st.session_state.get("rules_data")
-        and st.session_state.get("objects_data")
-        and st.session_state.get("extended_data")
-    )
+if selected_tab == "📘 Introduction & VPN Overview":
+    st.markdown("## 📘 Introduction & VPN Overview")
 
-    if not data_loaded:
-        with st.expander("📘 Introduction", expanded=True):
+    rules_data = st.session_state.get("rules_data")
+    extended_data = st.session_state.get("extended_data")
+    objects_data = st.session_state.get("objects_data")
+    object_map = st.session_state.get("object_map", {})
+
+    # Show welcome if no data yet
+    if not rules_data and not extended_data:
             st.markdown("""
             ## Welcome to the Meraki Network Toolkit
 
@@ -724,8 +725,6 @@ if selected_tab == "📘 Overview":
             """)
 
         
-        extended_data = st.session_state["extended_data"]
-        objects_data = st.session_state["objects_data"]
         network_map = extended_data.get("network_map", {})
         network_details = extended_data.get("network_details", {})
         network_names = sorted([v["network_name"] for v in network_details.values()])
