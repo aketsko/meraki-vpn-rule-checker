@@ -118,20 +118,6 @@ st.markdown("""
         padding: 4px;
         margin-bottom: 4px;
     }
-             .sticky-tabs {
-        position: sticky;
-        top: 0;
-        background-color: white;
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-        z-index: 999;
-        border-bottom: 1px solid #DDD;
-    }
-
-    /* Prevent overlap with Streamlit sidebar and header spacing */
-    .main > div {
-        padding-top: 0 !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -440,7 +426,6 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 st.sidebar.header("☰ Menu")
 collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data"))
-
 st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
 with st.sidebar.expander("🔽", expanded=not collapse_expanders):
     
@@ -624,11 +609,43 @@ highlight_colors = {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # -------------- MANUAL TAB HANDLING ----------------
 with st.container():
-    st.markdown("""
-        <div class="sticky-tabs">
-    """, unsafe_allow_html=True)
     col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
 
     # LEFT: Label + Selectbox
@@ -660,7 +677,7 @@ with st.container():
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
         network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
         col_n.metric("🏢 Networks", network_count)
-    st.markdown("</div>", unsafe_allow_html=True)
+
 
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
