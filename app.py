@@ -107,6 +107,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+    <style>
+    .stButton > button {
+        width: 100%;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 def generate_rule_table(rules, 
     source_port_input,
     port_input,
@@ -420,7 +428,7 @@ with st.sidebar.expander("☁️ Connect to Meraki Dashboard", expanded=True):
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
 
 
-    if st.button("🔄    Basic Data    "):
+    if st.button("🔄 Basic Data"):
         if api_key and org_id:
             rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
             if fetched:
