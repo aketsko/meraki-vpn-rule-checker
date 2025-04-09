@@ -250,21 +250,47 @@ def generate_rule_table(rules,
         return {{}};
     }}
     """)
+    # Drop "Matched" column if present
+    if "Matched" in df_to_show.columns:
+        df_to_show = df_to_show.drop(columns=["Matched"])
 
-    gb = GridOptionsBuilder.from_dataframe(df_to_show)
-    gb.configure_column("Comment", wrapText=True, autoHeight=True)
-    gb.configure_column("Source", wrapText=True, autoHeight=True)
-    gb.configure_column("Destination", wrapText=True, autoHeight=True)
-    gb.configure_column("Protocol", wrapText=True, autoHeight=True)
+    gb.configure_default_column(
+        resizable=True,
+        wrapText=True,
+        autoHeight=True,
+        minWidth=100,
+        flex=1  # This ensures columns scale equally to fit the container width
+    )
+    for col in ["Comment", "Source", "Destination", "Protocol"]:
+        gb.configure_column(col, wrapText=True, autoHeight=True)
+
+    gb.configure_column("Comment", flex=2)
+    gb.configure_column("Source", flex=2)
+    gb.configure_column("Destination", flex=2)
+
+    
+    gb = GridOptionsBuilder.from_dataframe(df)  # Initialize GridOptionsBuilder with a DataFrame
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     grid_options = gb.build()
+
+
+
+
+    # gb = GridOptionsBuilder.from_dataframe(df_to_show)
+    # gb.configure_column("Comment", wrapText=True, autoHeight=True)
+    # gb.configure_column("Source", wrapText=True, autoHeight=True)
+    # gb.configure_column("Destination", wrapText=True, autoHeight=True)
+    # gb.configure_column("Protocol", wrapText=True, autoHeight=True)
+    # gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
+    # grid_options = gb.build()
+
 
     st.markdown(title_prefix)
     AgGrid(
         df_to_show,
         gridOptions=grid_options,
         enable_enterprise_modules=False,
-        fit_columns_on_grid_load=True,
+    #    fit_columns_on_grid_load=True,
         use_container_width=True,
         allow_unsafe_jscode=True,
         key=key
