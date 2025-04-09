@@ -258,12 +258,13 @@ def generate_rule_table(rules,
         wrapText=True,
         autoHeight=True,
         minWidth=20,
-        maxWidth=30,
+        maxWidth=50,
         flex=1  # This ensures columns scale equally to fit the container width
     )
-    gb.configure_column("Comment", flex=2, minWidth=150, wrapText=True, autoHeight=True)
-    gb.configure_column("Source", flex=2, minWidth=150, wrapText=True, autoHeight=True)
-    gb.configure_column("Destination", flex=2, minWidth=150, wrapText=True, autoHeight=True)
+    # Configure specific columns to be wider
+    gb.configure_column("Comment", flex=3, minWidth=200, wrapText=True, autoHeight=True)
+    gb.configure_column("Source", flex=3, minWidth=200, wrapText=True, autoHeight=True)
+    gb.configure_column("Destination", flex=3, minWidth=200, wrapText=True, autoHeight=True)
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     grid_options = gb.build()
 
