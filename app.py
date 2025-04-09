@@ -257,7 +257,8 @@ def generate_rule_table(rules,
         resizable=True,
         wrapText=True,
         autoHeight=True,
-        minWidth=50,
+        minWidth=20,
+        maxWidth=30,
         flex=1  # This ensures columns scale equally to fit the container width
     )
     for col in ["Comment", "Source", "Destination"]:
