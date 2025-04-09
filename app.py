@@ -107,9 +107,16 @@ st.markdown("""
     .stButton > button {
         width: 100%;
     }
-    /* Change expander title font size */
-    .streamlit-expanderHeader {
-        font-size: 28px !important;
+    /* More reliable targeting of expander headers */
+    details > summary {
+        font-size: 40px !important;
+        font-weight: bold;
+    }
+
+    /* Optional: spacing and padding adjustments */
+    summary {
+        padding: 4px;
+        margin-bottom: 4px;
     }
     </style>
 """, unsafe_allow_html=True)
