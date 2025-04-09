@@ -1048,7 +1048,16 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             for s in subnets:
                 if s.get("useVpn", False):
                     vpn_enabled_subnets.add(s.get("localSubnet"))
-        return [cidr for cidr in cidr_list if any(ipaddress.ip_network(cidr).subnet_of(ipaddress.ip_network(vpn)) or ipaddress.ip_network(cidr) == ipaddress.ip_network(vpn) for vpn in vpn_enabled_subnets)]
+        return [
+            cidr for cidr in cidr_list
+            if any(
+                ipaddress.ip_network(cidr, strict=False).subnet_of(ipaddress.ip_network(vpn, strict=False)) or
+                ipaddress.ip_network(cidr, strict=False) == ipaddress.ip_network(vpn, strict=False)
+                for vpn in vpn_enabled_subnets
+            )
+        ]
+
+
 
     vpn_source_cidrs = filter_vpn_cidrs(source_cidrs, extended_data)
     vpn_destination_cidrs = filter_vpn_cidrs(destination_cidrs, extended_data)
