@@ -644,6 +644,11 @@ with st.container():
 # Update active_tab variable
 selected_tab = st.session_state.active_tab
 
+
+
+
+
+
 if selected_tab == "🔎 Search Object or Group":
 
     from utils.match_logic import build_object_location_map  # Ensure this is imported
@@ -659,15 +664,12 @@ if selected_tab == "🔎 Search Object or Group":
 
     location_map = st.session_state.get("object_location_map", {})
 
-    # --- Search Fields ---
-    col1, col2 = st.columns([2, 2])
-
-    with col1:
+    # --- Sidebar Controls ---
+    with st.sidebar:
+        st.markdown("### 📍 Location Filters")
         search_term = st.text_input("Search by name or CIDR:", "").lower()
 
-    with col2:
         location_term = None
-
         if location_map:
             def location_search(term: str):
                 term = term.strip().lower()
@@ -685,6 +687,37 @@ if selected_tab == "🔎 Search Object or Group":
                 label="VPN Location",
                 key="location_searchbox"
             )
+
+
+
+
+
+    # # --- Search Fields ---
+    # col1, col2 = st.columns([2, 2])
+
+    # with col1:
+    #     search_term = st.text_input("Search by name or CIDR:", "").lower()
+
+    # with col2:
+    #     location_term = None
+
+    #     if location_map:
+    #         def location_search(term: str):
+    #             term = term.strip().lower()
+    #             locations = set()
+    #             for entry in location_map.values():
+    #                 if isinstance(entry, list):
+    #                     locations.update(entry)
+    #                 elif isinstance(entry, str):
+    #                     locations.add(entry)
+    #             return [(loc, loc) for loc in sorted(locations) if term in loc.lower()]
+
+    #         location_term = st_searchbox(
+    #             location_search,
+    #             placeholder="🔍 Filter by location (optional)",
+    #             label="VPN Location",
+    #             key="location_searchbox"
+    #         )
 
     def match_object(obj, term):
         return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
