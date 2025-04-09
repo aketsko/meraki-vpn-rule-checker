@@ -974,21 +974,22 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             # Location filter inside sidebar only
             with st.sidebar:
                 st.markdown("### 📍 Location Filter")
-                all_locations = sorted(shared_locs)
-                default_selection = st.session_state.get("selected_local_locations", all_locations)
+                with st.expander(f"Collapse - `{count}`", expanded=True):
+                    all_locations = sorted(shared_locs)
+                    default_selection = st.session_state.get("selected_local_locations", all_locations)
 
-                if st.button("✅ Select All"):
-                    st.session_state["selected_local_locations"] = all_locations
-                if st.button("❌ Deselect All"):
-                    st.session_state["selected_local_locations"] = []
+                    if st.button("✅ Select All"):
+                        st.session_state["selected_local_locations"] = all_locations
+                    if st.button("❌ Deselect All"):
+                        st.session_state["selected_local_locations"] = []
 
-                selected_locations = st.session_state.get("selected_local_locations", all_locations)
-                selected_locations = st.multiselect(
-                    "Pick location(s) to display:",
-                    options=all_locations,
-                    default=selected_locations,
-                    key="selected_local_locations"
-                )
+                    selected_locations = st.session_state.get("selected_local_locations", all_locations)
+                    selected_locations = st.multiselect(
+                        "Pick location(s) to display:",
+                        options=all_locations,
+                        default=selected_locations,
+                        key="selected_local_locations"
+                    )
 
             with st.expander(f"Collapse - `{count}`", expanded=st.session_state["fw_expand_local"]):
                 for location in sorted(shared_locs):
