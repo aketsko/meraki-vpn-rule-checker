@@ -1013,12 +1013,25 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             with col_l:
                 st.subheader("🧱 Local Firewall Rules")
             with col_r:
-                selected_locations = st.multiselect(
-                    "Pick location(s) to display",
-                    options=sorted(shared_locs),
-                    default=sorted(shared_locs),
-                    key="local_firewall_location_filter"
-                )
+                with st.expander("⚙️ Select locations to display", expanded=False):
+                    all_locations = sorted(shared_locs)
+                    default_selection = st.session_state.get("selected_local_locations", all_locations)
+
+                    select_all = st.button("✅ Select All", key="select_all_locations_btn")
+                    deselect_all = st.button("❌ Deselect All", key="deselect_all_locations_btn")
+
+                    if select_all:
+                        st.session_state["selected_local_locations"] = all_locations
+                    if deselect_all:
+                        st.session_state["selected_local_locations"] = []
+
+                    selected_locations = st.session_state.get("selected_local_locations", all_locations)
+                    selected_locations = st.multiselect(
+                        "Pick locations below:",
+                        options=all_locations,
+                        default=selected_locations,
+                        key="selected_local_locations"
+                    )
 
             with st.expander(f"Collapse - `{count}`", expanded=expand_all_local):
                 for location in sorted(shared_locs):
