@@ -655,65 +655,119 @@ if selected_tab == "📘 Overview":
             👉 **Start by connecting to Meraki or uploading your JSON snapshot in the sidebar.**
             """)
     else:
-        with st.expander("📘 Introduction", expanded=False):
-            st.markdown("""
-            ## Welcome to the Meraki Network Toolkit
+        # with st.expander("📘 Introduction", expanded=False):
+        #     st.markdown("""
+        #     ## Welcome to the Meraki Network Toolkit
 
-            This app helps you analyze and understand Meraki firewall and VPN configurations.
+        #     This app helps you analyze and understand Meraki firewall and VPN configurations.
             
-            ### Tabs Overview:
-            - 🔎 **Search Object or Group**: Browse and filter network objects/groups and view their metadata and location.
-            - 🛡️ **Firewall & VPN Rules**: Check how specific traffic is handled based on source, destination, ports, and protocol.
-            - 🧠 **Optimization Insights**: Get tips on improving your rulebase (e.g., shadowed, duplicate, or broad rules).
+        #     ### Tabs Overview:
+        #     - 🔎 **Search Object or Group**: Browse and filter network objects/groups and view their metadata and location.
+        #     - 🛡️ **Firewall & VPN Rules**: Check how specific traffic is handled based on source, destination, ports, and protocol.
+        #     - 🧠 **Optimization Insights**: Get tips on improving your rulebase (e.g., shadowed, duplicate, or broad rules).
             
-            ✅ Data loaded successfully. Use the dropdown below to explore network details.
+        #     ✅ Data loaded successfully. Use the dropdown below to explore network details.
+        #     """)
+
+        # extended_data = st.session_state["extended_data"]
+        # objects_data = st.session_state["objects_data"]
+
+        # networks = {
+        #     info["network_name"]: net_id
+        #     for net_id, info in extended_data.get("network_details", {}).items()
+        # }
+
+        # selected_network_name = st.selectbox("🏢 Select a Network", sorted(networks.keys()))
+        # selected_net_id = networks[selected_network_name]
+        # network_info = extended_data["network_details"][selected_net_id]
+        # subnets = network_info.get("vpn_settings", {}).get("subnets", [])
+
+        # st.markdown(f"### 🏢 Network: `{selected_network_name}`")
+
+        # for subnet in subnets:
+        #     cidr = subnet["localSubnet"]
+        #     use_vpn = subnet.get("useVpn", "Unknown")
+        #     st.markdown(f"**🔹 Subnet:** `{cidr}` — **In VPN:** `{use_vpn}`")
+
+        #     # Match against objects
+        #     from ipaddress import ip_network
+
+        #     matches = []
+        #     try:
+        #         subnet_net = ip_network(cidr, strict=False)
+        #         for obj in objects_data:
+        #             obj_cidr = obj.get("cidr")
+        #             if obj_cidr:
+        #                 try:
+        #                     obj_net = ip_network(obj_cidr, strict=False)
+        #                     if obj_net == subnet_net:
+        #                         matches.append(obj)
+        #                 except:
+        #                     continue
+        #     except:
+        #         continue
+
+        #     if matches:
+        #         for obj in matches:
+        #             st.markdown(f"- 🌐**{obj['name']}** — `{obj['cidr']}` — {obj.get('fqdn', '')}")
+        #     else:
+        #         st.markdown("*⚠️ No matching objects found.*")
+
+        with st.expander("📘 About this tab (click to collapse)", expanded=False):
+            st.markdown("""
+            Use this section to explore how your networks are configured in terms of VPN settings and subnets.
+            
+            - You can pick a network from the dropdown.
+            - It shows its VPN subnets.
+            - You'll see if each subnet is part of the `useVpn` list.
+            - Matching objects (exact CIDR match) will be listed.
             """)
 
+        
         extended_data = st.session_state["extended_data"]
         objects_data = st.session_state["objects_data"]
+        network_map = extended_data.get("network_map", {})
+        network_details = extended_data.get("network_details", {})
+        network_names = sorted([v["network_name"] for v in network_details.values()])
 
-        networks = {
-            info["network_name"]: net_id
-            for net_id, info in extended_data.get("network_details", {}).items()
-        }
+        selected_network = st.selectbox("🏢 Choose a Network", options=network_names)
 
-        selected_network_name = st.selectbox("🏢 Select a Network", sorted(networks.keys()))
-        selected_net_id = networks[selected_network_name]
-        network_info = extended_data["network_details"][selected_net_id]
-        subnets = network_info.get("vpn_settings", {}).get("subnets", [])
+        # Display table after network selected
+        if selected_network:
+            # Get VPN subnets and useVpn flags
+            selected_net_id = None
+            for nid, info in network_details.items():
+                if info.get("network_name") == selected_network:
+                    selected_net_id = nid
+                    break
 
-        st.markdown(f"### 🏢 Network: `{selected_network_name}`")
+            if not selected_net_id:
+                st.warning("❌ Selected network not found.")
+                st.stop()
 
-        for subnet in subnets:
-            cidr = subnet["localSubnet"]
-            use_vpn = subnet.get("useVpn", "Unknown")
-            st.markdown(f"**🔹 Subnet:** `{cidr}` — **In VPN:** `{use_vpn}`")
+            vpn_info = network_details[selected_net_id].get("vpn_settings", {})
+            vpn_subnets = vpn_info.get("subnets", [])
+            use_vpn_enabled_subnets = {s["localSubnet"] for s in vpn_subnets if s.get("useVpn", "").lower() == "yes"}
 
-            # Match against objects
-            from ipaddress import ip_network
+            # Build rows
+            rows = []
+            for subnet_entry in vpn_subnets:
+                cidr = subnet_entry.get("localSubnet")
+                name = subnet_entry.get("name", "(Unnamed)")
+                in_vpn = "✅" if cidr in use_vpn_enabled_subnets else "❌"
+                matched_objs = [o["name"] for o in objects_data if o.get("cidr") == cidr]
+                rows.append({
+                    "Subnet Name": name,
+                    "CIDR": cidr,
+                    "In VPN": in_vpn,
+                    "Objects": ", ".join(matched_objs) if matched_objs else "—"
+                })
 
-            matches = []
-            try:
-                subnet_net = ip_network(cidr, strict=False)
-                for obj in objects_data:
-                    obj_cidr = obj.get("cidr")
-                    if obj_cidr:
-                        try:
-                            obj_net = ip_network(obj_cidr, strict=False)
-                            if obj_net == subnet_net:
-                                matches.append(obj)
-                        except:
-                            continue
-            except:
-                continue
-
-            if matches:
-                for obj in matches:
-                    st.markdown(f"- 🌐**{obj['name']}** — `{obj['cidr']}` — {obj.get('fqdn', '')}")
+            if rows:
+                df = pd.DataFrame(rows)
+                st.dataframe(df, use_container_width=True)
             else:
-                st.markdown("*⚠️ No matching objects found.*")
-
-
+                st.info("ℹ️ This network has no defined VPN subnets.")
 
 
 elif selected_tab == "🔎 Search Object or Group":
