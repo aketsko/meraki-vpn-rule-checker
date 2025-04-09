@@ -423,15 +423,15 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 
 
+
 st.sidebar.header("☰ Menu")
-
 collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data"))
-
-# Connect to Meraki Dashboard
 st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
-with st.sidebar.expander("🔒 API Access", expanded=not collapse_expanders):
+with st.sidebar.expander("🔽", expanded=not collapse_expanders):
+    
     org_id = st.text_input("🆔 Enter your Organization ID", value="")
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
+
 
     if st.button("📦 Basic Data"):
         if api_key and org_id:
@@ -450,19 +450,21 @@ with st.sidebar.expander("🔒 API Access", expanded=not collapse_expanders):
         else:
             st.error("❌ Please enter both API key and Org ID.")
 
+   
     if st.button("➕ Extended Data"):
         st.session_state["cancel_extended_fetch"] = False
         st.session_state["fetching_extended"] = True
 
-        progress_bar = st.progress(0)
-        progress_text = st.empty()
-
+        progress_bar = st.progress(0)  # Define progress_bar before using it
+        progress_text = st.empty()  # Define progress_text as an empty placeholder
         def update_progress(current, total, name):
-            ratio = min(max(current / total if total else 0, 0.0), 1.0)
+            ratio = current / total if total else 0
+            ratio = min(max(ratio, 0.0), 1.0)
             try:
                 progress_bar.progress(ratio)
                 progress_text.markdown(
-                    f"🔄 **Processing network**: ({current}/{total})<br>`{name}`", unsafe_allow_html=True
+                    f"🔄 **Processing network**: ({current}/{total})<br>`{name}`",
+                    unsafe_allow_html=True
                 )
             except:
                 pass
@@ -487,46 +489,58 @@ with st.sidebar.expander("🔒 API Access", expanded=not collapse_expanders):
                         extended_result
                     )
                     st.session_state["object_location_map"] = location_map
+
         except Exception as e:
             st.error(f"❌ Exception: {e}")
             st.session_state["extended_data"] = None
             st.session_state["object_location_map"] = {}
 
         st.session_state["fetching_extended"] = False
+        cancel_button_placeholder = st.empty()  # Define the placeholder
+        cancel_button_placeholder.empty()
         progress_bar.empty()
         progress_text.empty()
 
-# Data Import
+
 st.sidebar.markdown("📤 Data Import")
-with st.sidebar.expander("📤 Load / Save Snapshot", expanded=not collapse_expanders):
+with st.sidebar.expander("🔽", expanded=not collapse_expanders):
+
+    # Upload Snapshot to restore everything
     uploaded_snapshot = st.file_uploader("📤 Load Snapshot (.json)", type="json")
     if uploaded_snapshot:
         try:
             snapshot = json.load(uploaded_snapshot)
+
             st.session_state["rules_data"] = snapshot.get("rules_data", [])
             st.session_state["objects_data"] = snapshot.get("objects_data", [])
             st.session_state["groups_data"] = snapshot.get("groups_data", [])
             st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
             st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
             st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
-            st.session_state["object_location_map"] = snapshot.get("location_map", {})
-            st.session_state["fetched_from_api"] = True
+            st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Added
+            st.session_state["fetched_from_api"] = True  # Emulate success
+
             network_count = len(st.session_state["extended_data"].get("network_map", {}))
             snapshot_msg = st.empty()
             snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
             snapshot_msg.empty()
+
         except Exception as e:
             st.error(f"❌ Failed to load snapshot: {e}")
 
+  
+    # Manual fallback file upload
     if not st.session_state.get("fetched_from_api", False):
         rules_file = st.file_uploader("Upload Rules.json", type="json")
         objects_file = st.file_uploader("Upload Objects.json", type="json")
         groups_file = st.file_uploader("Upload Object Groups.json", type="json")
+
         if all([rules_file, objects_file, groups_file]):
             try:
                 rules_file.seek(0)
                 objects_file.seek(0)
                 groups_file.seek(0)
+
                 st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
                 st.session_state["objects_data"] = load_json_file(objects_file)
                 st.session_state["groups_data"] = load_json_file(groups_file)
@@ -535,6 +549,16 @@ with st.sidebar.expander("📤 Load / Save Snapshot", expanded=not collapse_expa
             except Exception as e:
                 st.error(f"❌ Failed to load one or more files: {e}")
 
+    # Update local variables from session
+    rules_data = st.session_state.get("rules_data", [])
+    objects_data = st.session_state.get("objects_data", [])
+    groups_data = st.session_state.get("groups_data", [])
+    object_map = st.session_state.get("object_map", {})
+    group_map = st.session_state.get("group_map", {})
+
+    
+
+    # Snapshot creation + download
     if st.button("💾 Create API Snapshot"):
         try:
             snapshot_str, snapshot_filename = prepare_snapshot(
@@ -544,6 +568,7 @@ with st.sidebar.expander("📤 Load / Save Snapshot", expanded=not collapse_expa
                 st.session_state.get("extended_data", {}),
                 st.session_state.get("object_location_map", {})
             )
+
             st.download_button(
                 label="📥 Download API Snapshot",
                 data=snapshot_str,
@@ -553,6 +578,10 @@ with st.sidebar.expander("📤 Load / Save Snapshot", expanded=not collapse_expa
             )
         except Exception as e:
             st.error(f"❌ Snapshot error: {e}")
+
+
+
+
 
 
 # 🧰 Toolbox inside a collapsible section
@@ -580,326 +609,313 @@ highlight_colors = {
 }
 
 
-if st.session_state.get("extended_data") or st.session_state.get("rules_data"):
-    # -------------- MANUAL TAB HANDLING ----------------
-    with st.container():
-        col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
 
-        # LEFT: Label + Selectbox
-        with col_left:
-            st.markdown(" 🔎-🛡️-🧠 Choose the module:")
-            tab_names = ["🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
 
-            if "active_tab" not in st.session_state:
-                st.session_state.active_tab = tab_names[0]  # Default
 
-            def on_tab_change():
-                st.session_state.active_tab = st.session_state["selected_tab"]
 
-            st.selectbox(
-                "Select Tab",
-                tab_names,
-                index=tab_names.index(st.session_state.active_tab),
-                key="selected_tab",
-                on_change=on_tab_change,
-                label_visibility="collapsed"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# -------------- MANUAL TAB HANDLING ----------------
+with st.container():
+    col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
+
+    # LEFT: Label + Selectbox
+    with col_left:
+        st.markdown(" 🔎-🛡️-🧠 Choose the module:")
+        tab_names = ["🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
+
+        if "active_tab" not in st.session_state:
+            st.session_state.active_tab = tab_names[0]  # Default
+
+        def on_tab_change():
+            st.session_state.active_tab = st.session_state["selected_tab"]
+
+        st.selectbox(
+            "Select Tab",
+            tab_names,
+            index=tab_names.index(st.session_state.active_tab),
+            key="selected_tab",
+            on_change=on_tab_change,
+            label_visibility="collapsed"
+        )
+
+    # RIGHT: Metrics
+    with col_right:
+        col_b, col_n, col_o, col_g, col_r = st.columns(5)
+        col_b.text("")
+        col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
+        col_o.metric("🌐 Objects", f"{len(objects_data)}")
+        col_g.metric("🗃️ Groups", f"{len(groups_data)}")
+        network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
+        col_n.metric("🏢 Networks", network_count)
+
+
+# Update active_tab variable
+selected_tab = st.session_state.active_tab
+
+if selected_tab == "🔎 Search Object or Group":
+    from utils.match_logic import build_object_location_map  # Ensure this is imported
+
+    # Build location map if extended data and not already available
+    if "object_location_map" not in st.session_state and "extended_data" in st.session_state and st.session_state["extended_data"]:
+        with st.spinner("🧠 Mapping objects to VPN locations..."):
+            st.session_state["object_location_map"] = build_object_location_map(
+                st.session_state["objects_data"],
+                st.session_state["groups_data"],
+                st.session_state["extended_data"]
             )
 
-        # RIGHT: Metrics
-        with col_right:
-            
-            col_b, col_n, col_o, col_g, col_r = st.columns(5)
-            col_b.text("")
-            col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
-            col_o.metric("🌐 Objects", f"{len(objects_data)}")
-            col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-            network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
-            col_n.metric("🏢 Networks", network_count)
+    location_map = st.session_state.get("object_location_map", {})
 
+    # --- Search Fields ---
+    col1, col2 = st.columns([2, 2])
 
-    # Update active_tab variable
-    selected_tab = st.session_state.active_tab
+    with col1:
+        search_term = st.text_input("Search by name or CIDR:", "").lower()
 
-    if selected_tab == "🔎 Search Object or Group":
-        from utils.match_logic import build_object_location_map  # Ensure this is imported
+    with col2:
+        location_term = None
 
-        # Build location map if extended data and not already available
-        if "object_location_map" not in st.session_state and "extended_data" in st.session_state and st.session_state["extended_data"]:
-            with st.spinner("🧠 Mapping objects to VPN locations..."):
-                st.session_state["object_location_map"] = build_object_location_map(
-                    st.session_state["objects_data"],
-                    st.session_state["groups_data"],
-                    st.session_state["extended_data"]
-                )
+        if location_map:
+            def location_search(term: str):
+                term = term.strip().lower()
+                locations = set()
+                for entry in location_map.values():
+                    if isinstance(entry, list):
+                        locations.update(entry)
+                    elif isinstance(entry, str):
+                        locations.add(entry)
+                return [(loc, loc) for loc in sorted(locations) if term in loc.lower()]
 
-        location_map = st.session_state.get("object_location_map", {})
+            location_term = st_searchbox(
+                location_search,
+                placeholder="🔍 Filter by location (optional)",
+                label="VPN Location",
+                key="location_searchbox"
+            )
 
-        # --- Search Fields ---
-        col1, col2 = st.columns([2, 2])
+    def match_object(obj, term):
+        return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
 
-        with col1:
-            search_term = st.text_input("Search by name or CIDR:", "").lower()
+    filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
+    filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
 
-        with col2:
-            location_term = None
-
-            if location_map:
-                def location_search(term: str):
-                    term = term.strip().lower()
-                    locations = set()
-                    for entry in location_map.values():
-                        if isinstance(entry, list):
-                            locations.update(entry)
-                        elif isinstance(entry, str):
-                            locations.add(entry)
-                    return [(loc, loc) for loc in sorted(locations) if term in loc.lower()]
-
-                location_term = st_searchbox(
-                    location_search,
-                    placeholder="🔍 Filter by location (optional)",
-                    label="VPN Location",
-                    key="location_searchbox"
-                )
-
-        def match_object(obj, term):
-            return term in obj.get("name", "").lower() or term in obj.get("cidr", "").lower()
-
-        filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
-        filtered_grps = [g for g in groups_data if search_term.lower() in g["name"].lower()] if search_term else groups_data
-
-        if location_term:
-            def obj_matches_location(o):
-                obj_id = o.get("id", "")
-                cidr = o.get("cidr", "")
-                return (
-                    location_term in location_map.get(f"OBJ({obj_id})", []) or
-                    location_term in location_map.get(cidr, [])
-                )
-
-            def grp_matches_location(g):
-                grp_id = g.get("id", "")
-                return location_term in location_map.get(f"GRP({grp_id})", [])
-
-            filtered_objs = [o for o in filtered_objs if obj_matches_location(o)]
-            filtered_grps = [g for g in filtered_grps if grp_matches_location(g)]
-
-        st.subheader("🔹 Matching Network Objects")
-        object_rows = []
-        for o in filtered_objs:
+    if location_term:
+        def obj_matches_location(o):
+            obj_id = o.get("id", "")
             cidr = o.get("cidr", "")
-            location = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({o.get('id')})", []))
-            object_rows.append({
-                "ID": o.get("id", ""),
-                "Name": o.get("name", ""),
-                "CIDR": cidr,
-                "FQDN": o.get("fqdn", ""),
-                "Group IDs": o.get("groupIds", []),
-                "Network IDs": o.get("networkIds", []),
-                "Location": location
-            })
-        st.dataframe(safe_dataframe(object_rows))
-
-        st.subheader("🔸 Matching Object Groups")
-        group_rows = []
-        for g in filtered_grps:
-            group_id = str(g.get("id", ""))
-            group_name = str(g.get("name", ""))
-            group_objects = g.get("objectIds", [])
-            group_locations = set()
-
-            for obj_id in group_objects:
-                obj = object_map.get(obj_id)
-                if obj:
-                    cidr = obj.get("cidr", "")
-                    loc = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({obj.get('id')})", []))
-                    if loc:
-                        if isinstance(loc, str):
-                            group_locations.update(loc.split(", "))
-                        elif isinstance(loc, list):
-                            group_locations.update(loc)
-
-            group_locations.update(location_map.get(f"GRP({group_id})", []))
-            group_rows.append({
-                "ID": group_id,
-                "Name": group_name,
-                "Type": str(g.get("category", "")),
-                "Object Count": str(len(group_objects)),
-                "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
-                "Location": ", ".join(sorted(group_locations)) if group_locations else ""
-            })
-        st.dataframe(safe_dataframe(group_rows))
-
-        if filtered_grps:
-            selected_group = st.selectbox(
-                "Explore group membership:",
-                options=[g["id"] for g in filtered_grps],
-                format_func=lambda x: group_map.get(x, {}).get("name", f"(unknown: {x})")
+            return (
+                location_term in location_map.get(f"OBJ({obj_id})", []) or
+                location_term in location_map.get(cidr, [])
             )
 
-            if selected_group and selected_group in group_map:
-                group_members = group_map[selected_group].get("objectIds", [])
-                member_objs = [object_map[oid] for oid in group_members if oid in object_map]
+        def grp_matches_location(g):
+            grp_id = g.get("id", "")
+            return location_term in location_map.get(f"GRP({grp_id})", [])
 
-                st.markdown(f"**Group Name:** `{group_map[selected_group]['name']}`")
-                st.markdown(f"**Members:** `{len(member_objs)}` object(s)")
+        filtered_objs = [o for o in filtered_objs if obj_matches_location(o)]
+        filtered_grps = [g for g in filtered_grps if grp_matches_location(g)]
 
-                member_data = []
-                for o in member_objs:
-                    cidr = o.get("cidr", "")
-                    location = location_map.get(cidr, "")
-                    member_data.append({
-                        "Object ID": o.get("id", ""),
-                        "Name": o.get("name", ""),
-                        "CIDR": cidr,
-                        "FQDN": o.get("fqdn", ""),
-                        "Location": location
-                    })
+    st.subheader("🔹 Matching Network Objects")
+    object_rows = []
+    for o in filtered_objs:
+        cidr = o.get("cidr", "")
+        location = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({o.get('id')})", []))
+        object_rows.append({
+            "ID": o.get("id", ""),
+            "Name": o.get("name", ""),
+            "CIDR": cidr,
+            "FQDN": o.get("fqdn", ""),
+            "Group IDs": o.get("groupIds", []),
+            "Network IDs": o.get("networkIds", []),
+            "Location": location
+        })
+    st.dataframe(safe_dataframe(object_rows))
 
-                if member_data:
-                    st.dataframe(safe_dataframe(member_data))
-                else:
-                    st.info("This group has no valid or displayable objects.")
-        else:
-            st.info("No groups match the current search.")
+    st.subheader("🔸 Matching Object Groups")
+    group_rows = []
+    for g in filtered_grps:
+        group_id = str(g.get("id", ""))
+        group_name = str(g.get("name", ""))
+        group_objects = g.get("objectIds", [])
+        group_locations = set()
 
+        for obj_id in group_objects:
+            obj = object_map.get(obj_id)
+            if obj:
+                cidr = obj.get("cidr", "")
+                loc = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({obj.get('id')})", []))
+                if loc:
+                    if isinstance(loc, str):
+                        group_locations.update(loc.split(", "))
+                    elif isinstance(loc, list):
+                        group_locations.update(loc)
 
+        group_locations.update(location_map.get(f"GRP({group_id})", []))
+        group_rows.append({
+            "ID": group_id,
+            "Name": group_name,
+            "Type": str(g.get("category", "")),
+            "Object Count": str(len(group_objects)),
+            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
+            "Location": ", ".join(sorted(group_locations)) if group_locations else ""
+        })
+    st.dataframe(safe_dataframe(group_rows))
 
+    if filtered_grps:
+        selected_group = st.selectbox(
+            "Explore group membership:",
+            options=[g["id"] for g in filtered_grps],
+            format_func=lambda x: group_map.get(x, {}).get("name", f"(unknown: {x})")
+        )
 
+        if selected_group and selected_group in group_map:
+            group_members = group_map[selected_group].get("objectIds", [])
+            member_objs = [object_map[oid] for oid in group_members if oid in object_map]
 
+            st.markdown(f"**Group Name:** `{group_map[selected_group]['name']}`")
+            st.markdown(f"**Members:** `{len(member_objs)}` object(s)")
 
-    elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
-        
-        def get_all_locations_for_cidrs(cidrs, location_map):
-            locations = set()
-            for cidr in cidrs:
-                mapped = location_map.get(cidr, [])
-                if isinstance(mapped, str):
-                    locations.add(mapped)
-                elif isinstance(mapped, list):
-                    locations.update(mapped)
-            return locations
+            member_data = []
+            for o in member_objs:
+                cidr = o.get("cidr", "")
+                location = location_map.get(cidr, "")
+                member_data.append({
+                    "Object ID": o.get("id", ""),
+                    "Name": o.get("name", ""),
+                    "CIDR": cidr,
+                    "FQDN": o.get("fqdn", ""),
+                    "Location": location
+                })
 
-        # --- Search input helpers ---
-        def custom_search(term: str):
-            term = term.strip()
-            results = []
-            if not objects_data or not groups_data:
-                return [("Data not loaded yet", "any")]
-            if term.lower() == "any":
-                return [("Any (all traffic)", "any")]
-            for obj in objects_data:
-                if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
-                    results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
-            for group in groups_data:
-                if term.lower() in group["name"].lower():
-                    results.append((f"{group['name']} (Group)", group["name"]))
-            if not results:
-                results.append((f"Use: {term}", term))
-            return results
-
-        def search_protocol(term: str):
-            options = ["any", "tcp", "udp", "icmpv4", "icmpv6"]
-            term = term.strip().lower()
-            return [(proto.upper(), proto) for proto in options if term in proto]
-
-        def passthrough_port(term: str):
-            term = term.strip()
-            return [(f"Use: {term}", term)] if term else []
-
-        # --- Input UI ---
-        col1, col2, col3, col4, col5 = st.columns(5)
-        with col1:
-            source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
-        with col2:
-            source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
-        with col3:
-            destination_input = st_searchbox(custom_search, label="Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
-        with col4:
-            port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
-        with col5:
-            protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
-
-        col_left, col_right, col_collapse = st.columns(3)
-        with col_right:
-            filter_toggle = st.checkbox("✅ Show only matching rules", value=False)
-        with col_left:
-            dynamic_mode = st.checkbox("🔄 Dynamic update", value=False)
-        with col_collapse:
-            expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=False)
-
-        if not dynamic_mode:
-            st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
-            st.stop()
-
-        # ---- Resolve Inputs ----
-        source_cidrs = resolve_search_input(source_input)
-        destination_cidrs = resolve_search_input(destination_input)
-
-        skip_src_check = source_input.strip().lower() == "any"
-        skip_dst_check = destination_input.strip().lower() == "any"
-
-        obj_loc_map = st.session_state.get("object_location_map", {})
-        extended_data = st.session_state.get("extended_data", {})
-
-        if obj_loc_map and extended_data:
-            src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
-            dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
-
-            shared_locs = src_locs & dst_locs
-        # If destination has no location match and is not 'any', only evaluate local rules based on source
-            dst_not_found = not dst_locs and destination_input.strip().lower() != "any"
-            if dst_not_found and src_locs:
-                st.info("📍 Destination not found in any network. Evaluating Local Firewall rules based on Source location only.")
-                for location in sorted(src_locs):
-                    for net_id, info in extended_data.get("network_details", {}).items():
-                        if info.get("network_name") == location:
-                            st.subheader(f"🧱 Local Firewall Rules - `{location}`")
-                            generate_rule_table(
-                                rules=info.get("firewall_rules", []),
-                                source_port_input=source_port_input,
-                                port_input=port_input,
-                                protocol=protocol,
-                                filter_toggle=filter_toggle,
-                                object_map=object_map,
-                                group_map=group_map,
-                                highlight_colors=highlight_colors,
-                                source_cidrs=source_cidrs,
-                                destination_cidrs=destination_cidrs,
-                                skip_src_check=skip_src_check,
-                                skip_dst_check=skip_dst_check,
-                                key=f"local_{location}_fallback"
-                            )
-                st.stop()
-
-
-            is_dst_any = destination_input.strip().lower() == "any"
-            fully_inside_same_location = (
-                len(shared_locs) == 1
-                and src_locs.issubset(shared_locs)
-                and dst_locs.issubset(shared_locs)
-            )
-
-            # Adjusted logic:
-            if is_dst_any:
-                show_local_only = False
-                show_local_and_vpn = True
-                show_vpn_only = False
-                shared_locs = src_locs
+            if member_data:
+                st.dataframe(safe_dataframe(member_data))
             else:
-                show_local_only = fully_inside_same_location
-                show_local_and_vpn = not fully_inside_same_location and shared_locs
-                show_vpn_only = not shared_locs
+                st.info("This group has no valid or displayable objects.")
+    else:
+        st.info("No groups match the current search.")
 
 
-            if is_dst_any:
-                st.info("🌍 Destination is set to ANY. Evaluating local rules based on source location(s) and VPN rules.")
 
-            # ---------- LOCAL ONLY ----------
-            if show_local_only:
-                location = list(shared_locs)[0]
-                st.subheader(f"🧱 Local Firewall Rules - `{location}`")
+
+
+
+elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
+    
+    def get_all_locations_for_cidrs(cidrs, location_map):
+        locations = set()
+        for cidr in cidrs:
+            mapped = location_map.get(cidr, [])
+            if isinstance(mapped, str):
+                locations.add(mapped)
+            elif isinstance(mapped, list):
+                locations.update(mapped)
+        return locations
+
+    # --- Search input helpers ---
+    def custom_search(term: str):
+        term = term.strip()
+        results = []
+        if not objects_data or not groups_data:
+            return [("Data not loaded yet", "any")]
+        if term.lower() == "any":
+            return [("Any (all traffic)", "any")]
+        for obj in objects_data:
+            if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
+                results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
+        for group in groups_data:
+            if term.lower() in group["name"].lower():
+                results.append((f"{group['name']} (Group)", group["name"]))
+        if not results:
+            results.append((f"Use: {term}", term))
+        return results
+
+    def search_protocol(term: str):
+        options = ["any", "tcp", "udp", "icmpv4", "icmpv6"]
+        term = term.strip().lower()
+        return [(proto.upper(), proto) for proto in options if term in proto]
+
+    def passthrough_port(term: str):
+        term = term.strip()
+        return [(f"Use: {term}", term)] if term else []
+
+    # --- Input UI ---
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
+    with col2:
+        source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
+    with col3:
+        destination_input = st_searchbox(custom_search, label="Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
+    with col4:
+        port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
+    with col5:
+        protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
+
+    col_left, col_right, col_collapse = st.columns(3)
+    with col_right:
+        filter_toggle = st.checkbox("✅ Show only matching rules", value=False)
+    with col_left:
+        dynamic_mode = st.checkbox("🔄 Dynamic update", value=False)
+    with col_collapse:
+        expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=False)
+
+    if not dynamic_mode:
+        st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
+        st.stop()
+
+    # ---- Resolve Inputs ----
+    source_cidrs = resolve_search_input(source_input)
+    destination_cidrs = resolve_search_input(destination_input)
+
+    skip_src_check = source_input.strip().lower() == "any"
+    skip_dst_check = destination_input.strip().lower() == "any"
+
+    obj_loc_map = st.session_state.get("object_location_map", {})
+    extended_data = st.session_state.get("extended_data", {})
+
+    if obj_loc_map and extended_data:
+        src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
+        dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
+
+        shared_locs = src_locs & dst_locs
+    # If destination has no location match and is not 'any', only evaluate local rules based on source
+        dst_not_found = not dst_locs and destination_input.strip().lower() != "any"
+        if dst_not_found and src_locs:
+            st.info("📍 Destination not found in any network. Evaluating Local Firewall rules based on Source location only.")
+            for location in sorted(src_locs):
                 for net_id, info in extended_data.get("network_details", {}).items():
                     if info.get("network_name") == location:
+                        st.subheader(f"🧱 Local Firewall Rules - `{location}`")
                         generate_rule_table(
                             rules=info.get("firewall_rules", []),
                             source_port_input=source_port_input,
@@ -913,147 +929,193 @@ if st.session_state.get("extended_data") or st.session_state.get("rules_data"):
                             destination_cidrs=destination_cidrs,
                             skip_src_check=skip_src_check,
                             skip_dst_check=skip_dst_check,
-                            key=f"local_{location}"
+                            key=f"local_{location}_fallback"
                         )
-                        break
-                st.info("🧱 Local rules fully evaluated based on single shared location. VPN rules skipped.")
-                st.stop()
-                
-            # ---------- LOCAL + VPN ----------
-            elif show_local_and_vpn:
-                count = len(shared_locs)
-                st.subheader(f"🧱 Local Firewall Rules")
-                with st.expander(f"Collapse - `{count}`", expanded=expand_all_local):
-                    for location in sorted(shared_locs):
-                        for net_id, info in extended_data.get("network_details", {}).items():
-                            if info.get("network_name") == location:
-                                st.subheader(f"`{location}`")
-                                generate_rule_table(
-                                    rules=info.get("firewall_rules", []),
-                                    source_port_input=source_port_input,
-                                    port_input=port_input,
-                                    protocol=protocol,
-                                    filter_toggle=filter_toggle,
-                                    object_map=object_map,
-                                    group_map=group_map,
-                                    highlight_colors=highlight_colors,
-                                    source_cidrs=source_cidrs,
-                                    destination_cidrs=destination_cidrs,
-                                    skip_src_check=skip_src_check,
-                                    skip_dst_check=skip_dst_check,
-                                    key=f"local_{location}"
-                                )
+            st.stop()
 
-            # ---------- VPN ONLY ----------
-            elif show_vpn_only:
-                st.info("🌐 Source and destination belong to different locations. VPN rules will be used.")
 
-        # ---------- Fallback: VPN Firewall ----------
-        st.subheader("🌐 VPN Firewall Rules")
-        generate_rule_table(
-            rules=rules_data,
-            source_port_input=source_port_input,
-            port_input=port_input,
-            protocol=protocol,
-            filter_toggle=filter_toggle,
-            object_map=object_map,
-            group_map=group_map,
-            highlight_colors=highlight_colors,
-            source_cidrs=source_cidrs,
-            destination_cidrs=destination_cidrs,
-            skip_src_check=skip_src_check,
-            skip_dst_check=skip_dst_check,
-            key="vpn_table"
+        is_dst_any = destination_input.strip().lower() == "any"
+        fully_inside_same_location = (
+            len(shared_locs) == 1
+            and src_locs.issubset(shared_locs)
+            and dst_locs.issubset(shared_locs)
         )
 
+        # Adjusted logic:
+        if is_dst_any:
+            show_local_only = False
+            show_local_and_vpn = True
+            show_vpn_only = False
+            shared_locs = src_locs
+        else:
+            show_local_only = fully_inside_same_location
+            show_local_and_vpn = not fully_inside_same_location and shared_locs
+            show_vpn_only = not shared_locs
+
+
+        if is_dst_any:
+            st.info("🌍 Destination is set to ANY. Evaluating local rules based on source location(s) and VPN rules.")
+
+        # ---------- LOCAL ONLY ----------
+        if show_local_only:
+            location = list(shared_locs)[0]
+            st.subheader(f"🧱 Local Firewall Rules - `{location}`")
+            for net_id, info in extended_data.get("network_details", {}).items():
+                if info.get("network_name") == location:
+                    generate_rule_table(
+                        rules=info.get("firewall_rules", []),
+                        source_port_input=source_port_input,
+                        port_input=port_input,
+                        protocol=protocol,
+                        filter_toggle=filter_toggle,
+                        object_map=object_map,
+                        group_map=group_map,
+                        highlight_colors=highlight_colors,
+                        source_cidrs=source_cidrs,
+                        destination_cidrs=destination_cidrs,
+                        skip_src_check=skip_src_check,
+                        skip_dst_check=skip_dst_check,
+                        key=f"local_{location}"
+                    )
+                    break
+            st.info("🧱 Local rules fully evaluated based on single shared location. VPN rules skipped.")
+            st.stop()
+            
+        # ---------- LOCAL + VPN ----------
+        elif show_local_and_vpn:
+            count = len(shared_locs)
+            st.subheader(f"🧱 Local Firewall Rules")
+            with st.expander(f"Collapse - `{count}`", expanded=expand_all_local):
+                for location in sorted(shared_locs):
+                    for net_id, info in extended_data.get("network_details", {}).items():
+                        if info.get("network_name") == location:
+                            st.subheader(f"`{location}`")
+                            generate_rule_table(
+                                rules=info.get("firewall_rules", []),
+                                source_port_input=source_port_input,
+                                port_input=port_input,
+                                protocol=protocol,
+                                filter_toggle=filter_toggle,
+                                object_map=object_map,
+                                group_map=group_map,
+                                highlight_colors=highlight_colors,
+                                source_cidrs=source_cidrs,
+                                destination_cidrs=destination_cidrs,
+                                skip_src_check=skip_src_check,
+                                skip_dst_check=skip_dst_check,
+                                key=f"local_{location}"
+                            )
+
+        # ---------- VPN ONLY ----------
+        elif show_vpn_only:
+            st.info("🌐 Source and destination belong to different locations. VPN rules will be used.")
+
+    # ---------- Fallback: VPN Firewall ----------
+    st.subheader("🌐 VPN Firewall Rules")
+    generate_rule_table(
+        rules=rules_data,
+        source_port_input=source_port_input,
+        port_input=port_input,
+        protocol=protocol,
+        filter_toggle=filter_toggle,
+        object_map=object_map,
+        group_map=group_map,
+        highlight_colors=highlight_colors,
+        source_cidrs=source_cidrs,
+        destination_cidrs=destination_cidrs,
+        skip_src_check=skip_src_check,
+        skip_dst_check=skip_dst_check,
+        key="vpn_table"
+    )
 
 
 
 
-    elif selected_tab == "🧠 Optimization Insights":
 
-        def rule_covers(rule_a, rule_b):
-            return (
-                (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
-                (rule_a["destCidr"] == "Any" or rule_a["destCidr"] == rule_b["destCidr"]) and
-                (rule_a["destPort"].lower() == "any" or rule_a["destPort"] == rule_b["destPort"]) and
-                (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
-            )
+elif selected_tab == "🧠 Optimization Insights":
 
-        insight_rows = []
-        seen_rules = set()
+    def rule_covers(rule_a, rule_b):
+        return (
+            (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
+            (rule_a["destCidr"] == "Any" or rule_a["destCidr"] == rule_b["destCidr"]) and
+            (rule_a["destPort"].lower() == "any" or rule_a["destPort"] == rule_b["destPort"]) and
+            (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
+        )
 
-        for i, rule in enumerate(rules_data):
-            sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
-            if sig in seen_rules:
+    insight_rows = []
+    seen_rules = set()
+
+    for i, rule in enumerate(rules_data):
+        sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
+        if sig in seen_rules:
+            insight_rows.append((
+                f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
+                [i+1]
+            ))
+        else:
+            seen_rules.add(sig)
+
+        # Broad rule exclusion
+        is_last = i == len(rules_data) - 1
+        is_penultimate = i == len(rules_data) - 2
+        is_allow_any = rule["policy"].lower() == "allow"
+        is_deny_any = rule["policy"].lower() == "deny"
+
+        if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
+            and rule["destPort"].lower() == "any"
+            and rule["protocol"].lower() == "any"):
+            if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
+                pass  # expected, skip
+            else:
                 insight_rows.append((
-                    f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
+                    f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
                     [i+1]
                 ))
-            else:
-                seen_rules.add(sig)
 
-            # Broad rule exclusion
-            is_last = i == len(rules_data) - 1
-            is_penultimate = i == len(rules_data) - 2
-            is_allow_any = rule["policy"].lower() == "allow"
-            is_deny_any = rule["policy"].lower() == "deny"
+        # ✅ Shadowed rule detection
+        for j in range(i):
+            if rule_covers(rules_data[j], rule):
+                insight_rows.append((
+                    f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
+                    [j+1, i+1]
+                ))
+                break
 
-            if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
-                and rule["destPort"].lower() == "any"
-                and rule["protocol"].lower() == "any"):
-                if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
-                    pass  # expected, skip
-                else:
+        # Merge opportunities
+        if i < len(rules_data) - 1:
+            next_rule = rules_data[i+1]
+            fields_to_compare = ["policy", "srcCidr", "destCidr"]
+            if all(rule[f] == next_rule[f] for f in fields_to_compare):
+                if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
                     insight_rows.append((
-                        f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
-                        [i+1]
+                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
+                        [i+1, i+2]
+                    ))
+                elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
+                    if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
+                        continue
+                    insight_rows.append((
+                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/src/dst/ports, different protocol.",
+                        [i+1, i+2]
                     ))
 
-            # ✅ Shadowed rule detection
-            for j in range(i):
-                if rule_covers(rules_data[j], rule):
-                    insight_rows.append((
-                        f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
-                        [j+1, i+1]
-                    ))
-                    break
+    if insight_rows:
+        for msg, rule_indexes in insight_rows:
+            st.markdown(msg)
+            show_rule_summary(rule_indexes)
 
-            # Merge opportunities
-            if i < len(rules_data) - 1:
-                next_rule = rules_data[i+1]
-                fields_to_compare = ["policy", "srcCidr", "destCidr"]
-                if all(rule[f] == next_rule[f] for f in fields_to_compare):
-                    if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
-                        insight_rows.append((
-                            f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
-                            [i+1, i+2]
-                        ))
-                    elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
-                        if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
-                            continue
-                        insight_rows.append((
-                            f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/src/dst/ports, different protocol.",
-                            [i+1, i+2]
-                        ))
+        st.download_button("📥 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
+    else:
+        st.success("✅ No optimization issues detected.")
 
-        if insight_rows:
-            for msg, rule_indexes in insight_rows:
-                st.markdown(msg)
-                show_rule_summary(rule_indexes)
-
-            st.download_button("📥 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
-        else:
-            st.success("✅ No optimization issues detected.")
-
-        # ℹ️ Legend
-        st.markdown("---")
-        st.subheader("ℹ️ Legend")
-        st.markdown("""
-    | Term               | Description                                                                 |
-    |--------------------|-----------------------------------------------------------------------------|
-    | 🔁 **Duplicate Rule** | Rule is identical to a previous one (all fields except comment)           |
-    | 🔄 **Merge Candidate** | Rules could be combined (only one field differs, e.g., port)              |
-    | ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               |
-    | 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic |
-    """)
+    # ℹ️ Legend
+    st.markdown("---")
+    st.subheader("ℹ️ Legend")
+    st.markdown("""
+| Term               | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| 🔁 **Duplicate Rule** | Rule is identical to a previous one (all fields except comment)           |
+| 🔄 **Merge Candidate** | Rules could be combined (only one field differs, e.g., port)              |
+| ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               |
+| 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic |
+""")
