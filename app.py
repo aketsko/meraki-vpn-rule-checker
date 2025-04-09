@@ -833,26 +833,53 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 locations.update(mapped)
         return locations
 
+    # --- Search input helpers ---
+    def custom_search(term: str):
+        term = term.strip()
+        results = []
+        if not objects_data or not groups_data:
+            return [("Data not loaded yet", "any")]
+        if term.lower() == "any":
+            return [("Any (all traffic)", "any")]
+        for obj in objects_data:
+            if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
+                results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
+        for group in groups_data:
+            if term.lower() in group["name"].lower():
+                results.append((f"{group['name']} (Group)", group["name"]))
+        if not results:
+            results.append((f"Use: {term}", term))
+        return results
+
+    def search_protocol(term: str):
+        options = ["any", "tcp", "udp", "icmpv4", "icmpv6"]
+        term = term.strip().lower()
+        return [(proto.upper(), proto) for proto in options if term in proto]
+
+    def passthrough_port(term: str):
+        term = term.strip()
+        return [(f"Use: {term}", term)] if term else []
+
     # --- Sidebar Controls (Tab-Specific) ---
     with st.sidebar:
-        st.markdown("### 🛡️ Rule Search Settings")
-
+        st.markdown("### 🛡️ Traffic Flow")
+        source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
+    
+        source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
+    
+        destination_input = st_searchbox(custom_search, label="Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
+ 
+        port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
+   
+        protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
+        st.markdown("### 🛡️ Search Settings")
         dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
         expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
 
     # --- Search Inputs ---
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
-    with col2:
-        source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
-    with col3:
-        destination_input = st_searchbox(custom_search, label="Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
-    with col4:
-        port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
-    with col5:
-        protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
+    
+
 
     if not st.session_state["fw_dynamic_update"]:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
