@@ -258,7 +258,7 @@ def generate_rule_table(rules,
         wrapText=True,
         autoHeight=True,
         minWidth=20,
-        maxWidth=300,
+        maxWidth=30,
         flex=1  # This ensures columns scale equally to fit the container width
     )
     gb.configure_column("Comment", flex=2, minWidth=150, wrapText=True, autoHeight=True)
