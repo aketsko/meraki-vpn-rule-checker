@@ -102,14 +102,14 @@ st.markdown("""
     /* Sidebar file uploader text color */
     section[data-testid="stSidebar"] .stFileUploader label,
     section[data-testid="stSidebar"] .stFileUploader span {
-        color: black !important;
+        color: black;
     }
     .stButton > button {
         width: 100%;
     }
     /* Change expander title font size */
     .streamlit-expanderHeader {
-        font-size: 28px !important;
+        font-size: 28px;
     }
     </style>
 """, unsafe_allow_html=True)
