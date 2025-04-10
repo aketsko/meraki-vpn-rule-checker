@@ -907,8 +907,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             if isinstance(mapped, str):
                 locations.add(mapped)
             elif isinstance(mapped, list):
-                locations.update(mapped)
+                for entry in mapped:
+                    if isinstance(entry, dict):
+                        locations.add(entry.get("network", entry.get("location", "")))
+                    elif isinstance(entry, str):
+                        locations.add(entry)
         return locations
+
 
     # --- Search input helpers ---
     def custom_search(term: str):
@@ -1124,24 +1129,28 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 st.error("🏁 **Verdict: No valid routing decision. No rules will be shown.**")
                 # Render Local Rules (if applicable)
                 if use_local_rules:
-                    with st.sidebar:
-                        st.markdown("### 📍 Location Filter")
-                        with st.expander(f"Collapse - `{count}`", expanded=True):
-                            all_locations = sorted(shared_locations)
-                            default_selection = st.session_state.get("selected_local_locations", all_locations)
+                    local_locations_to_show = src_locs if dst_is_any else shared_locations
 
-                            if st.button("✅ Select All"):
-                                st.session_state["selected_local_locations"] = all_locations
-                            if st.button("❌ Deselect All"):
-                                st.session_state["selected_local_locations"] = []
+                    all_locations = sorted(local_locations_to_show)
+                    default_selection = st.session_state.get("selected_local_locations", all_locations)
+                    selected_locations = st.session_state.get("selected_local_locations", all_locations)
 
-                            selected_locations = st.session_state.get("selected_local_locations", all_locations)
-                            selected_locations = st.multiselect(
-                                "Pick location(s) to display:",
-                                options=all_locations,
-                                default=selected_locations,
-                                key="selected_local_locations"
-                            )
+                    if selected_tab == "🛡️ Search in Firewall and VPN Rules":
+                        with st.sidebar:
+                            st.markdown("### 📍 Location Filter")
+                            with st.expander(f"Collapse - `{len(all_locations)}`", expanded=True):
+                                if st.button("✅ Select All"):
+                                    st.session_state["selected_local_locations"] = all_locations
+                                if st.button("❌ Deselect All"):
+                                    st.session_state["selected_local_locations"] = []
+
+                                selected_locations = st.multiselect(
+                                    "Pick location(s) to display:",
+                                    options=all_locations,
+                                    default=selected_locations,
+                                    key="selected_local_locations"
+                                )
+
             
         with st.expander(f"Collapse - `{count}`", expanded=st.session_state["fw_expand_local"]):
             for location in sorted(shared_locations):
