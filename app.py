@@ -1076,13 +1076,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         use_vpn_debug = bool(not shared_locations and src_vpn_locs and dst_vpn_locs)
 
         if use_local_debug and use_vpn_debug:
-            verdict = ("Both Local and VPN rules will be evaluated.**")
+            verdict = ("Both Local and VPN rules will be evaluated.")
         elif use_local_debug:
-            verdict = ("Verdict: Only Local Firewall rules will be evaluated.**")
+            verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
         elif use_vpn_debug:
-            verdict = ("Verdict: Only VPN rules will be evaluated.**")
+            verdict = ("Verdict: Only VPN rules will be evaluated.")
         else:
-            verdict = ("Verdict: No valid routing decision. No rules will be shown.**")
+            verdict = ("Verdict: No valid routing decision. No rules will be shown.")
         with st.expander(f"🔍 {verdict}", expanded=False):
             def format_location_table(cidrs, obj_loc_map):
                 rows = []
