@@ -891,9 +891,13 @@ elif selected_tab == "🔎 Search Object or Group":
                 loc = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({obj.get('id')})", []))
                 if loc:
                     if isinstance(loc, str):
-                        group_locations.update(loc.split(", "))
+                        group_locations.update(loc.split(", "))  # OK if comma-separated
                     elif isinstance(loc, list):
-                        group_locations.update(loc)
+                        for l in loc:
+                            if isinstance(l, dict) and "network" in l:
+                                group_locations.add(l["network"])
+                            elif isinstance(l, str):
+                                group_locations.add(l)
 
         group_locations.update(location_map.get(f"GRP({group_id})", []))
         group_rows.append({
