@@ -832,7 +832,17 @@ elif selected_tab == "🔎 Search Object or Group":
                     if isinstance(loc, str):
                         group_locations.update(loc.split(", "))
                     elif isinstance(loc, list):
-                        group_locations.update(loc)
+                        if isinstance(loc, list):
+                            for l in loc:
+                                if isinstance(l, dict) and "network" in l:
+                                    group_locations.add(l["network"])
+                                elif isinstance(l, str):
+                                    group_locations.add(l)
+                        elif isinstance(loc, dict) and "network" in loc:
+                            group_locations.add(loc["network"])
+                        elif isinstance(loc, str):
+                            group_locations.add(loc)
+
 
         grp_locs = location_map.get(f"GRP({group_id})", [])
         if isinstance(grp_locs, list):
