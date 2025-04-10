@@ -1046,7 +1046,10 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         dst_vpn_locs = get_vpn_enabled_locations(destination_cidrs, obj_loc_map)
 
         # Determine routing logic
-        shared_locations = result["src_location_map"] & result["dst_location_map"]
+        src_locs = set(entry["network"] for locs in result["src_location_map"].values() for entry in locs)
+        dst_locs = set(entry["network"] for locs in result["dst_location_map"].values() for entry in locs)
+        shared_locations = src_locs & dst_locs
+
         dst_is_any = destination_input.strip().lower() == "any"
 
         # Conditions for LOCAL rules
