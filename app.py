@@ -963,8 +963,10 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             if isinstance(entries, list):
                 for entry in entries:
                     if isinstance(entry, dict) and entry.get("useVpn", False):
-                        vpn_locations.add(entry["location"])
+                        # FIX: Use "network" instead of "location"
+                        vpn_locations.add(entry["network"])
         return vpn_locations
+
 
     # --- Search input helpers ---
     def custom_search(term: str):
