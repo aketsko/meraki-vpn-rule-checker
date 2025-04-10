@@ -15,10 +15,14 @@ from streamlit_searchbox import st_searchbox
 def evaluate_rule_scope_from_inputs(src_input, dst_input, object_map, group_map, object_location_map):
     from utils.match_logic import resolve_to_cidrs
 
-    def normalize_input(input_str):
-        if not input_str or input_str.strip().lower() == "any":
-            return ["0.0.0.0/0"]
-        return [input_str.strip()]
+    def normalize_input(input_val):
+        if isinstance(input_val, str):
+            if input_val.strip().lower() == "any":
+                return ["0.0.0.0/0"]
+            return [input_val.strip()]
+        elif isinstance(input_val, list):
+            return ["0.0.0.0/0"] if not input_val else input_val
+        return []
 
     src_ids = normalize_input(src_input)
     dst_ids = normalize_input(dst_input)
