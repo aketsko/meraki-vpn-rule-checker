@@ -1055,7 +1055,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             #                 skip_src_check=skip_src_check,
             #                 skip_dst_check=skip_dst_check,
             #                 key=f"local_rules_{location}"
-                        )
+            #            )
 
         # Render VPN Rules (if applicable)
         if use_vpn_rules:
