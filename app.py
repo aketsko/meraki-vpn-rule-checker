@@ -1008,6 +1008,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     extended_data = st.session_state.get("extended_data", {})
 
     if obj_loc_map and extended_data:
+        st.write("RAW SRC input:", st.session_state.get("source_raw_input"))
+        st.write("RAW DST input:", st.session_state.get("destination_raw_input"))
         result = evaluate_rule_scope_from_inputs(
             src_input=st.session_state.get("source_raw_input", ""),
             dst_input=st.session_state.get("destination_raw_input", ""),
@@ -1025,6 +1027,9 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         show_vpn = result["show_vpn_rules"]
 
         # 🧪 Debug
+        test = resolve_to_cidrs("G_Systemair_Corporate_Networks", object_map, group_map)
+        st.write("Test resolve_to_cidrs:", test)
+        st.write("Known Group Keys:", list(group_map.keys())[:10])
         st.subheader("🔍 Raw VPN Evaluation Debug")
         st.write("🧠 Source CIDRs:", source_cidrs)
         st.write("🧠 Destination CIDRs:", destination_cidrs)
