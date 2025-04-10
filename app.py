@@ -1128,7 +1128,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             else:
                 st.error("🏁 **Verdict: No valid routing decision. No rules will be shown.**")
                 # Render Local Rules (if applicable)
-        selected_locations = []
+        #selected_locations = []
 
         with st.sidebar:
             st.markdown("### 📍 Location Filter")
