@@ -971,10 +971,14 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         st.markdown("### ↔️ Traffic Flow")
         source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
-    
+        if source_input:
+            st.session_state["source_raw_input"] = source_input
+
         source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
     
         destination_input = st_searchbox(custom_search, label="Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
+        if destination_input:
+            st.session_state["destination_raw_input"] = destination_input
  
         port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
    
