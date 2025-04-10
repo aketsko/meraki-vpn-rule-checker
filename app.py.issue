@@ -725,7 +725,7 @@ if selected_tab == "📘 Overview":
 
         
         extended_data = st.session_state["extended_data"]
-        objects_data = st.session_state["objects_data"]
+        objects_data = st.session_state.get("objects_data",{})
         network_map = extended_data.get("network_map", {})
         network_details = extended_data.get("network_details", {})
         network_names = sorted([v["network_name"] for v in network_details.values()])
@@ -860,7 +860,11 @@ elif selected_tab == "🔎 Search Object or Group":
     object_rows = []
     for o in filtered_objs:
         cidr = o.get("cidr", "")
-        location = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({o.get('id')})", []))
+        entries = location_map.get(cidr, []) or location_map.get(f"OBJ({o.get('id')})", [])
+        if isinstance(entries, list) and all(isinstance(e, dict) for e in entries):
+            location = ", ".join(sorted({e["network"] for e in entries}))
+        else:
+            location = ", ".join(entries) if isinstance(entries, list) else entries
         object_rows.append({
             "ID": o.get("id", ""),
             "Name": o.get("name", ""),
@@ -887,11 +891,23 @@ elif selected_tab == "🔎 Search Object or Group":
                 loc = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({obj.get('id')})", []))
                 if loc:
                     if isinstance(loc, str):
-                        group_locations.update(loc.split(", "))
+                        group_locations.update(loc.split(", "))  # OK if comma-separated
                     elif isinstance(loc, list):
-                        group_locations.update(loc)
+                        for l in loc:
+                            if isinstance(l, dict) and "network" in l:
+                                group_locations.add(l["network"])
+                            elif isinstance(l, str):
+                                group_locations.add(l)
 
-        group_locations.update(location_map.get(f"GRP({group_id})", []))
+        grp_locs = location_map.get(f"GRP({group_id})", [])
+        if isinstance(grp_locs, list):
+            for l in grp_locs:
+                if isinstance(l, dict) and "network" in l:
+                    group_locations.add(l["network"])
+                elif isinstance(l, str):
+                    group_locations.add(l)
+        elif isinstance(grp_locs, str):
+            group_locations.add(grp_locs)
         group_rows.append({
             "ID": group_id,
             "Name": group_name,
@@ -945,8 +961,24 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             if isinstance(mapped, str):
                 locations.add(mapped)
             elif isinstance(mapped, list):
-                locations.update(mapped)
+                for entry in mapped:
+                    if isinstance(entry, dict) and "location" in entry:
+                        locations.add(entry["location"])
+                    elif isinstance(entry, str):
+                        locations.add(entry)
         return locations
+
+    def get_vpn_enabled_locations(cidrs, location_map):
+        vpn_locations = set()
+        for cidr in cidrs:
+            entries = location_map.get(cidr, [])
+            if isinstance(entries, list):
+                for entry in entries:
+                    if isinstance(entry, dict) and entry.get("useVpn", False):
+                        # FIX: Use "network" instead of "location"
+                        vpn_locations.add(entry["network"])
+        return vpn_locations
+
 
     # --- Search input helpers ---
     def custom_search(term: str):
@@ -978,23 +1010,18 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     # --- Sidebar Controls (Tab-Specific) ---
     with st.sidebar:
         st.markdown("### ↔️ Traffic Flow")
-        source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
-    
-        source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
-    
-        destination_input = st_searchbox(custom_search, label="Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
- 
-        port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
-   
-        protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
+        source_input = st_searchbox(custom_search, label="Source", key="src_searchbox", default="any")
+        source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", key="srcport_searchbox", default="any")
+        destination_input = st_searchbox(custom_search, label="Destination", key="dst_searchbox", default="any")
+        port_input = st_searchbox(passthrough_port, label="Destination Port(s)", key="dstport_searchbox", default="any")
+        protocol = st_searchbox(search_protocol, label="Protocol", key="protocol_searchbox", default="any")
+
         st.markdown("### ⚙️ View Settings")
         dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
         expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
 
-    # --- Search Inputs ---
-    
-            # 🧰 Toolbox inside a collapsible section
+    # 🧰 Toolbox inside a collapsible section
         st.sidebar.markdown("🔘 Set Colors")
         with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
             st.markdown("Adjust the colors used to highlight rule matches:")
@@ -1017,8 +1044,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
             "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
         }
-
-    if not st.session_state["fw_dynamic_update"]:
+        
+    if not dynamic_mode:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
         st.stop()
 
@@ -1027,7 +1054,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     destination_cidrs = resolve_search_input(destination_input)
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
-
     obj_loc_map = st.session_state.get("object_location_map", {})
     extended_data = st.session_state.get("extended_data", {})
 
@@ -1036,19 +1062,26 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
         shared_locs = src_locs & dst_locs
 
-        dst_not_found = not dst_locs and destination_input.strip().lower() != "any"
-        if dst_not_found and src_locs:
-            st.info("📍 Destination not found in any network. Evaluating Local Firewall rules based on Source location only.")
-            for location in sorted(src_locs):
+        # VPN evaluation logic only applies if both source and destination are marked useVpn=True
+        src_vpn_locs = get_vpn_enabled_locations(source_cidrs, obj_loc_map)
+        dst_vpn_locs = get_vpn_enabled_locations(destination_cidrs, obj_loc_map)
+        shared_vpn_locs = src_vpn_locs & dst_vpn_locs
+
+        show_local_only = shared_locs and not shared_vpn_locs
+        show_vpn_only = shared_vpn_locs and not shared_locs
+        show_local_and_vpn = shared_locs and shared_vpn_locs
+
+        if show_local_only:
+            for location in sorted(shared_locs):
+                st.subheader(f"🧱 Local Firewall Rules - `{location}`")
                 for net_id, info in extended_data.get("network_details", {}).items():
                     if info.get("network_name") == location:
-                        st.subheader(f"🧱 Local Firewall Rules - `{location}`")
                         generate_rule_table(
                             rules=info.get("firewall_rules", []),
                             source_port_input=source_port_input,
                             port_input=port_input,
                             protocol=protocol,
-                            filter_toggle=st.session_state["fw_filter_toggle"],
+                            filter_toggle=filter_toggle,
                             object_map=object_map,
                             group_map=group_map,
                             highlight_colors=highlight_colors,
@@ -1056,123 +1089,50 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                             destination_cidrs=destination_cidrs,
                             skip_src_check=skip_src_check,
                             skip_dst_check=skip_dst_check,
-                            key=f"local_{location}_fallback"
+                            key=f"local_{location}"
                         )
+            st.info("🧱 Evaluated Local Firewall rules only.")
             st.stop()
 
-        is_dst_any = destination_input.strip().lower() == "any"
-        fully_inside_same_location = (
-            len(shared_locs) == 1
-            and src_locs.issubset(shared_locs)
-            and dst_locs.issubset(shared_locs)
-        )
-
-        if is_dst_any:
-            show_local_only = False
-            show_local_and_vpn = True
-            show_vpn_only = False
-            shared_locs = src_locs
-            st.info("🌍 Destination is set to ANY. Evaluating local rules based on source location(s) and VPN rules.")
-        else:
-            show_local_only = fully_inside_same_location
-            show_local_and_vpn = not fully_inside_same_location and shared_locs
-            show_vpn_only = not shared_locs
-
-        # ---------- LOCAL ONLY ----------
-        if show_local_only:
-            location = list(shared_locs)[0]
-            st.subheader(f"🧱 Local Firewall Rules - `{location}`")
-            for net_id, info in extended_data.get("network_details", {}).items():
-                if info.get("network_name") == location:
-                    generate_rule_table(
-                        rules=info.get("firewall_rules", []),
-                        source_port_input=source_port_input,
-                        port_input=port_input,
-                        protocol=protocol,
-                        filter_toggle=st.session_state["fw_filter_toggle"],
-                        object_map=object_map,
-                        group_map=group_map,
-                        highlight_colors=highlight_colors,
-                        source_cidrs=source_cidrs,
-                        destination_cidrs=destination_cidrs,
-                        skip_src_check=skip_src_check,
-                        skip_dst_check=skip_dst_check,
-                        key=f"local_{location}"
-                    )
-                    break
-            st.info("🧱 Local rules fully evaluated based on single shared location. VPN rules skipped.")
-            st.stop()
-
-        # ---------- LOCAL + VPN ----------
         elif show_local_and_vpn:
-            count = len(shared_locs)
             st.subheader("🧱 Local Firewall Rules")
-
-            # Location filter inside sidebar only
-            with st.sidebar:
-                st.markdown("### 📍 Location Filter")
-                with st.expander(f"Collapse - `{count}`", expanded=True):
-                    all_locations = sorted(shared_locs)
-                    default_selection = st.session_state.get("selected_local_locations", all_locations)
-
-                    if st.button("✅ Select All"):
-                        st.session_state["selected_local_locations"] = all_locations
-                    if st.button("❌ Deselect All"):
-                        st.session_state["selected_local_locations"] = []
-
-                    selected_locations = st.session_state.get("selected_local_locations", all_locations)
-                    selected_locations = st.multiselect(
-                        "Pick location(s) to display:",
-                        options=all_locations,
-                        default=selected_locations,
-                        key="selected_local_locations"
-                    )
-
-            with st.expander(f"Collapse - `{count}`", expanded=st.session_state["fw_expand_local"]):
-                for location in sorted(shared_locs):
-                    if location not in selected_locations:
-                        continue
+            for location in sorted(shared_locs):
+                with st.expander(f"{location}", expanded=expand_all_local):
                     for net_id, info in extended_data.get("network_details", {}).items():
                         if info.get("network_name") == location:
-                            with st.container():
-                                st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location}</h5>", unsafe_allow_html=True)
-                                generate_rule_table(
-                                    rules=info.get("firewall_rules", []),
-                                    source_port_input=source_port_input,
-                                    port_input=port_input,
-                                    protocol=protocol,
-                                    filter_toggle=st.session_state["fw_filter_toggle"],
-                                    object_map=object_map,
-                                    group_map=group_map,
-                                    highlight_colors=highlight_colors,
-                                    source_cidrs=source_cidrs,
-                                    destination_cidrs=destination_cidrs,
-                                    skip_src_check=skip_src_check,
-                                    skip_dst_check=skip_dst_check,
-                                    key=f"local_{location}"
-                                )
+                            generate_rule_table(
+                                rules=info.get("firewall_rules", []),
+                                source_port_input=source_port_input,
+                                port_input=port_input,
+                                protocol=protocol,
+                                filter_toggle=filter_toggle,
+                                object_map=object_map,
+                                group_map=group_map,
+                                highlight_colors=highlight_colors,
+                                source_cidrs=source_cidrs,
+                                destination_cidrs=destination_cidrs,
+                                skip_src_check=skip_src_check,
+                                skip_dst_check=skip_dst_check,
+                                key=f"local_{location}"
+                            )
 
-        # ---------- VPN ONLY ----------
-        elif show_vpn_only:
-            st.info("🌐 Source and destination belong to different locations. VPN rules will be used.")
-
-    # ---------- VPN Firewall ----------
-    st.subheader("🌐 VPN Firewall Rules")
-    generate_rule_table(
-        rules=rules_data,
-        source_port_input=source_port_input,
-        port_input=port_input,
-        protocol=protocol,
-        filter_toggle=st.session_state["fw_filter_toggle"],
-        object_map=object_map,
-        group_map=group_map,
-        highlight_colors=highlight_colors,
-        source_cidrs=source_cidrs,
-        destination_cidrs=destination_cidrs,
-        skip_src_check=skip_src_check,
-        skip_dst_check=skip_dst_check,
-        key="vpn_table"
-    )
+        if show_vpn_only or show_local_and_vpn:
+            st.subheader("🌐 VPN Firewall Rules")
+            generate_rule_table(
+                rules=rules_data,
+                source_port_input=source_port_input,
+                port_input=port_input,
+                protocol=protocol,
+                filter_toggle=filter_toggle,
+                object_map=object_map,
+                group_map=group_map,
+                highlight_colors=highlight_colors,
+                source_cidrs=source_cidrs,
+                destination_cidrs=destination_cidrs,
+                skip_src_check=skip_src_check,
+                skip_dst_check=skip_dst_check,
+                key="vpn_table"
+            )
 
 
 
