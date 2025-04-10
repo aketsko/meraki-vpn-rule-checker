@@ -1053,7 +1053,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
             use_local_debug = bool(shared_locs_debug or not src_vpn_locs_debug or not dst_vpn_locs_debug or (dst_is_any_debug and src_table.shape[0] > 0))
             use_vpn_debug = bool(not shared_locs_debug and src_vpn_locs_debug and dst_vpn_locs_debug)
-
+            count = len(shared_locations)
             if use_local_debug and use_vpn_debug:
                 st.success("🏁 **Verdict: Both Local and VPN rules will be evaluated.**")
             elif use_local_debug:
@@ -1064,7 +1064,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 st.error("🏁 **Verdict: No valid routing decision. No rules will be shown.**")
                 # Render Local Rules (if applicable)
                 if use_local_rules:
-                    count = len(shared_locations)  # Define count as the number of shared locations
                     with st.sidebar:
                         st.markdown("### 📍 Location Filter")
                         with st.expander(f"Collapse - `{count}`", expanded=True):
@@ -1083,7 +1082,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                 default=selected_locations,
                                 key="selected_local_locations"
                             )
-
+            
             with st.expander(f"Collapse - `{count}`", expanded=st.session_state["fw_expand_local"]):
                 for location in sorted(shared_locations):
                     if location not in selected_locations:
