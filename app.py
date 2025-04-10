@@ -1009,12 +1009,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
     if obj_loc_map and extended_data:
         result = evaluate_rule_scope_from_inputs(
-            src_input=source_input,
-            dst_input=destination_input,
+            src_input=st.session_state.get("source_raw_input", ""),
+            dst_input=st.session_state.get("destination_raw_input", ""),
             object_map=object_map,
             group_map=group_map,
             object_location_map=obj_loc_map
         )
+
 
         source_cidrs = result["src_cidrs"]
         destination_cidrs = result["dst_cidrs"]
