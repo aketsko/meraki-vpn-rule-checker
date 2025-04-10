@@ -1074,10 +1074,16 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         group_map=group_map,
         object_location_map=st.session_state["object_location_map"]
     )
+    # --- Debugging / Testing ---
+    src_test = resolve_to_cidrs(["G_Systemair_Corporate_Networks"], object_map, group_map)
+    dst_test = resolve_to_cidrs(["G_Systemair_Corporate_Networks"], object_map, group_map)
 
+    st.write("🧪 Manual SRC resolution:", src_test)
+    st.write("🧪 Manual DST resolution:", dst_test)
+             
     source_cidrs = result['src_cidrs']
     destination_cidrs = result['dst_cidrs']
-
+    st.write("📥 Raw source input from Streamlit:", source_input)
     st.write("🔍 Resolved Source CIDRs:", source_cidrs)
     st.write("🔍 Resolved Destination CIDRs:", destination_cidrs)
     mapped_src = {
@@ -1090,6 +1096,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         for cidr in destination_cidrs
     }
     st.write("📍 Destination CIDRs Location Mapping Check:", mapped_dst)
+    # --- Debugging / Testing End ---
+
 
     skip_src_check = source_input.strip().lower() == 'any'
     skip_dst_check = destination_input.strip().lower() == 'any'
