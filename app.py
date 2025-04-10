@@ -957,7 +957,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
         st.markdown("### ⚙️ View Settings")
         dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
-        filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", True), key="fw_filter_toggle")
+        filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
         expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
 
     # --- Search Inputs ---
@@ -1008,28 +1008,81 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             not shared_locations and
             src_vpn_locs and dst_vpn_locs
         )
+        with st.expander("🔍 Traffic Pattern Debug - Verdict Preview", expanded=False):
+            def format_location_table(cidrs, obj_loc_map):
+                rows = []
+                for cidr in cidrs:
+                    entries = obj_loc_map.get(cidr, [])
+                    for entry in entries:
+                        if isinstance(entry, dict):
+                            rows.append({
+                                "CIDR": cidr,
+                                "Location": entry.get("network"),
+                                "useVpn": "✅" if entry.get("useVpn") else "❌"
+                            })
+                        elif isinstance(entry, str):
+                            rows.append({
+                                "CIDR": cidr,
+                                "Location": entry,
+                                "useVpn": "❓"
+                            })
+                return pd.DataFrame(rows)
 
-        # Render Local Rules (if applicable)
-        if use_local_rules:
-            count = len(shared_locations)  # Define count as the number of shared locations
-            with st.sidebar:
-                st.markdown("### 📍 Location Filter")
-                with st.expander(f"Collapse - `{count}`", expanded=True):
-                    all_locations = sorted(shared_locations)
-                    default_selection = st.session_state.get("selected_local_locations", all_locations)
+            src_table = format_location_table(source_cidrs, obj_loc_map)
+            dst_table = format_location_table(destination_cidrs, obj_loc_map)
 
-                    if st.button("✅ Select All"):
-                        st.session_state["selected_local_locations"] = all_locations
-                    if st.button("❌ Deselect All"):
-                        st.session_state["selected_local_locations"] = []
+            st.markdown("**🟦 Source CIDRs Location Mapping:**")
+            st.dataframe(src_table, use_container_width=True)
 
-                    selected_locations = st.session_state.get("selected_local_locations", all_locations)
-                    selected_locations = st.multiselect(
-                        "Pick location(s) to display:",
-                        options=all_locations,
-                        default=selected_locations,
-                        key="selected_local_locations"
-                    )
+            st.markdown("**🟥 Destination CIDRs Location Mapping:**")
+            st.dataframe(dst_table, use_container_width=True)
+
+            shared_locs_debug = get_all_locations_for_cidrs(source_cidrs, obj_loc_map) & get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
+
+            # Show the shared locations
+            st.markdown("**📍 Shared Locations:**")
+            if shared_locs_debug:
+                st.markdown(f"`{', '.join(sorted(shared_locs_debug))}`")
+            else:
+                st.markdown("❌ No shared locations.")
+
+            # Show verdict
+            src_vpn_locs_debug = get_vpn_enabled_locations(source_cidrs, obj_loc_map)
+            dst_vpn_locs_debug = get_vpn_enabled_locations(destination_cidrs, obj_loc_map)
+            dst_is_any_debug = destination_input.strip().lower() == "any"
+
+            use_local_debug = bool(shared_locs_debug or not src_vpn_locs_debug or not dst_vpn_locs_debug or (dst_is_any_debug and src_table.shape[0] > 0))
+            use_vpn_debug = bool(not shared_locs_debug and src_vpn_locs_debug and dst_vpn_locs_debug)
+
+            if use_local_debug and use_vpn_debug:
+                st.success("🏁 **Verdict: Both Local and VPN rules will be evaluated.**")
+            elif use_local_debug:
+                st.info("🏁 **Verdict: Only Local Firewall rules will be evaluated.**")
+            elif use_vpn_debug:
+                st.warning("🏁 **Verdict: Only VPN rules will be evaluated.**")
+            else:
+                st.error("🏁 **Verdict: No valid routing decision. No rules will be shown.**")
+                # Render Local Rules (if applicable)
+                if use_local_rules:
+                    count = len(shared_locations)  # Define count as the number of shared locations
+                    with st.sidebar:
+                        st.markdown("### 📍 Location Filter")
+                        with st.expander(f"Collapse - `{count}`", expanded=True):
+                            all_locations = sorted(shared_locations)
+                            default_selection = st.session_state.get("selected_local_locations", all_locations)
+
+                            if st.button("✅ Select All"):
+                                st.session_state["selected_local_locations"] = all_locations
+                            if st.button("❌ Deselect All"):
+                                st.session_state["selected_local_locations"] = []
+
+                            selected_locations = st.session_state.get("selected_local_locations", all_locations)
+                            selected_locations = st.multiselect(
+                                "Pick location(s) to display:",
+                                options=all_locations,
+                                default=selected_locations,
+                                key="selected_local_locations"
+                            )
 
             with st.expander(f"Collapse - `{count}`", expanded=st.session_state["fw_expand_local"]):
                 for location in sorted(shared_locations):
