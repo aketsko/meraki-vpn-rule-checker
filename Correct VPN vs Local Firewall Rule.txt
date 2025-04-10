@@ -1,0 +1,12 @@
+Correct VPN vs Local Firewall Rule Evaluation Logic:
+Local Firewall Rules will be used when:
+
+Source's or part's of Source location match destination's or part's of Destination location, regardless of useVpn status.
+
+Either source or destination is not in useVpn: true.
+
+Destination is any and source is from a known location.
+
+VPN Rules will be used only when:
+
+Source's or part's of Source location don't match destination's or part's of Destination location and the items that don't match in condition 1 are  in useVpn: true.

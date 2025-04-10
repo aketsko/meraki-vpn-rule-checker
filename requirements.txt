@@ -6,4 +6,3 @@ kaleido
 streamlit-aggrid
 streamlit-searchbox
 uv
-ui.browser
