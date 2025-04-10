@@ -1083,52 +1083,30 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                 key="selected_local_locations"
                             )
             
-            with st.expander(f"Collapse - `{count}`", expanded=st.session_state["fw_expand_local"]):
-                for location in sorted(shared_locations):
-                    if location not in selected_locations:
-                        continue
-                    for net_id, info in extended_data.get("network_details", {}).items():
-                        if info.get("network_name") == location:
-                            with st.container():
-                                st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location}</h5>", unsafe_allow_html=True)
-                                generate_rule_table(
-                                    rules=info.get("firewall_rules", []),
-                                    source_port_input=source_port_input,
-                                    port_input=port_input,
-                                    protocol=protocol,
-                                    filter_toggle=st.session_state["fw_filter_toggle"],
-                                    object_map=object_map,
-                                    group_map=group_map,
-                                    highlight_colors=highlight_colors,
-                                    source_cidrs=source_cidrs,
-                                    destination_cidrs=destination_cidrs,
-                                    skip_src_check=skip_src_check,
-                                    skip_dst_check=skip_dst_check,
-                                    key=f"local_rules{location}"
-                                )
+        with st.expander(f"Collapse - `{count}`", expanded=st.session_state["fw_expand_local"]):
+            for location in sorted(shared_locations):
+                if location not in selected_locations:
+                    continue
+                for net_id, info in extended_data.get("network_details", {}).items():
+                    if info.get("network_name") == location:
+                        with st.container():
+                            st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location}</h5>", unsafe_allow_html=True)
+                            generate_rule_table(
+                                rules=info.get("firewall_rules", []),
+                                source_port_input=source_port_input,
+                                port_input=port_input,
+                                protocol=protocol,
+                                filter_toggle=st.session_state["fw_filter_toggle"],
+                                object_map=object_map,
+                                group_map=group_map,
+                                highlight_colors=highlight_colors,
+                                source_cidrs=source_cidrs,
+                                destination_cidrs=destination_cidrs,
+                                skip_src_check=skip_src_check,
+                                skip_dst_check=skip_dst_check,
+                                key=f"local_rules{location}"
+                            )
             
-            
-            # st.subheader("🧱 Local Firewall Rules")
-            # for location in sorted(shared_locations):
-            #     for net_id, net_info in extended_data.get("network_details", {}).items():
-            #         if net_info.get("network_name") == location:
-            #             st.markdown(f"### 📍 {location}")
-            #             generate_rule_table(
-            #                 rules=net_info.get("firewall_rules", []),
-            #                 source_port_input=source_port_input,
-            #                 port_input=port_input,
-            #                 protocol=protocol,
-            #                 filter_toggle=filter_toggle,
-            #                 object_map=object_map,
-            #                 group_map=group_map,
-            #                 highlight_colors=highlight_colors,
-            #                 source_cidrs=source_cidrs,
-            #                 destination_cidrs=destination_cidrs,
-            #                 skip_src_check=skip_src_check,
-            #                 skip_dst_check=skip_dst_check,
-            #                 key=f"local_rules_{location}"
-            #            )
-
         # Render VPN Rules (if applicable)
         if use_vpn_rules:
             st.subheader("🌐 VPN Firewall Rules")
