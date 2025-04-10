@@ -956,6 +956,15 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         locations.add(entry)
         return locations
 
+    def get_vpn_enabled_locations(cidrs, location_map):
+        vpn_locations = set()
+        for cidr in cidrs:
+            entries = location_map.get(cidr, [])
+            if isinstance(entries, list):
+                for entry in entries:
+                    if isinstance(entry, dict) and entry.get("useVpn", False):
+                        vpn_locations.add(entry["location"])
+        return vpn_locations
 
     # --- Search input helpers ---
     def custom_search(term: str):
@@ -987,153 +996,54 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     # --- Sidebar Controls (Tab-Specific) ---
     with st.sidebar:
         st.markdown("### ↔️ Traffic Flow")
-        source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
-    
-        source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
-    
-        destination_input = st_searchbox(custom_search, label="Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
- 
-        port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
-   
-        protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
+        source_input = st_searchbox(custom_search, label="Source", key="src_searchbox", default="any")
+        source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", key="srcport_searchbox", default="any")
+        destination_input = st_searchbox(custom_search, label="Destination", key="dst_searchbox", default="any")
+        port_input = st_searchbox(passthrough_port, label="Destination Port(s)", key="dstport_searchbox", default="any")
+        protocol = st_searchbox(search_protocol, label="Protocol", key="protocol_searchbox", default="any")
+
         st.markdown("### ⚙️ View Settings")
         dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
         expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
 
-    # --- Search Inputs ---
-    
-            # 🧰 Toolbox inside a collapsible section
-        st.sidebar.markdown("🔘 Set Colors")
-        with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
-            st.markdown("Adjust the colors used to highlight rule matches:")
-
-            def color_slider(label, key, default_hex):
-                return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
-
-            
-            color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
-            color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
-            color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
-            color_slider("Described traffic is partially DENIED. This rule can affect the traffic. To investigate further, make the search more specific.", key="partial_deny", default_hex="#F7EF81")
-
-
-
-        # Reconstruct highlight_colors from session state
-        highlight_colors = {
-            "exact_allow": st.session_state.get("exact_allow", "#09BC8A"),
-            "exact_deny": st.session_state.get("exact_deny", "#DA2C38"),
-            "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
-            "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
-        }
-
-    if not st.session_state["fw_dynamic_update"]:
+    if not dynamic_mode:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
         st.stop()
 
     # ---- Resolve Inputs ----
     source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
-
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
-
     obj_loc_map = st.session_state.get("object_location_map", {})
     extended_data = st.session_state.get("extended_data", {})
-   
-    def filter_vpn_cidrs(cidr_list, extended_data):
-        vpn_enabled_subnets = set()
-        for net in extended_data.get("network_details", {}).values():
-            subnets = net.get("vpn_settings", {}).get("subnets", [])
-            for s in subnets:
-                if s.get("useVpn", False):
-                    vpn_enabled_subnets.add(s.get("localSubnet"))
-        return [
-            cidr for cidr in cidr_list
-            if any(
-                ipaddress.ip_network(cidr, strict=False).subnet_of(ipaddress.ip_network(vpn, strict=False)) or
-                ipaddress.ip_network(cidr, strict=False) == ipaddress.ip_network(vpn, strict=False)
-                for vpn in vpn_enabled_subnets
-            )
-        ]
-
-
-
-    vpn_source_cidrs = filter_vpn_cidrs(source_cidrs, extended_data)
-    vpn_destination_cidrs = filter_vpn_cidrs(destination_cidrs, extended_data)
-
 
     if obj_loc_map and extended_data:
         src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
         dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
         shared_locs = src_locs & dst_locs
 
-        # Helper: Find VPN-enabled subnets per CIDR
-        def is_cidr_vpn_enabled(cidr):
-            try:
-                net = ipaddress.ip_network(cidr, strict=False)
-                for netinfo in extended_data.get("network_details", {}).values():
-                    for s in netinfo.get("vpn_settings", {}).get("subnets", []):
-                        if s.get("useVpn", False):
-                            vpn_net = ipaddress.ip_network(s.get("localSubnet", ""), strict=False)
-                            if net.subnet_of(vpn_net) or net == vpn_net:
-                                return True
-            except:
-                return False
-            return False
+        # VPN evaluation logic only applies if both source and destination are marked useVpn=True
+        src_vpn_locs = get_vpn_enabled_locations(source_cidrs, obj_loc_map)
+        dst_vpn_locs = get_vpn_enabled_locations(destination_cidrs, obj_loc_map)
+        shared_vpn_locs = src_vpn_locs & dst_vpn_locs
 
-        src_vpn = all(is_cidr_vpn_enabled(c) for c in source_cidrs)
-        dst_vpn = all(is_cidr_vpn_enabled(c) for c in destination_cidrs)
+        show_local_only = shared_locs and not shared_vpn_locs
+        show_vpn_only = shared_vpn_locs and not shared_locs
+        show_local_and_vpn = shared_locs and shared_vpn_locs
 
-        is_dst_any = destination_input.strip().lower() == "any"
-        fully_inside_same_location = (
-            len(shared_locs) == 1 and
-            src_locs.issubset(shared_locs) and
-            dst_locs.issubset(shared_locs)
-        )
-
-        if fully_inside_same_location:
-            # ✅ Internal traffic: local only
-            location = list(shared_locs)[0]
-            st.subheader(f"🧱 Local Firewall Rules - `{location}`")
-            for net_id, info in extended_data.get("network_details", {}).items():
-                if info.get("network_name") == location:
-                    generate_rule_table(
-                        rules=info.get("firewall_rules", []),
-                        source_port_input=source_port_input,
-                        port_input=port_input,
-                        protocol=protocol,
-                        filter_toggle=st.session_state["fw_filter_toggle"],
-                        object_map=object_map,
-                        group_map=group_map,
-                        highlight_colors=highlight_colors,
-                        source_cidrs=source_cidrs,
-                        destination_cidrs=destination_cidrs,
-                        skip_src_check=skip_src_check,
-                        skip_dst_check=skip_dst_check,
-                        key=f"local_{location}"
-                    )
-                    break
-            st.info("🧱 Internal traffic detected. Only Local Firewall Rules are applied.")
-            st.stop()
-
-        elif src_vpn and dst_vpn and shared_locs == set():
-            # 🌐 VPN: source and destination are in different VPN-enabled locations
-            st.info("🌐 Source and destination are in different locations with VPN enabled. Using VPN Firewall Rules.")
-        else:
-            # 🌐↔️ Partial match or internet-bound: default to Local rules
-            st.info("🧱 Local rules apply due to non-VPN or internet-bound traffic.")
-            locs_to_show = sorted(src_locs.union(dst_locs))
-            for location in locs_to_show:
+        if show_local_only:
+            for location in sorted(shared_locs):
+                st.subheader(f"🧱 Local Firewall Rules - `{location}`")
                 for net_id, info in extended_data.get("network_details", {}).items():
                     if info.get("network_name") == location:
-                        st.subheader(f"🧱 Local Firewall Rules - `{location}`")
                         generate_rule_table(
                             rules=info.get("firewall_rules", []),
                             source_port_input=source_port_input,
                             port_input=port_input,
                             protocol=protocol,
-                            filter_toggle=st.session_state["fw_filter_toggle"],
+                            filter_toggle=filter_toggle,
                             object_map=object_map,
                             group_map=group_map,
                             highlight_colors=highlight_colors,
@@ -1141,9 +1051,50 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                             destination_cidrs=destination_cidrs,
                             skip_src_check=skip_src_check,
                             skip_dst_check=skip_dst_check,
-                            key=f"local_{location}_fallback"
+                            key=f"local_{location}"
                         )
+            st.info("🧱 Evaluated Local Firewall rules only.")
             st.stop()
+
+        elif show_local_and_vpn:
+            st.subheader("🧱 Local Firewall Rules")
+            for location in sorted(shared_locs):
+                with st.expander(f"{location}", expanded=expand_all_local):
+                    for net_id, info in extended_data.get("network_details", {}).items():
+                        if info.get("network_name") == location:
+                            generate_rule_table(
+                                rules=info.get("firewall_rules", []),
+                                source_port_input=source_port_input,
+                                port_input=port_input,
+                                protocol=protocol,
+                                filter_toggle=filter_toggle,
+                                object_map=object_map,
+                                group_map=group_map,
+                                highlight_colors=highlight_colors,
+                                source_cidrs=source_cidrs,
+                                destination_cidrs=destination_cidrs,
+                                skip_src_check=skip_src_check,
+                                skip_dst_check=skip_dst_check,
+                                key=f"local_{location}"
+                            )
+
+        if show_vpn_only or show_local_and_vpn:
+            st.subheader("🌐 VPN Firewall Rules")
+            generate_rule_table(
+                rules=rules_data,
+                source_port_input=source_port_input,
+                port_input=port_input,
+                protocol=protocol,
+                filter_toggle=filter_toggle,
+                object_map=object_map,
+                group_map=group_map,
+                highlight_colors=highlight_colors,
+                source_cidrs=source_cidrs,
+                destination_cidrs=destination_cidrs,
+                skip_src_check=skip_src_check,
+                skip_dst_check=skip_dst_check,
+                key="vpn_table"
+            )
 
 
 
