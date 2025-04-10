@@ -1,0 +1,4 @@
+ideas: 
+- rule logic data in expander (in progress)
+- Source location filter to shorten the search list- to think about
+- disregard objects with wrong IP addresses * subnets
