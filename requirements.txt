@@ -5,3 +5,4 @@ plotly
 kaleido
 streamlit-aggrid
 streamlit-searchbox
+uv
