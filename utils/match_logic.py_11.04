@@ -1,49 +1,7 @@
 import ipaddress
 
-
-def resolve_to_cidrs(input_list, object_map, group_map, visited=None):
-    import ipaddress
-
-    if visited is None:
-        visited = set()
-
-    resolved = set()
-
-    for item in input_list:
-        if item.lower() == "any":
-            resolved.add("0.0.0.0/0")
-            continue
-
-        if item in visited:
-            continue
-        visited.add(item)
-
-        # Direct CIDR or IP check
-        try:
-            ip_net = ipaddress.ip_network(item, strict=False)
-            resolved.add(str(ip_net))
-            continue
-        except ValueError:
-            pass
-
-        # Object
-        if item in object_map:
-            for cidr in object_map[item]:
-                try:
-                    ip_net = ipaddress.ip_network(cidr, strict=False)
-                    resolved.add(str(ip_net))
-                except ValueError:
-                    pass
-
-        # Group (recurse)
-        if item in group_map:
-            nested_items = group_map[item]
-            nested_resolved = resolve_to_cidrs(nested_items, object_map, group_map, visited)
-            resolved.update(nested_resolved)
-
-    return sorted(resolved)
-
-
+def resolve_to_cidrs(id_list, object_map, group_map):
+    cidrs = []
     for entry in id_list:
         entry = entry.strip()
         if entry == "Any":
@@ -60,6 +18,7 @@ def resolve_to_cidrs(input_list, object_map, group_map, visited=None):
                     if obj and "cidr" in obj:
                         cidrs.append(obj["cidr"])
     return cidrs
+
 
 def match_input_to_rule(rule_cidrs, search_input):
     try:
@@ -163,4 +122,6 @@ def build_object_location_map(objects_data, groups_data, extended_data):
             object_location_map[group_key] = entries
 
     return object_location_map
+
+import ipaddress
 
