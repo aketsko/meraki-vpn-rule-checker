@@ -11,81 +11,6 @@ from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_su
 from streamlit_searchbox import st_searchbox
 #from utils.API import fetch_meraki_data_extended
 
-
-def evaluate_rule_scope_from_inputs(src_input, dst_input, object_map, group_map, object_location_map):
-    from utils.match_logic import resolve_to_cidrs
-
-    def normalize_input(input_val):
-        if isinstance(input_val, str):
-            if input_val.strip().lower() == "any":
-                return ["0.0.0.0/0"]
-            return [input_val.strip()]
-        elif isinstance(input_val, list):
-            return ["0.0.0.0/0"] if not input_val else input_val
-        return []
-
-    src_ids = normalize_input(src_input)
-    dst_ids = normalize_input(dst_input)
-
-    src_cidrs = resolve_to_cidrs(src_ids, object_map, group_map)
-    dst_cidrs = resolve_to_cidrs(dst_ids, object_map, group_map)
-
-    show_vpn = False
-    local_locations = set()
-    skipped_pairs = []
-
-    def get_location_entries(cidr):
-        return object_location_map.get(cidr, [])
-
-    def extract_locations(entries, only_vpn=False):
-        locations = set()
-        for entry in entries:
-            if isinstance(entry, dict):
-                if only_vpn:
-                    if entry.get("useVpn"):
-                        locations.add(entry.get("network"))
-                else:
-                    locations.add(entry.get("network"))
-            elif isinstance(entry, str):
-                locations.add(entry)
-        return locations
-
-    for src in src_cidrs:
-        src_entries = get_location_entries(src)
-        src_all_locations = extract_locations(src_entries, only_vpn=False)
-        src_vpn_locations = extract_locations(src_entries, only_vpn=True)
-
-        for dst in dst_cidrs:
-            dst_entries = get_location_entries(dst)
-            dst_all_locations = extract_locations(dst_entries, only_vpn=False)
-            dst_vpn_locations = extract_locations(dst_entries, only_vpn=True)
-
-            if src_vpn_locations and dst_vpn_locations:
-                if not src_vpn_locations.intersection(dst_vpn_locations):
-                    show_vpn = True
-
-            shared_locations = src_all_locations.intersection(dst_all_locations)
-            if shared_locations:
-                local_locations.update(shared_locations)
-            elif not src_all_locations and dst_all_locations:
-                local_locations.update(dst_all_locations)
-            elif src_all_locations and not dst_all_locations:
-                local_locations.update(src_all_locations)
-            elif not src_all_locations and not dst_all_locations:
-                continue
-            else:
-                if not (src_vpn_locations and dst_vpn_locations):
-                    skipped_pairs.append((src, dst))
-
-    return {
-        "src_cidrs": src_cidrs,
-        "dst_cidrs": dst_cidrs,
-        "show_vpn": show_vpn,
-        "local_locations": sorted(local_locations),
-        "skipped_pairs": skipped_pairs
-    }
-
-
 # ------------------ PAGE SETUP ------------------
 st.set_page_config(
     page_title="Meraki Network Toolkit",
@@ -1066,44 +991,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
         st.stop()
 
-    # ---- Resolve Inputs ---- (NEW LOGIC with evaluate_rule_scope_from_inputs)
-    result = evaluate_rule_scope_from_inputs(
-        src_input=source_input,
-        dst_input=destination_input,
-        object_map=object_map,
-        group_map=group_map,
-        object_location_map=st.session_state["object_location_map"]
-    )
-    # --- Debugging / Testing ---
-    src_test = resolve_to_cidrs(["G_Systemair_Corporate_Networks"], object_map, group_map)
-    dst_test = resolve_to_cidrs(["G_Systemair_Corporate_Networks"], object_map, group_map)
-
-    st.write("🧪 Manual SRC resolution:", src_test)
-    st.write("🧪 Manual DST resolution:", dst_test)
-             
-    source_cidrs = result['src_cidrs']
-    destination_cidrs = result['dst_cidrs']
-    st.write("📥 Raw source input from Streamlit:", source_input)
-    st.write("🔍 Resolved Source CIDRs:", source_cidrs)
-    st.write("🔍 Resolved Destination CIDRs:", destination_cidrs)
-    mapped_src = {
-        cidr: st.session_state["object_location_map"].get(cidr, "❌ Not Found")
-        for cidr in source_cidrs
-    }
-    st.write("📍 Source CIDRs Location Mapping Check:", mapped_src)
-    mapped_dst = {
-        cidr: st.session_state["object_location_map"].get(cidr, "❌ Not Found")
-        for cidr in destination_cidrs
-    }
-    st.write("📍 Destination CIDRs Location Mapping Check:", mapped_dst)
-    # --- Debugging / Testing End ---
-
-
-    skip_src_check = source_input.strip().lower() == 'any'
-    skip_dst_check = destination_input.strip().lower() == 'any'
-
-    show_vpn = result['show_vpn']
-    shared_locations = set(result['local_locations'])
+    # ---- Resolve Inputs ----
+    source_cidrs = resolve_search_input(source_input)
     destination_cidrs = resolve_search_input(destination_input)
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
@@ -1188,11 +1077,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             
 
             # Show the shared locations
-            # Show skipped pairs if any
-            if result['skipped_pairs']:
-                st.markdown("**⛔ Skipped Pairs (No VPN or Local Match):**")
-                st.code("\n".join([f"{s} → {d}" for s, d in result['skipped_pairs']]), language="text")
-
             st.markdown("**📍 Shared Locations:**")
             if shared_locs_debug:
                 st.markdown(f"`{', '.join(sorted(shared_locs_debug))}`")
