@@ -1072,6 +1072,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     )
 
     source_cidrs = result['src_cidrs']
+    st.write("🔍 Resolved Source CIDRs:", source_cidrs)
     destination_cidrs = result['dst_cidrs']
     skip_src_check = source_input.strip().lower() == 'any'
     skip_dst_check = destination_input.strip().lower() == 'any'
