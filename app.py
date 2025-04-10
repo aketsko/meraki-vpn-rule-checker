@@ -1075,11 +1075,17 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     destination_cidrs = result['dst_cidrs']
 
     st.write("🔍 Resolved Source CIDRs:", source_cidrs)
+    st.write("🔍 Resolved Destination CIDRs:", destination_cidrs)
     mapped_src = {
         cidr: st.session_state["object_location_map"].get(cidr, "❌ Not Found")
         for cidr in source_cidrs
     }
     st.write("📍 Source CIDRs Location Mapping Check:", mapped_src)
+    mapped_dst = {
+        cidr: st.session_state["object_location_map"].get(cidr, "❌ Not Found")
+        for cidr in destination_cidrs
+    }
+    st.write("📍 Destination CIDRs Location Mapping Check:", mapped_dst)
 
     skip_src_check = source_input.strip().lower() == 'any'
     skip_dst_check = destination_input.strip().lower() == 'any'
