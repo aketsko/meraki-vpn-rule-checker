@@ -977,6 +977,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     extended_data = st.session_state.get("extended_data", {})
 
     if obj_loc_map and extended_data:
+
         src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
         dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
         # Get locations where source/destination are in useVpn: True
@@ -1008,6 +1009,46 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             not shared_locations and
             src_vpn_locs and dst_vpn_locs
         )
+        with st.expander("🧪 Traffic Routing Decision (Click to Expand)"):
+            src_debug = []
+            dst_debug = []
+
+            for cidr in source_cidrs:
+                for entry in obj_loc_map.get(cidr, []):
+                    if isinstance(entry, dict):
+                        src_debug.append({
+                            "CIDR": cidr,
+                            "Location": entry["network"],
+                            "useVpn": entry["useVpn"]
+                        })
+
+            for cidr in destination_cidrs:
+                for entry in obj_loc_map.get(cidr, []):
+                    if isinstance(entry, dict):
+                        dst_debug.append({
+                            "CIDR": cidr,
+                            "Location": entry["network"],
+                            "useVpn": entry["useVpn"]
+                        })
+
+            st.markdown("#### Source CIDRs & Locations")
+            st.dataframe(pd.DataFrame(src_debug))
+            st.markdown("#### Destination CIDRs & Locations")
+            st.dataframe(pd.DataFrame(dst_debug))
+
+            st.markdown("#### Shared Locations")
+            st.write(shared_locations)
+
+            st.markdown("#### Verdict:")
+            if use_local_rules and use_vpn_rules:
+                st.success("✅ Showing both LOCAL and VPN rules.")
+            elif use_local_rules:
+                st.info("🧱 Showing only LOCAL firewall rules.")
+            elif use_vpn_rules:
+                st.warning("🌐 Showing only VPN firewall rules.")
+            else:
+                st.error("❌ No rules will be shown (check inputs or mapping logic).")
+
         with st.expander("🔍 Traffic Pattern Debug - Verdict Preview", expanded=False):
             def format_location_table(cidrs, obj_loc_map):
                 rows = []
