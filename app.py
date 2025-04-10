@@ -1072,6 +1072,9 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         #         st.warning("🌐 Showing only VPN firewall rules.")
         #     else:
         #         st.error("❌ No rules will be shown (check inputs or mapping logic).")
+        use_local_debug = bool(shared_locations or not src_vpn_locs or not dst_vpn_locs or (dst_is_any and src_locs))
+        use_vpn_debug = bool(not shared_locations and src_vpn_locs and dst_vpn_locs)
+
         if use_local_debug and use_vpn_debug:
             verdict = ("🏁 **Verdict: Both Local and VPN rules will be evaluated.**")
         elif use_local_debug:
@@ -1080,7 +1083,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             verdict = ("🏁 **Verdict: Only VPN rules will be evaluated.**")
         else:
             verdict = ("🏁 **Verdict: No valid routing decision. No rules will be shown.**")
-        with st.expander(f"🔍 Traffic Pattern Debug - {Verdict}", expanded=False):
+        with st.expander(f"🔍 Traffic Pattern Debug - {verdict}", expanded=False):
             def format_location_table(cidrs, obj_loc_map):
                 rows = []
                 for cidr in cidrs:
