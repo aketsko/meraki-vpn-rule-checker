@@ -1033,45 +1033,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             not shared_locations and
             src_vpn_locs and dst_vpn_locs
         )
-        # with st.expander("🧪 Traffic Routing Decision (Click to Expand)"):
-        #     src_debug = []
-        #     dst_debug = []
-
-        #     for cidr in source_cidrs:
-        #         for entry in obj_loc_map.get(cidr, []):
-        #             if isinstance(entry, dict):
-        #                 src_debug.append({
-        #                     "CIDR": cidr,
-        #                     "Location": entry["network"],
-        #                     "useVpn": entry["useVpn"]
-        #                 })
-
-        #     for cidr in destination_cidrs:
-        #         for entry in obj_loc_map.get(cidr, []):
-        #             if isinstance(entry, dict):
-        #                 dst_debug.append({
-        #                     "CIDR": cidr,
-        #                     "Location": entry["network"],
-        #                     "useVpn": entry["useVpn"]
-        #                 })
-
-        #     st.markdown("#### Source CIDRs & Locations")
-        #     st.dataframe(pd.DataFrame(src_debug))
-        #     st.markdown("#### Destination CIDRs & Locations")
-        #     st.dataframe(pd.DataFrame(dst_debug))
-
-        #     st.markdown("#### Shared Locations")
-        #     st.write(shared_locations)
-
-        #     st.markdown("#### Verdict:")
-        #     if use_local_rules and use_vpn_rules:
-        #         st.success("✅ Showing both LOCAL and VPN rules.")
-        #     elif use_local_rules:
-        #         st.info("🧱 Showing only LOCAL firewall rules.")
-        #     elif use_vpn_rules:
-        #         st.warning("🌐 Showing only VPN firewall rules.")
-        #     else:
-        #         st.error("❌ No rules will be shown (check inputs or mapping logic).")
+        shared_locs_debug = get_all_locations_for_cidrs(source_cidrs, obj_loc_map) & get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
         use_local_debug = bool(shared_locations or not src_vpn_locs or not dst_vpn_locs or (dst_is_any and src_locs))
         use_vpn_debug = bool(not shared_locations and src_vpn_locs and dst_vpn_locs)
 
@@ -1082,7 +1044,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         elif use_vpn_debug:
             verdict = ("Verdict: Only VPN rules will be evaluated.")
         else:
-            verdict = ("Verdict: No valid routing decision. No rules will be shown.")
+            verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
         with st.expander(f"🔍 {verdict}", expanded=False):
             def format_location_table(cidrs, obj_loc_map):
                 rows = []
@@ -1112,7 +1074,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             st.markdown("**🟥 Destination CIDRs Location Mapping:**")
             st.dataframe(dst_table, use_container_width=True)
 
-            shared_locs_debug = get_all_locations_for_cidrs(source_cidrs, obj_loc_map) & get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
+            
 
             # Show the shared locations
             st.markdown("**📍 Shared Locations:**")
@@ -1126,19 +1088,9 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             dst_vpn_locs_debug = get_vpn_enabled_locations(destination_cidrs, obj_loc_map)
             dst_is_any_debug = destination_input.strip().lower() == "any"
 
-            use_local_debug = bool(shared_locs_debug or not src_vpn_locs_debug or not dst_vpn_locs_debug or (dst_is_any_debug and src_table.shape[0] > 0))
-            use_vpn_debug = bool(not shared_locs_debug and src_vpn_locs_debug and dst_vpn_locs_debug)
+            #use_local_debug = bool(shared_locs_debug or not src_vpn_locs_debug or not dst_vpn_locs_debug or (dst_is_any_debug and src_table.shape[0] > 0))
+            #use_vpn_debug = bool(not shared_locs_debug and src_vpn_locs_debug and dst_vpn_locs_debug)
             count = len(shared_locations)
-            # if use_local_debug and use_vpn_debug:
-            #     st.success("🏁 **Verdict: Both Local and VPN rules will be evaluated.**")
-            # elif use_local_debug:
-            #     st.info("🏁 **Verdict: Only Local Firewall rules will be evaluated.**")
-            # elif use_vpn_debug:
-            #     st.warning("🏁 **Verdict: Only VPN rules will be evaluated.**")
-            # else:
-            #     st.error("🏁 **Verdict: No valid routing decision. No rules will be shown.**")
-                # Render Local Rules (if applicable)
-        #selected_locations = []
 
         with st.sidebar:
             st.markdown("### 📍 Location Filter")
