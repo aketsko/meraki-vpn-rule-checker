@@ -11,5 +11,4 @@ headless = true
 enableCORS = false
 enableXsrfProtection = false
 
-[ui]
-browser.gatherUsageStats = false
+
