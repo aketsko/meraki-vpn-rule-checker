@@ -19,7 +19,6 @@ def resolve_to_cidrs(id_list, object_map, group_map):
                         cidrs.append(obj["cidr"])
     return cidrs
 
-
 def match_input_to_rule(rule_cidrs, search_input):
     try:
         search_net = ipaddress.ip_network(search_input, strict=False)
@@ -122,6 +121,4 @@ def build_object_location_map(objects_data, groups_data, extended_data):
             object_location_map[group_key] = entries
 
     return object_location_map
-
-import ipaddress
 
