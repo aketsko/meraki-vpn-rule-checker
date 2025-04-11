@@ -1056,7 +1056,16 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         )
 
         # Debug
-        with st.expander("🔍 Decision Logic Debug", expanded=False):
+
+        if use_local_rules and use_vpn_rules:
+            verdict = ("Both Local and VPN rules will be evaluated.")
+        elif use_local_rules:
+            verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
+        elif use_vpn_rules:
+            verdict = ("Verdict: Only VPN rules will be evaluated.")
+        else:
+            verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
+        with st.expander(f"🔍 {verdict}", expanded=False):
             def format_location_table(cidrs, obj_loc_map):
                 rows = []
                 for cidr in cidrs:
@@ -1078,23 +1087,26 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
             src_table = format_location_table(source_cidrs, obj_loc_map)
             dst_table = format_location_table(destination_cidrs, obj_loc_map)
-
+            Loc_table = format_location_table(shared_locations, obj_loc_map)
             st.markdown("**🟦 Source CIDRs Location Mapping:**")
             st.dataframe(src_table, use_container_width=True)
 
             st.markdown("**🟥 Destination CIDRs Location Mapping:**")
             st.dataframe(dst_table, use_container_width=True)
             
+            st.markdown("**📍 Destination CIDRs Location Mapping:**")
+            st.dataframe(Loc_table, use_container_width=True)
+
             # st.markdown("**Resolved Source CIDRs:**")
             # st.write(source_cidrs)
             # st.markdown("**Resolved Destination CIDRs:**")
             # st.write(destination_cidrs)
-            st.markdown("**Source Locations:**")
-            st.write(src_locations)
-            st.markdown("**Destination Locations:**")
-            st.write(dst_locations)
-            st.markdown("**Shared Locations:**")
-            st.write(shared_locations)
+            # st.markdown("**Source Locations:**")
+            # st.write(src_locations)
+            # st.markdown("**Destination Locations:**")
+            # st.write(dst_locations)
+            # st.markdown("**Shared Locations:**")
+            # st.write(shared_locations)
             st.markdown("**VPN Locations (SRC → DST):**")
             st.write(f"SRC: {src_vpn_locs}, DST: {dst_vpn_locs}")
             st.markdown("**Non-VPN Locations (SRC → DST):**")
@@ -1107,15 +1119,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         # use_local_debug = bool(shared_locations or not src_vpn_locs or not dst_vpn_locs or (dst_is_any and src_locs))
         # use_vpn_debug = bool(not shared_locations and src_vpn_locs and dst_vpn_locs)
 
-        if use_local_rules and use_vpn_rules:
-            verdict = ("Both Local and VPN rules will be evaluated.")
-        elif use_local_rules:
-            verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
-        elif use_vpn_rules:
-            verdict = ("Verdict: Only VPN rules will be evaluated.")
-        else:
-            verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
-        with st.expander(f"🔍 {verdict}", expanded=False):
+        
 
             
             count = len(shared_locations)
@@ -1170,7 +1174,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         if use_vpn_rules:
             st.subheader("🌐 VPN Firewall Rules")
             generate_rule_table(
-                #rules=rules_data,
+                rules=rules_data,
                 source_port_input=source_port_input,
                 port_input=port_input,
                 protocol=protocol,
