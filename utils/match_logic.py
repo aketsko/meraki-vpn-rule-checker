@@ -1,23 +1,24 @@
 import ipaddress
 
 def resolve_to_cidrs(id_list, object_map, group_map):
-    cidrs = []
+    cidrs = set()
     for entry in id_list:
         entry = entry.strip()
-        if entry == "Any":
-            cidrs.append("0.0.0.0/0")
+        if entry.lower() == "any":
+            cidrs.add("0.0.0.0/0")
         elif entry.startswith("OBJ(") and entry.endswith(")"):
             obj = object_map.get(entry[4:-1])
             if obj and "cidr" in obj:
-                cidrs.append(obj["cidr"])
+                cidrs.add(obj["cidr"])
         elif entry.startswith("GRP(") and entry.endswith(")"):
             grp = group_map.get(entry[4:-1])
             if grp:
                 for m in grp.get("objectIds", []):
                     obj = object_map.get(str(m))
                     if obj and "cidr" in obj:
-                        cidrs.append(obj["cidr"])
-    return cidrs
+                        cidrs.add(obj["cidr"])
+    return list(cidrs)
+
 
 def match_input_to_rule(rule_cidrs, search_input):
     try:
