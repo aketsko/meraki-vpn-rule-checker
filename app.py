@@ -1042,8 +1042,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         # Final decision logic
         use_vpn_rules = (
-            src_vpn_locs and dst_vpn_locs
-            and not shared_locations
+            src_vpn_locs and dst_vpn_locs and
+            any(src != dst for src in src_vpn_locs for dst in dst_vpn_locs)
         )
 
         use_local_rules = (
