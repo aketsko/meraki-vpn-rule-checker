@@ -1170,7 +1170,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         if use_vpn_rules:
             st.subheader("🌐 VPN Firewall Rules")
             generate_rule_table(
-                rules=rules_data,
+                #rules=rules_data,
                 source_port_input=source_port_input,
                 port_input=port_input,
                 protocol=protocol,
