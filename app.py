@@ -1024,17 +1024,25 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             locations = set()
             vpn_locations = set()
             nonvpn_locations = set()
+
             for cidr in cidr_list:
                 entries = location_map.get(cidr, [])
                 for entry in entries:
-                    loc = entry.get("network")
-                    if loc:
-                        locations.add(loc)
-                        if entry.get("useVpn") is True:
-                            vpn_locations.add(loc)
-                        else:
-                            nonvpn_locations.add(loc)
+                    if isinstance(entry, dict):
+                        loc = entry.get("network")
+                        if loc:
+                            locations.add(loc)
+                            if entry.get("useVpn"):
+                                vpn_locations.add(loc)
+                            else:
+                                nonvpn_locations.add(loc)
+                    elif isinstance(entry, str):
+                        # fallback for older mapping style
+                        locations.add(entry)
+                        nonvpn_locations.add(entry)
+
             return locations, vpn_locations, nonvpn_locations
+
 
         src_locations, src_vpn_locs, src_nonvpn = get_location_entries(source_cidrs, obj_loc_map)
         dst_locations, dst_vpn_locs, dst_nonvpn = get_location_entries(destination_cidrs, obj_loc_map)
