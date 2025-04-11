@@ -1,6 +1,6 @@
 import ipaddress
 
-def build_object_location_map(vpn_settings):
+def build_object_location_map(object_map, group_map, extended_data):
     object_location_map = {}
     for net in vpn_settings:
         net_name = net.get("name")
