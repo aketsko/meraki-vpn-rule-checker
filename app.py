@@ -1034,8 +1034,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         show_vpn = result["show_vpn_rules"]
 
         # 🧪 Debug
-        test = resolve_to_cidrs("G_Systemair_Corporate_Networks", object_map, group_map)
-        st.write("Test resolve_to_cidrs:", test)
+        # test = resolve_to_cidrs("G_Systemair_Corporate_Networks", object_map, group_map)
+        # st.write("Test resolve_to_cidrs:", test)
         st.write("Known Group Keys:", list(group_map.keys())[:10])
         st.subheader("🔍 Raw VPN Evaluation Debug")
         st.write("🧠 Source CIDRs:", source_cidrs)
