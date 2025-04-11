@@ -911,6 +911,22 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             elif isinstance(mapped, list):
                 for entry in mapped:
                     if isinstance(entry, dict):
+                        loc = entry.get("network")
+                        if loc:
+                            locations.add(loc)
+                            if entry.get("useVpn"):
+                                vpn_locations.add(loc)
+                            else:
+                                nonvpn_locations.add(loc)
+                        loc = entry.get("network")
+                        if loc:
+                            locations.add(loc)
+                            if entry.get("useVpn"):
+                                vpn_locations = vpn_locations if 'vpn_locations' in locals() else set()
+                                vpn_locations.add(loc)
+                            else:
+                                nonvpn_locations = nonvpn_locations if 'nonvpn_locations' in locals() else set()
+                                nonvpn_locations.add(loc)
                         locations.add(entry.get("network", entry.get("location", "")))
                     elif isinstance(entry, str):
                         locations.add(entry)
@@ -1030,6 +1046,9 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 for entry in entries:
                     if isinstance(entry, dict):
                         loc = entry.get("network")
+                    elif isinstance(entry, str):
+                        loc = entry
+
                         if loc:
                             locations.add(loc)
                             if entry.get("useVpn"):
@@ -1037,6 +1056,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                             else:
                                 nonvpn_locations.add(loc)
                     elif isinstance(entry, str):
+                        # fallback for older mapping style
                         locations.add(entry)
                         nonvpn_locations.add(entry)
 
