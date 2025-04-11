@@ -911,7 +911,11 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             elif isinstance(mapped, list):
                 for entry in mapped:
                     if isinstance(entry, dict):
-                        locations.add((entry.get('network', entry.get('location', '')) if isinstance(entry, dict) else None))
+                        loc = entry.get('network') or entry.get('location')
+                    else:
+                        loc = entry  # fallback if entry is str
+                    if loc:
+                        locations.add(loc)
                     elif isinstance(entry, str):
                         locations.add(entry)
         return locations
