@@ -925,7 +925,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         return locations, vpn_locations, nonvpn_locations
 
 
-
     # --- Search input helpers ---
     def custom_search(term: str):
         term = term.strip()
@@ -1013,8 +1012,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
     if obj_loc_map and extended_data:
 
-        src_locs, _, _ = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
-        dst_locs, _, _ = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
+        src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
+        dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
         # Get locations where source/destination are in useVpn: True
         def get_vpn_enabled_locations(cidrs, location_map):
             vpn_locations = set()
