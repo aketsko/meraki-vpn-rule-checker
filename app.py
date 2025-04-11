@@ -7,7 +7,7 @@ from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
-from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, find_object_locations, build_object_location_map, evaluate_rule_scope_from_inputs
+from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, find_object_locations, build_object_location_map
 from streamlit_searchbox import st_searchbox
 #from utils.API import fetch_meraki_data_extended
 
@@ -971,21 +971,14 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         st.markdown("### ↔️ Traffic Flow")
         source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
-        if source_input:
-            st.session_state["source_raw_input"] = source_input
-
+    
         source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
     
         destination_input = st_searchbox(custom_search, label="Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
-        if destination_input:
-            st.session_state["destination_raw_input"] = destination_input
  
         port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
    
         protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
-        
-        source_cidrs = resolve_to_cidrs(st.session_state["source_raw_input"], object_map, group_map)
-        destination_cidrs = resolve_to_cidrs(st.session_state["destination_raw_input"], object_map, group_map)
         st.markdown("### ⚙️ View Settings")
         dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
@@ -999,53 +992,18 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         st.stop()
 
     # ---- Resolve Inputs ----
-    # source_cidrs = resolve_search_input(source_input)
-    # destination_cidrs = resolve_search_input(destination_input)
-    # skip_src_check = source_input.strip().lower() == "any"
-    # skip_dst_check = destination_input.strip().lower() == "any"
+    source_cidrs = resolve_search_input(source_input)
+    destination_cidrs = resolve_search_input(destination_input)
+    skip_src_check = source_input.strip().lower() == "any"
+    skip_dst_check = destination_input.strip().lower() == "any"
 
-    # obj_loc_map = st.session_state.get("object_location_map", {})
-    # extended_data = st.session_state.get("extended_data", {})
-
-    # if obj_loc_map and extended_data:
-
-    #     src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
-    #     dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
     obj_loc_map = st.session_state.get("object_location_map", {})
     extended_data = st.session_state.get("extended_data", {})
 
     if obj_loc_map and extended_data:
-        st.write("RAW SRC input:", st.session_state.get("source_raw_input"))
-        st.write("RAW DST input:", st.session_state.get("destination_raw_input"))
-        result = evaluate_rule_scope_from_inputs(
-            src_input=st.session_state.get("source_raw_input", ""),
-            dst_input=st.session_state.get("destination_raw_input", ""),
-            object_map=object_map,
-            group_map=group_map,
-            object_location_map=obj_loc_map
-        )
 
-
-        source_cidrs = result["src_cidrs"]
-        destination_cidrs = result["dst_cidrs"]
-        skip_src_check = source_input.strip().lower() == "any"
-        skip_dst_check = destination_input.strip().lower() == "any"
-        shared_locations = set(result["local_locations"])
-        show_vpn = result["show_vpn_rules"]
-
-        # 🧪 Debug
-        # test = resolve_to_cidrs("G_Systemair_Corporate_Networks", object_map, group_map)
-        # st.write("Test resolve_to_cidrs:", test)
-        st.write("Known Group Keys:", list(group_map.keys())[:10])
-        st.subheader("🔍 Raw VPN Evaluation Debug")
-        st.write("🧠 Source CIDRs:", source_cidrs)
-        st.write("🧠 Destination CIDRs:", destination_cidrs)
-        st.write("📍 Source Location Map:", result["src_location_map"])
-        st.write("📍 Destination Location Map:", result["dst_location_map"])
-        st.write("🌐 VPN Needed?", show_vpn)
-        st.write("🧱 Local Locations:", shared_locations)
-        st.write("Resolved Source CIDRs:", source_cidrs)
-        st.write("Resolved Destination CIDRs:", destination_cidrs)
+        src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
+        dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
         # Get locations where source/destination are in useVpn: True
         def get_vpn_enabled_locations(cidrs, location_map):
             vpn_locations = set()
@@ -1059,38 +1017,46 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         src_vpn_locs = get_vpn_enabled_locations(source_cidrs, obj_loc_map)
         dst_vpn_locs = get_vpn_enabled_locations(destination_cidrs, obj_loc_map)
 
-        # Determine routing logic
-        src_locs = set(entry["network"] for locs in result["src_location_map"].values() for entry in locs)
-        dst_locs = set(entry["network"] for locs in result["dst_location_map"].values() for entry in locs)
-        shared_locations = src_locs & dst_locs
+        # Decompose input into resolved CIDRs
+        def get_location_entries(cidr_list, location_map):
+            locations = set()
+            vpn_locations = set()
+            nonvpn_locations = set()
+            for cidr in cidr_list:
+                entries = location_map.get(cidr, [])
+                for entry in entries:
+                    loc = entry.get("network")
+                    if loc:
+                        locations.add(loc)
+                        if entry.get("useVpn") is True:
+                            vpn_locations.add(loc)
+                        else:
+                            nonvpn_locations.add(loc)
+            return locations, vpn_locations, nonvpn_locations
 
+        src_locations, src_vpn_locs, src_nonvpn = get_location_entries(source_cidrs, obj_loc_map)
+        dst_locations, dst_vpn_locs, dst_nonvpn = get_location_entries(destination_cidrs, obj_loc_map)
+
+        shared_locations = src_locations & dst_locations
         dst_is_any = destination_input.strip().lower() == "any"
 
-        # Conditions for LOCAL rules
-        use_local_rules = (
-            shared_locations or
-            not src_vpn_locs or not dst_vpn_locs or
-            (dst_is_any and result["src_location_map"])
-        )
-
-        # Conditions for VPN rules
+        # Final decision logic
         use_vpn_rules = (
-            not shared_locations and
-            src_vpn_locs and dst_vpn_locs
+            src_vpn_locs and dst_vpn_locs and
+            any(src != dst for src in src_vpn_locs for dst in dst_vpn_locs)
         )
-        shared_locs_debug = get_all_locations_for_cidrs(source_cidrs, obj_loc_map) & get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
-        use_local_debug = bool(shared_locations or not src_vpn_locs or not dst_vpn_locs or (dst_is_any and result["src_location_map"]))
-        use_vpn_debug = bool(not shared_locations and src_vpn_locs and dst_vpn_locs)
 
-        if use_local_debug and use_vpn_debug:
-            verdict = ("Both Local and VPN rules will be evaluated.")
-        elif use_local_debug:
-            verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
-        elif use_vpn_debug:
-            verdict = ("Verdict: Only VPN rules will be evaluated.")
-        else:
-            verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
-        with st.expander(f"🔍 {verdict}", expanded=False):
+        use_local_rules = (
+            shared_locations
+            or not src_vpn_locs
+            or not dst_vpn_locs
+            or not src_locations
+            or not dst_locations
+            or dst_is_any
+        )
+
+        # Debug
+        with st.expander("🔍 Decision Logic Debug", expanded=False):
             def format_location_table(cidrs, obj_loc_map):
                 rows = []
                 for cidr in cidrs:
@@ -1118,23 +1084,40 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
             st.markdown("**🟥 Destination CIDRs Location Mapping:**")
             st.dataframe(dst_table, use_container_width=True)
+            
+            # st.markdown("**Resolved Source CIDRs:**")
+            # st.write(source_cidrs)
+            # st.markdown("**Resolved Destination CIDRs:**")
+            # st.write(destination_cidrs)
+            st.markdown("**Source Locations:**")
+            st.write(src_locations)
+            st.markdown("**Destination Locations:**")
+            st.write(dst_locations)
+            st.markdown("**Shared Locations:**")
+            st.write(shared_locations)
+            st.markdown("**VPN Locations (SRC → DST):**")
+            st.write(f"SRC: {src_vpn_locs}, DST: {dst_vpn_locs}")
+            st.markdown("**Non-VPN Locations (SRC → DST):**")
+            st.write(f"SRC: {src_nonvpn}, DST: {dst_nonvpn}")
+            st.markdown("**Show VPN Rules?**")
+            st.success(use_vpn_rules)
+            st.markdown("**Show Local Rules?**")
+            st.success(use_local_rules)
+        # shared_locs_debug = get_all_locations_for_cidrs(source_cidrs, obj_loc_map) & get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
+        # use_local_debug = bool(shared_locations or not src_vpn_locs or not dst_vpn_locs or (dst_is_any and src_locs))
+        # use_vpn_debug = bool(not shared_locations and src_vpn_locs and dst_vpn_locs)
+
+        if use_local_rules and use_vpn_rules:
+            verdict = ("Both Local and VPN rules will be evaluated.")
+        elif use_local_rules:
+            verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
+        elif use_vpn_rules:
+            verdict = ("Verdict: Only VPN rules will be evaluated.")
+        else:
+            verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
+        with st.expander(f"🔍 {verdict}", expanded=False):
 
             
-
-            # Show the shared locations
-            st.markdown("**📍 Shared Locations:**")
-            if shared_locs_debug:
-                st.markdown(f"`{', '.join(sorted(shared_locs_debug))}`")
-            else:
-                st.markdown("❌ No shared locations.")
-
-            # Show verdict
-            src_vpn_locs_debug = get_vpn_enabled_locations(source_cidrs, obj_loc_map)
-            dst_vpn_locs_debug = get_vpn_enabled_locations(destination_cidrs, obj_loc_map)
-            dst_is_any_debug = destination_input.strip().lower() == "any"
-
-            #use_local_debug = bool(shared_locs_debug or not src_vpn_locs_debug or not dst_vpn_locs_debug or (dst_is_any_debug and src_table.shape[0] > 0))
-            #use_vpn_debug = bool(not shared_locs_debug and src_vpn_locs_debug and dst_vpn_locs_debug)
             count = len(shared_locations)
 
         with st.sidebar:
