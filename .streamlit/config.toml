@@ -5,9 +5,9 @@ backgroundColor="#d3dcdc"
 secondaryBackgroundColor="#f5fafa"
 
 
-
 [server]
 headless = true
+port = 8501
 enableCORS = false
 enableXsrfProtection = false
 
