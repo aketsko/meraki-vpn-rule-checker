@@ -1017,21 +1017,36 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         src_vpn_locs = get_vpn_enabled_locations(source_cidrs, obj_loc_map)
         dst_vpn_locs = get_vpn_enabled_locations(destination_cidrs, obj_loc_map)
 
-        # Determine routing logic
+        # Get locations where source/destination are in useVpn: True
+        def get_vpn_enabled_locations(cidrs, location_map):
+            vpn_locations = set()
+            for cidr in cidrs:
+                entries = location_map.get(cidr, [])
+                for entry in entries:
+                    if isinstance(entry, dict) and entry.get("useVpn") is True:
+                        vpn_locations.add(entry["network"])
+            return vpn_locations
+
+        src_vpn_locs = get_vpn_enabled_locations(source_cidrs, obj_loc_map)
+        dst_vpn_locs = get_vpn_enabled_locations(destination_cidrs, obj_loc_map)
+
         shared_locations = src_locs & dst_locs
         dst_is_any = destination_input.strip().lower() == "any"
 
-        # Conditions for LOCAL rules
-        use_local_rules = (
-            shared_locations or
-            not src_vpn_locs or not dst_vpn_locs or
-            (dst_is_any and src_locs)
+        # Final decision logic
+        use_vpn_rules = (
+            bool(src_vpn_locs)
+            and bool(dst_vpn_locs)
+            and not shared_locations
         )
 
-        # Conditions for VPN rules
-        use_vpn_rules = (
-            not shared_locations and
-            src_vpn_locs and dst_vpn_locs
+        use_local_rules = (
+            bool(shared_locations)
+            or not bool(src_vpn_locs)
+            or not bool(dst_vpn_locs)
+            or not bool(src_locs)
+            or not bool(dst_locs)
+            or dst_is_any
         )
         shared_locs_debug = get_all_locations_for_cidrs(source_cidrs, obj_loc_map) & get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
         use_local_debug = bool(shared_locations or not src_vpn_locs or not dst_vpn_locs or (dst_is_any and src_locs))
