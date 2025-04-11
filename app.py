@@ -1088,10 +1088,10 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             src_table = format_location_table(source_cidrs, obj_loc_map)
             dst_table = format_location_table(destination_cidrs, obj_loc_map)
             Loc_table = format_location_table(shared_locations, obj_loc_map)
-            st.markdown("**🟦 Source is {source_input} - CIDRs Location Mapping:**")
+            st.markdown(f"**🟦 Source is {source_input} - CIDRs Location Mapping:**")
             st.dataframe(src_table, use_container_width=True)
 
-            st.markdown("**🟥 Destination is {destination_input} - CIDRs Location Mapping:**")
+            st.markdown(f"**🟥 Destination is {destination_input} - CIDRs Location Mapping:**")
             st.dataframe(dst_table, use_container_width=True)
             
             st.markdown("**Shared Locations:**")
