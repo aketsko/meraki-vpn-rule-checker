@@ -57,13 +57,14 @@ def find_object_locations(cidrs, object_location_map):
             try:
                 if ipaddress.ip_network(cidr).subnet_of(ipaddress.ip_network(key)) or ipaddress.ip_network(key).subnet_of(ipaddress.ip_network(cidr)):
                     for entry in object_location_map[key]:
-                        if isinstance(entry, dict) and "network" in entry:
-                            locations.add(entry["network"])
+                        if isinstance(entry, dict):
+                            locations.add(entry.get("network") or entry.get("location", ""))
                         elif isinstance(entry, str):
                             locations.add(entry)
             except ValueError:
                 continue
     return locations
+
 
 
 def resolve_to_cidrs(id_list, object_map, group_map):
