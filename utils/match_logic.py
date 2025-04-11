@@ -2,20 +2,42 @@ import ipaddress
 
 def build_object_location_map(object_map, group_map, extended_data):
     object_location_map = {}
-
     network_map = extended_data.get("network_map", {})
 
+    # Track which object CIDRs inherit from each network subnet
     for net_name, net_data in network_map.items():
         for subnet in net_data.get("subnets", []):
-            cidr = subnet.get("localSubnet")
+            supernet_cidr = subnet.get("localSubnet")
             use_vpn = subnet.get("useVpn", False)
-            if cidr:
-                object_location_map.setdefault(cidr, []).append({
-                    "network": net_name,
-                    "useVpn": use_vpn
-                })
+            if not supernet_cidr:
+                continue
+            try:
+                supernet = ipaddress.ip_network(supernet_cidr)
+            except ValueError:
+                continue
 
-    # Catch-all rule: "any" = 0.0.0.0/0 should include everything
+            # Direct entry
+            object_location_map.setdefault(supernet_cidr, []).append({
+                "network": net_name,
+                "useVpn": use_vpn
+            })
+
+            # Check all object_map CIDRs that fall inside this supernet
+            for obj in object_map.values():
+                obj_cidr = obj.get("cidr")
+                if not obj_cidr:
+                    continue
+                try:
+                    ipnet = ipaddress.ip_network(obj_cidr)
+                except ValueError:
+                    continue
+                if ipnet.subnet_of(supernet):
+                    object_location_map.setdefault(obj_cidr, []).append({
+                        "network": net_name,
+                        "useVpn": use_vpn
+                    })
+
+    # Final fallback: map 0.0.0.0/0 to all known locations
     all_entries = []
     for entries in object_location_map.values():
         for e in entries:
@@ -24,6 +46,7 @@ def build_object_location_map(object_map, group_map, extended_data):
     object_location_map["0.0.0.0/0"] = all_entries
 
     return object_location_map
+
 
 
 
