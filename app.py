@@ -1094,31 +1094,16 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             st.markdown("**🟥 Destination CIDRs Location Mapping:**")
             st.dataframe(dst_table, use_container_width=True)
             
-            st.markdown("**📍 Destination CIDRs Location Mapping:**")
-            st.dataframe(Loc_table, use_container_width=True)
-
-            # st.markdown("**Resolved Source CIDRs:**")
-            # st.write(source_cidrs)
-            # st.markdown("**Resolved Destination CIDRs:**")
-            # st.write(destination_cidrs)
-            # st.markdown("**Source Locations:**")
-            # st.write(src_locations)
-            # st.markdown("**Destination Locations:**")
-            # st.write(dst_locations)
-            # st.markdown("**Shared Locations:**")
-            # st.write(shared_locations)
-            st.markdown("**VPN Locations (SRC → DST):**")
-            st.write(f"SRC: {src_vpn_locs}, DST: {dst_vpn_locs}")
-            st.markdown("**Non-VPN Locations (SRC → DST):**")
-            st.write(f"SRC: {src_nonvpn}, DST: {dst_nonvpn}")
+            st.markdown("**Shared Locations:**")
+            st.write(shared_locations)
+            # st.markdown("**VPN Locations (SRC → DST):**")
+            # st.write(f"SRC: {src_vpn_locs}, DST: {dst_vpn_locs}")
+            # st.markdown("**Non-VPN Locations (SRC → DST):**")
+            # st.write(f"SRC: {src_nonvpn}, DST: {dst_nonvpn}")
             st.markdown("**Show VPN Rules?**")
             st.success(use_vpn_rules)
             st.markdown("**Show Local Rules?**")
             st.success(use_local_rules)
-        # shared_locs_debug = get_all_locations_for_cidrs(source_cidrs, obj_loc_map) & get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
-        # use_local_debug = bool(shared_locations or not src_vpn_locs or not dst_vpn_locs or (dst_is_any and src_locs))
-        # use_vpn_debug = bool(not shared_locations and src_vpn_locs and dst_vpn_locs)
-
         
 
             
