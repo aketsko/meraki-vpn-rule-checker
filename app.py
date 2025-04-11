@@ -1086,6 +1086,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         else:
             verdict = ("Verdict: Only Local Firewall rules will be evaluated.")
         with st.expander(f"🔍 {verdict}", expanded=False):
+
             def format_location_table(cidrs, obj_loc_map):
                 rows = []
                 for cidr in cidrs:
@@ -1094,8 +1095,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         if isinstance(entry, dict):
                             rows.append({
                                 "CIDR": cidr,
-                                "Location": (entry.get('network') if isinstance(entry, dict) else None),
-                                "useVpn": "✅" if (entry.get('useVpn') if isinstance(entry, dict) else None) else "❌"
+                                "Location": entry.get("network") or entry.get("location"),
+                                "useVpn": "✅" if entry.get("useVpn") else "❌"
                             })
                         elif isinstance(entry, str):
                             rows.append({
@@ -1107,19 +1108,19 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
             src_table = format_location_table(source_cidrs, obj_loc_map)
             dst_table = format_location_table(destination_cidrs, obj_loc_map)
-            Loc_table = format_location_table(shared_locations, obj_loc_map)
+
             st.markdown(f"**🟦 Source is '{source_input}' - CIDRs Location Mapping:**")
             st.dataframe(src_table, use_container_width=True)
 
             st.markdown(f"**🟥 Destination is '{destination_input}' - CIDRs Location Mapping:**")
             st.dataframe(dst_table, use_container_width=True)
-            
+
             st.markdown("**Shared Locations:**")
             st.write(shared_locations)
-            # st.markdown("**VPN Locations (SRC → DST):**")
-            # st.write(f"SRC: {src_vpn_locs}, DST: {dst_vpn_locs}")
-            # st.markdown("**Non-VPN Locations (SRC → DST):**")
-            # st.write(f"SRC: {src_nonvpn}, DST: {dst_nonvpn}")
+            st.markdown("**VPN Locations (SRC → DST):**")
+            st.write(f"SRC: {src_vpn_locs}, DST: {dst_vpn_locs}")
+            st.markdown("**Non-VPN Locations (SRC → DST):**")
+            st.write(f"SRC: {src_nonvpn}, DST: {dst_nonvpn}")
             st.markdown("**Show VPN Rules?**")
             st.success(use_vpn_rules)
             st.markdown("**Show Local Rules?**")
