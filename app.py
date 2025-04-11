@@ -983,6 +983,9 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
    
         protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
+        
+        source_cidrs = resolve_to_cidrs(st.session_state["source_raw_input"], object_map, group_map)
+        destination_cidrs = resolve_to_cidrs(st.session_state["destination_raw_input"], object_map, group_map)
         st.markdown("### ⚙️ View Settings")
         dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
@@ -1041,7 +1044,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         st.write("📍 Destination Location Map:", result["dst_location_map"])
         st.write("🌐 VPN Needed?", show_vpn)
         st.write("🧱 Local Locations:", shared_locations)
-
+        st.write("Resolved Source CIDRs:", source_cidrs)
+        st.write("Resolved Destination CIDRs:", destination_cidrs)
         # Get locations where source/destination are in useVpn: True
         def get_vpn_enabled_locations(cidrs, location_map):
             vpn_locations = set()
