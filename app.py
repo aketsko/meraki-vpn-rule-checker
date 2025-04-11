@@ -1046,9 +1046,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 for entry in entries:
                     if isinstance(entry, dict):
                         loc = entry.get("network")
-                    elif isinstance(entry, str):
-                        loc = entry
-
                         if loc:
                             locations.add(loc)
                             if entry.get("useVpn"):
