@@ -1037,7 +1037,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                             else:
                                 nonvpn_locations.add(loc)
                     elif isinstance(entry, str):
-                        # fallback for older mapping style
                         locations.add(entry)
                         nonvpn_locations.add(entry)
 
