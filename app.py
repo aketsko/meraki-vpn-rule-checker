@@ -18,13 +18,6 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
-def passthrough_port(query: str):
-    # Allow passthrough of raw port text (even invalid) for custom entries
-    return [(query, query)] if query else []
-
-def search_protocol(query: str):
-    common_protocols = ["any", "tcp", "udp", "icmp", "gre"]
-    return [(p, p) for p in common_protocols if query.lower() in p.lower()]
 
 def load_json_file(uploaded_file):
     try:
@@ -51,10 +44,10 @@ def load_json_file(uploaded_file):
 def search_objects_and_groups(searchterm: str):
     results = []
 
-    objects_data = st.session_state.get("object_data", {})
     for obj in objects_data:
         if searchterm.lower() in obj.get("name", "").lower() or searchterm in obj.get("cidr", ""):
-            results.append((f"{obj.get('name', '')} ({obj.get('cidr', '')})", obj.get("name", "")))
+            results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
+
     for group in groups_data:
         if searchterm.lower() in group.get("name", "").lower():
             results.append((f"{group['name']} (Group)", group["name"]))
@@ -342,7 +335,7 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
         for i, net in enumerate(networks, start=1):
             if update_progress:
                 update_progress(i, total, net["name"])
-            if st.st.session_state.get("cancel_extended_fetch"):
+            if st.session_state.get("cancel_extended_fetch"):
                 raise Exception("Fetch cancelled by user.")
 
             network_id = net["id"]
@@ -364,8 +357,8 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
             }
 
         # Build location mapping
-        obj_map = st.st.session_state.get("object_map", {})
-        grp_map = st.st.session_state.get("group_map", {})
+        obj_map = st.session_state.get("object_map", {})
+        grp_map = st.session_state.get("group_map", {})
         location_map = {}
 
         for network_id, data in extended_data.items():
@@ -432,8 +425,8 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 
 st.sidebar.header("☰ Menu")
-st.st.session_state["api_data_expander"] = False
-collapse_expanders = bool(st.st.session_state.get("extended_data") or st.st.session_state.get("rules_data") or st.st.session_state["api_data_expander"])
+st.session_state["api_data_expander"] = False
+collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data") or st.session_state["api_data_expander"])
 
 st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
 with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not collapse_expanders):
@@ -446,23 +439,23 @@ with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not c
         if api_key and org_id:
             rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
             if fetched:
-                st.st.session_state["rules_data"] = rules_data
-                st.st.session_state["objects_data"] = objects_data
-                st.st.session_state["groups_data"] = groups_data
-                st.st.session_state["object_map"] = get_object_map(objects_data)
-                st.st.session_state["group_map"] = get_group_map(groups_data)
-                st.st.session_state["fetched_from_api"] = True
+                st.session_state["rules_data"] = rules_data
+                st.session_state["objects_data"] = objects_data
+                st.session_state["groups_data"] = groups_data
+                st.session_state["object_map"] = get_object_map(objects_data)
+                st.session_state["group_map"] = get_group_map(groups_data)
+                st.session_state["fetched_from_api"] = True
                 st.success("✅ Data refreshed from Meraki API.")
             else:
-                st.st.session_state["fetched_from_api"] = False
+                st.session_state["fetched_from_api"] = False
                 st.error("❌ Failed to refresh data from API.")
         else:
             st.error("❌ Please enter both API key and Org ID.")
 
    
     if st.button("➕ Extended Data"):
-        st.st.session_state["cancel_extended_fetch"] = False
-        st.st.session_state["fetching_extended"] = True
+        st.session_state["cancel_extended_fetch"] = False
+        st.session_state["fetching_extended"] = True
 
         progress_bar = st.progress(0)  # Define progress_bar before using it
         progress_text = st.empty()  # Define progress_text as an empty placeholder
@@ -480,31 +473,31 @@ with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not c
 
         try:
             extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
-            if st.st.session_state.get("cancel_extended_fetch"):
+            if st.session_state.get("cancel_extended_fetch"):
                 st.info("⛔ Fetch cancelled before completion.")
-                st.st.session_state["extended_data"] = None
-                st.st.session_state["object_location_map"] = {}
+                st.session_state["extended_data"] = None
+                st.session_state["object_location_map"] = {}
             elif "error" in extended_result:
                 st.error(f"❌ Error: {extended_result['error']}")
-                st.st.session_state["extended_data"] = None
-                st.st.session_state["object_location_map"] = {}
+                st.session_state["extended_data"] = None
+                st.session_state["object_location_map"] = {}
             else:
-                st.st.session_state["extended_data"] = extended_result
+                st.session_state["extended_data"] = extended_result
                 st.success("✅ Extended Meraki data has been fetched successfully!")
                 with st.spinner("🧠 Mapping objects to VPN locations..."):
                     location_map = build_object_location_map(
-                        st.st.session_state["objects_data"],
-                        st.st.session_state["groups_data"],
+                        st.session_state["objects_data"],
+                        st.session_state["groups_data"],
                         extended_result
                     )
-                    st.st.session_state["object_location_map"] = location_map
+                    st.session_state["object_location_map"] = location_map
 
         except Exception as e:
             st.error(f"❌ Exception: {e}")
-            st.st.session_state["extended_data"] = None
-            st.st.session_state["object_location_map"] = {}
+            st.session_state["extended_data"] = None
+            st.session_state["object_location_map"] = {}
 
-        st.st.session_state["fetching_extended"] = False
+        st.session_state["fetching_extended"] = False
         cancel_button_placeholder = st.empty()  # Define the placeholder
         cancel_button_placeholder.empty()
         progress_bar.empty()
@@ -520,18 +513,18 @@ with st.sidebar.expander("🔽 Upload prepared .json data or create and download
         try:
             snapshot = json.load(uploaded_snapshot)
 
-            st.st.session_state["rules_data"] = snapshot.get("rules_data", [])
-            st.st.session_state["objects_data"] = snapshot.get("objects_data", [])
-            st.st.session_state["groups_data"] = snapshot.get("groups_data", [])
-            st.st.session_state["object_map"] = get_object_map(st.st.session_state["objects_data"])
-            st.st.session_state["group_map"] = get_group_map(st.st.session_state["groups_data"])
-            st.st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
-            st.st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Added
-            st.st.session_state["fetched_from_api"] = True  # Emulate success
+            st.session_state["rules_data"] = snapshot.get("rules_data", [])
+            st.session_state["objects_data"] = snapshot.get("objects_data", [])
+            st.session_state["groups_data"] = snapshot.get("groups_data", [])
+            st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
+            st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
+            st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
+            st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Added
+            st.session_state["fetched_from_api"] = True  # Emulate success
 
-            network_count = len(st.st.session_state["extended_data"].get("network_map", {}))
+            network_count = len(st.session_state["extended_data"].get("network_map", {}))
             snapshot_msg = st.empty()
-            snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.st.session_state['rules_data'])}")
+            snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
             snapshot_msg.empty()
 
         except Exception as e:
@@ -539,7 +532,7 @@ with st.sidebar.expander("🔽 Upload prepared .json data or create and download
 
   
     # Manual fallback file upload
-    if not st.st.session_state.get("fetched_from_api", False):
+    if not st.session_state.get("fetched_from_api", False):
         rules_file = st.file_uploader("Upload Rules.json", type="json")
         objects_file = st.file_uploader("Upload Objects.json", type="json")
         groups_file = st.file_uploader("Upload Object Groups.json", type="json")
@@ -550,20 +543,20 @@ with st.sidebar.expander("🔽 Upload prepared .json data or create and download
                 objects_file.seek(0)
                 groups_file.seek(0)
 
-                st.st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
-                st.st.session_state["objects_data"] = load_json_file(objects_file)
-                st.st.session_state["groups_data"] = load_json_file(groups_file)
-                st.st.session_state["object_map"] = get_object_map(st.st.session_state["objects_data"])
-                st.st.session_state["group_map"] = get_group_map(st.st.session_state["groups_data"])
+                st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
+                st.session_state["objects_data"] = load_json_file(objects_file)
+                st.session_state["groups_data"] = load_json_file(groups_file)
+                st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
+                st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
             except Exception as e:
                 st.error(f"❌ Failed to load one or more files: {e}")
 
     # Update local variables from session
-    rules_data = st.st.session_state.get("rules_data", [])
-    objects_data = st.st.session_state.get("objects_data", [])
-    groups_data = st.st.session_state.get("groups_data", [])
-    object_map = st.st.session_state.get("object_map", {})
-    group_map = st.st.session_state.get("group_map", {})
+    rules_data = st.session_state.get("rules_data", [])
+    objects_data = st.session_state.get("objects_data", [])
+    groups_data = st.session_state.get("groups_data", [])
+    object_map = st.session_state.get("object_map", {})
+    group_map = st.session_state.get("group_map", {})
 
     
 
@@ -571,11 +564,11 @@ with st.sidebar.expander("🔽 Upload prepared .json data or create and download
     if st.button("💾 Create Data Snapshot"):
         try:
             snapshot_str, snapshot_filename = prepare_snapshot(
-                st.st.session_state.get("rules_data", []),
-                st.st.session_state.get("objects_data", []),
-                st.st.session_state.get("groups_data", []),
-                st.st.session_state.get("extended_data", {}),
-                st.st.session_state.get("object_location_map", {})
+                st.session_state.get("rules_data", []),
+                st.session_state.get("objects_data", []),
+                st.session_state.get("groups_data", []),
+                st.session_state.get("extended_data", {}),
+                st.session_state.get("object_location_map", {})
             )
 
             st.download_button(
@@ -599,30 +592,30 @@ with st.container():
         st.markdown(" 📘-🔎-🛡️-🧠 Choose the module:")
         tab_names = ["📘 Overview", "🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
 
-        if "active_tab" not in st.st.session_state:
-            st.st.session_state.active_tab = tab_names[0]  # Default
+        if "active_tab" not in st.session_state:
+            st.session_state.active_tab = tab_names[0]  # Default
 
         def on_tab_change():
-            st.st.session_state.active_tab = st.st.session_state["selected_tab"]
+            st.session_state.active_tab = st.session_state["selected_tab"]
 
         st.selectbox(
             "Select Tab",
             tab_names,
-            index=tab_names.index(st.st.session_state.active_tab),
+            index=tab_names.index(st.session_state.active_tab),
             key="selected_tab",
             on_change=on_tab_change,
             label_visibility="collapsed"
         )
 
     # Detect tab switch and collapse expanders if not on startup tab
-    if "last_active_tab" not in st.st.session_state:
-        st.st.session_state.last_active_tab = st.st.session_state.active_tab
+    if "last_active_tab" not in st.session_state:
+        st.session_state.last_active_tab = st.session_state.active_tab
 
     # When user changes tab, collapse API/Data expanders
-    if st.st.session_state.active_tab != st.st.session_state.last_active_tab:
-        if st.st.session_state.active_tab != "☁️ API & Snapshot":
-            st.st.session_state["api_data_expander"] = False
-        st.st.session_state.last_active_tab = st.st.session_state.active_tab
+    if st.session_state.active_tab != st.session_state.last_active_tab:
+        if st.session_state.active_tab != "☁️ API & Snapshot":
+            st.session_state["api_data_expander"] = False
+        st.session_state.last_active_tab = st.session_state.active_tab
 
 
     # RIGHT: Metrics
@@ -632,21 +625,21 @@ with st.container():
         col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-        #network_count = len(st.st.session_state.get("extended_data", {}).get("network_map", {}))
-        extended_data = st.st.session_state.get("extended_data") or {}
+        #network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
+        extended_data = st.session_state.get("extended_data") or {}
         network_count = len(extended_data.get("network_map", {}))
         col_n.metric("🏢 Networks", network_count)
 
 
 # Update active_tab variable
-selected_tab = st.st.session_state.active_tab
+selected_tab = st.session_state.active_tab
 
 
 if selected_tab == "📘 Overview":
     data_loaded = (
-        st.st.session_state.get("rules_data")
-        and st.st.session_state.get("objects_data")
-        and st.st.session_state.get("extended_data")
+        st.session_state.get("rules_data")
+        and st.session_state.get("objects_data")
+        and st.session_state.get("extended_data")
     )
 
     if not data_loaded:
@@ -676,8 +669,8 @@ if selected_tab == "📘 Overview":
             """)
 
         
-        extended_data = st.st.session_state["extended_data"]
-        objects_data = st.st.session_state["objects_data"]
+        extended_data = st.session_state["extended_data"]
+        objects_data = st.session_state["objects_data"]
         network_map = extended_data.get("network_map", {})
         network_details = extended_data.get("network_details", {})
         network_names = sorted([v["network_name"] for v in network_details.values()])
@@ -751,15 +744,15 @@ elif selected_tab == "🔎 Search Object or Group":
     from utils.match_logic import build_object_location_map  # Ensure this is imported
 
     # Build location map if extended data and not already available
-    if "object_location_map" not in st.st.session_state and "extended_data" in st.st.session_state and st.st.session_state["extended_data"]:
+    if "object_location_map" not in st.session_state and "extended_data" in st.session_state and st.session_state["extended_data"]:
         with st.spinner("🧠 Mapping objects to VPN locations..."):
-            st.st.session_state["object_location_map"] = build_object_location_map(
-                st.st.session_state["objects_data"],
-                st.st.session_state["groups_data"],
-                st.st.session_state["extended_data"]
+            st.session_state["object_location_map"] = build_object_location_map(
+                st.session_state["objects_data"],
+                st.session_state["groups_data"],
+                st.session_state["extended_data"]
             )
 
-    location_map = st.st.session_state.get("object_location_map", {})
+    location_map = st.session_state.get("object_location_map", {})
 
     # --- Sidebar Controls ---
     with st.sidebar:
@@ -918,7 +911,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             elif isinstance(mapped, list):
                 for entry in mapped:
                     if isinstance(entry, dict):
-                        locations.add(entry.get("network", (entry.get('location') if isinstance(entry, dict) else None)))
+                        locations.add(entry.get("network", entry.get("location", "")))
                     elif isinstance(entry, str):
                         locations.add(entry)
         return locations
@@ -932,16 +925,24 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             return [("Data not loaded yet", "any")]
         if term.lower() == "any":
             return [("Any (all traffic)", "any")]
-
         for obj in objects_data:
-            if term.lower() in obj.get("name", "").lower() or term in obj.get("cidr", ""):
-                results.append((f"{obj.get('name', '')} ({obj.get('cidr', '')})", obj.get("name", "")))
-
+            if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
+                results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
         for group in groups_data:
-            if term.lower() in group.get("name", "").lower():
-                results.append((f"{group.get('name', '')} (Group)", group.get("name", "")))
-
+            if term.lower() in group["name"].lower():
+                results.append((f"{group['name']} (Group)", group["name"]))
+        if not results:
+            results.append((f"Use: {term}", term))
         return results
+
+    def search_protocol(term: str):
+        options = ["any", "tcp", "udp", "icmpv4", "icmpv6"]
+        term = term.strip().lower()
+        return [(proto.upper(), proto) for proto in options if term in proto]
+
+    def passthrough_port(term: str):
+        term = term.strip()
+        return [(f"Use: {term}", term)] if term else []
 
     # --- Sidebar Controls (Tab-Specific) ---
     with st.sidebar:
@@ -951,7 +952,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             st.markdown("Adjust the colors used to highlight rule matches:")
 
             def color_slider(label, key, default_hex):
-                return st.color_picker(label, value=st.st.session_state.get(key, default_hex), key=key)
+                return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
 
             
             color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
@@ -963,10 +964,10 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         # Reconstruct highlight_colors from session state
         highlight_colors = {
-            "exact_allow": st.st.session_state.get("exact_allow", "#09BC8A"),
-            "exact_deny": st.st.session_state.get("exact_deny", "#DA2C38"),
-            "partial_allow": st.st.session_state.get("partial_allow", "#99E2B4"),
-            "partial_deny": st.st.session_state.get("partial_deny", "#F7EF81")
+            "exact_allow": st.session_state.get("exact_allow", "#09BC8A"),
+            "exact_deny": st.session_state.get("exact_deny", "#DA2C38"),
+            "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
+            "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
         }
 
 
@@ -981,14 +982,14 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
    
         protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
         st.markdown("### ⚙️ View Settings")
-        dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
-        filter_toggle = st.checkbox("✅ Show only matching rules", value=st.st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
-        expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.st.session_state.get("fw_expand_local", False), key="fw_expand_local")
+        dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
+        filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
+        expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
 
     # --- Search Inputs ---
     
  
-    if not st.st.session_state["fw_dynamic_update"]:
+    if not st.session_state["fw_dynamic_update"]:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
         st.stop()
 
@@ -998,8 +999,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     skip_src_check = source_input.strip().lower() == "any"
     skip_dst_check = destination_input.strip().lower() == "any"
 
-    obj_loc_map = st.st.session_state.get("object_location_map", {})
-    extended_data = st.st.session_state.get("extended_data", {})
+    obj_loc_map = st.session_state.get("object_location_map", {})
+    extended_data = st.session_state.get("extended_data", {})
 
     if obj_loc_map and extended_data:
 
@@ -1036,7 +1037,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                             else:
                                 nonvpn_locations.add(loc)
                     elif isinstance(entry, str):
-                        # fallback for older mapping style
                         locations.add(entry)
                         nonvpn_locations.add(entry)
 
@@ -1124,23 +1124,23 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 all_locations = sorted(shared_locations)
 
                 # Initialize if not already in session state
-                if "selected_local_locations" not in st.st.session_state:
-                    st.st.session_state["selected_local_locations"] = all_locations
+                if "selected_local_locations" not in st.session_state:
+                    st.session_state["selected_local_locations"] = all_locations
 
                 if st.button("✅ Select All"):
-                    st.st.session_state["selected_local_locations"] = all_locations
+                    st.session_state["selected_local_locations"] = all_locations
                 if st.button("❌ Deselect All"):
-                    st.st.session_state["selected_local_locations"] = []
+                    st.session_state["selected_local_locations"] = []
 
                 selected_locations = st.multiselect(
                     "Pick location(s) to display:",
                     options=all_locations,
-                    default=st.st.session_state["selected_local_locations"],
+                    default=st.session_state["selected_local_locations"],
                     key="selected_local_locations"
                 )
 
             
-        with st.expander(f"Collapse - `{count}`", expanded=st.st.session_state["fw_expand_local"]):
+        with st.expander(f"Collapse - `{count}`", expanded=st.session_state["fw_expand_local"]):
             for location in sorted(shared_locations):
                 if location not in selected_locations:
                     continue
@@ -1153,7 +1153,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                 source_port_input=source_port_input,
                                 port_input=port_input,
                                 protocol=protocol,
-                                filter_toggle=st.st.session_state["fw_filter_toggle"],
+                                filter_toggle=st.session_state["fw_filter_toggle"],
                                 object_map=object_map,
                                 group_map=group_map,
                                 highlight_colors=highlight_colors,
