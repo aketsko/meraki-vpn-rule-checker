@@ -634,15 +634,25 @@ with st.container():
         col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
+        # Robust handling in case extended_data is str or corrupted
         extended_data = st.session_state.get("extended_data", {})
-        if isinstance(extended_data, str):
-            try:
-                extended_data = json.loads(extended_data)
-            except json.JSONDecodeError:
+
+        # Attempt to coerce to dict safely
+        if not isinstance(extended_data, dict):
+            if isinstance(extended_data, str):
+                try:
+                    extended_data = json.loads(extended_data)
+                except Exception:
+                    extended_data = {}
+            else:
                 extended_data = {}
 
-        st.session_state["extended_data"] = extended_data  # ensure state is fixed
+        # Ensure session state is corrected
+        st.session_state["extended_data"] = extended_data
+
+        # Now safe to use .get()
         network_count = len(extended_data.get("network_map", {}))
+
         col_n.metric("🏢 Networks", network_count)
 
 
