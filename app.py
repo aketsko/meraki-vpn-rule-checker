@@ -901,12 +901,18 @@ elif selected_tab == "🔎 Search Object or Group":
 
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
-
+    
     def get_all_locations_for_cidrs(cidrs, location_map):
         locations = set()
         for cidr in cidrs:
             mapped = location_map.get(cidr, [])
-            if isinstance(mapped, list):
+            if isinstance(mapped, dict):
+                loc = mapped.get("network") or mapped.get("location")
+                if loc:
+                    locations.add(loc)
+            elif isinstance(mapped, str):
+                locations.add(mapped)
+            elif isinstance(mapped, list):
                 for entry in mapped:
                     if isinstance(entry, dict):
                         loc = entry.get("network") or entry.get("location")
@@ -914,14 +920,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                             locations.add(loc)
                     elif isinstance(entry, str):
                         locations.add(entry)
-            elif isinstance(mapped, dict):
-                loc = mapped.get("network") or mapped.get("location")
-                if loc:
-                    locations.add(loc)
-            elif isinstance(mapped, str):
-                locations.add(mapped)
         return locations
-
 
     # --- Search input helpers ---
     def custom_search(term: str):
