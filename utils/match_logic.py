@@ -104,6 +104,33 @@ def match_input_to_rule(input_cidrs, rule_cidrs):
             except ValueError:
                 continue
     return False
+def find_object_locations(input_list, object_location_map):
+    import ipaddress
+
+    results = []
+    seen = set()
+
+    for item in input_list:
+        matches = object_location_map.get(item, [])
+        try:
+            ip_net = ipaddress.ip_network(item, strict=False)
+            for cidr, entries in object_location_map.items():
+                try:
+                    net = ipaddress.ip_network(cidr, strict=False)
+                    if ip_net.subnet_of(net) or net.subnet_of(ip_net) or ip_net == net:
+                        matches.extend(entries)
+                except ValueError:
+                    continue
+        except ValueError:
+            pass  # skip if not CIDR
+
+        for match in matches:
+            key = (match["network"], match["useVpn"])
+            if key not in seen:
+                seen.add(key)
+                results.append(match)
+
+    return results
 
 
 def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
