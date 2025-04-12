@@ -518,8 +518,17 @@ with st.sidebar.expander("🔽 Upload prepared .json data or create and download
             st.session_state["groups_data"] = snapshot.get("groups_data", [])
             st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
             st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-            st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
-            st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Added
+        
+            # Ensure proper format of loaded data
+            loaded_extended = snapshot.get("extended_api_data", {})
+            if isinstance(loaded_extended, str):
+                try:
+                    loaded_extended = json.loads(loaded_extended)
+                except json.JSONDecodeError:
+                    loaded_extended = {}
+
+            st.session_state["extended_data"] = loaded_extended
+            st.session_state["object_location_map"] = snapshot.get("location_map", {})
             st.session_state["fetched_from_api"] = True  # Emulate success
 
             network_count = len(st.session_state["extended_data"].get("network_map", {}))
@@ -625,7 +634,15 @@ with st.container():
         col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-        network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
+        extended_data = st.session_state.get("extended_data", {})
+        if isinstance(extended_data, str):
+            try:
+                extended_data = json.loads(extended_data)
+            except json.JSONDecodeError:
+                extended_data = {}
+
+        st.session_state["extended_data"] = extended_data  # ensure state is fixed
+        network_count = len(extended_data.get("network_map", {}))
         col_n.metric("🏢 Networks", network_count)
 
 
