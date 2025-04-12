@@ -1041,18 +1041,22 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 entries = [entries]
             elif isinstance(entries, str):
                 entries = [{"network": entries, "useVpn": False}]
-            for entry in entries:
-                if isinstance(entry, dict):
-                    loc = entry.get("network") or entry.get("location")
-                    if loc:
-                        locations.add(loc)
-                        if entry.get("useVpn"):
-                            vpn_locations.add(loc)
-                        else:
-                            nonvpn_locations.add(loc)
-                elif isinstance(entry, str):
-                    locations.add(entry)
-                    nonvpn_locations.add(entry)
+                for entry in entries:
+                    if isinstance(entry, dict):
+                        loc = entry.get("network") or entry.get("location")
+                        if loc:
+                            locations.add(loc)
+                            if entry.get("useVpn"):
+                                vpn_locations.add(loc)
+                            else:
+                                nonvpn_locations.add(loc)
+                    elif isinstance(entry, str):
+                        locations.add(entry)
+                        nonvpn_locations.add(entry)
+                    else:
+                        # Fallback for unexpected types
+                        continue
+
         return locations, vpn_locations, nonvpn_locations
 
 
