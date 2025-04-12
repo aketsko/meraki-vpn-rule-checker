@@ -921,17 +921,17 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             elif isinstance(mapped, list):
                 for entry in mapped:
                     if isinstance(entry, dict):
-                        loc = entry.get("network") or entry.get("location")
+                        if isinstance(entry, dict):
+                            loc = (entry.get('network') if isinstance(entry, dict) else None) or (entry.get('location') if isinstance(entry, dict) else None)
+                        elif isinstance(entry, str):
+                            loc = entry
+
                         if loc:
                             locations.add(loc)
-                            if entry.get("useVpn") is True:
+                            if (entry.get('useVpn') if isinstance(entry, dict) else None) is True:
                                 vpn_locations.add(loc)
                             else:
                                 nonvpn_locations.add(loc)
-                    elif isinstance(entry, str):
-                        locations.add(entry)
-                        nonvpn_locations.add(entry)
-
                     elif isinstance(entry, str):
                         locations.add(entry)
                         nonvpn_locations.add(entry)
@@ -1035,8 +1035,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             for cidr in cidrs:
                 entries = location_map.get(cidr, [])
                 for entry in entries:
-                    if isinstance(entry, dict) and entry.get("useVpn") is True:
-                        vpn_locations.add(entry.get("network", ""))
+                    if isinstance(entry, dict) and (entry.get('useVpn') if isinstance(entry, dict) else None) is True:
+                        vpn_locations.add((entry.get('network", "') if isinstance(entry, dict) else None))
             return vpn_locations
 
 
@@ -1053,10 +1053,10 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 entries = location_map.get(cidr, [])
                 for entry in entries:
                     if isinstance(entry, dict):
-                        loc = entry.get("network") or entry.get("location")
+                        loc = (entry.get('network') if isinstance(entry, dict) else None) or (entry.get('location') if isinstance(entry, dict) else None)
                         if loc:
                             locations.add(loc)
-                            if entry.get("useVpn") is True:
+                            if (entry.get('useVpn') if isinstance(entry, dict) else None) is True:
                                 vpn_locations.add(loc)
                             else:
                                 nonvpn_locations.add(loc)
@@ -1108,8 +1108,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         if isinstance(entry, dict):
                             rows.append({
                                 "CIDR": cidr,
-                                "Location": entry.get("network"),
-                                "useVpn": "✅" if entry.get("useVpn") else "❌"
+                                "Location": (entry.get('network') if isinstance(entry, dict) else None),
+                                "useVpn": "✅" if (entry.get('useVpn') if isinstance(entry, dict) else None) else "❌"
                             })
                         elif isinstance(entry, str):
                             rows.append({
