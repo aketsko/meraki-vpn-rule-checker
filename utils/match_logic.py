@@ -161,3 +161,44 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
         "vpn_needed": vpn_needed,
         "local_needed": local_needed,
     }
+
+def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
+    import ipaddress
+
+    known_cidrs = set()
+    for obj in object_map.values():
+        cidr = obj.get("cidr")
+        if cidr:
+            try:
+                known_cidrs.add(ipaddress.ip_network(cidr, strict=False))
+            except ValueError:
+                continue
+
+    resolved = set()
+
+    for entry in id_list:
+        entry = entry.strip()
+        if entry.lower() == "any":
+            resolved.add("0.0.0.0/0")
+            continue
+        elif entry.startswith("OBJ(") and entry.endswith(")"):
+            obj = object_map.get(entry[4:-1])
+            if obj and "cidr" in obj:
+                resolved.add(obj["cidr"])
+        elif entry.startswith("GRP(") and entry.endswith(")"):
+            grp = group_map.get(entry[4:-1])
+            if grp:
+                for m in grp.get("objectIds", []):
+                    obj = object_map.get(str(m))
+                    if obj and "cidr" in obj:
+                        resolved.add(obj["cidr"])
+        else:
+            try:
+                input_net = ipaddress.ip_network(entry, strict=False)
+                for known in known_cidrs:
+                    if known.subnet_of(input_net) or input_net.subnet_of(known):
+                        resolved.add(str(known))
+            except ValueError:
+                continue
+
+    return list(resolved)
