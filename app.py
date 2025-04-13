@@ -407,7 +407,23 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
             "network_details": {},
             "location_map": {}
         }
-    
+
+
+def save_snapshot(data, object_location_map, extended_data):
+    snapshot = {
+        "raw_data": data,
+        "object_location_map": object_location_map,
+        "extended_api_data": extended_data,
+    }
+    return snapshot
+
+def load_snapshot(snapshot):
+    raw_data = snapshot.get("raw_data", {})
+    object_location_map = snapshot.get("object_location_map", {})
+    extended_data = snapshot.get("extended_api_data", {})
+    return raw_data, object_location_map, extended_data
+
+
 
 def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, object_location_map):
     snapshot = {
