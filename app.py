@@ -900,12 +900,13 @@ elif selected_tab == "🔎 Search Object or Group":
             obj = object_map.get(obj_id)
             if obj:
                 cidr = obj.get("cidr", "")
-                loc = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({obj.get('id')})", []))
-                if loc:
-                    if isinstance(loc, str):
-                        group_locations.update(loc.split(", "))
-                    elif isinstance(loc, list):
-                        group_locations.update(loc)
+                entries = location_map.get(cidr, []) + location_map.get(f"OBJ({obj.get('id')})", [])
+                for loc_entry in entries:
+                    if isinstance(loc_entry, dict):
+                        network = loc_entry.get("network", "")
+                        use_vpn = loc_entry.get("useVpn", False)
+                        label = f"{network} (VPN)" if use_vpn else f"{network} (Local)"
+                        group_locations.add(label)
 
         for loc_entry in location_map.get(f"GRP({group_id})", []):
             if isinstance(loc_entry, dict):
@@ -920,9 +921,10 @@ elif selected_tab == "🔎 Search Object or Group":
             "Type": str(g.get("category", "")),
             "Object Count": str(len(group_objects)),
             "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
-            "Location": ", ".join(sorted(group_locations)) if group_locations else ""
-        })
+            "Location": ", ".join(sorted(group_locations)) if group_locations else ""})
+
     st.dataframe(safe_dataframe(group_rows))
+
 
     if filtered_grps:
         selected_group = st.selectbox(
