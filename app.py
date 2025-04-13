@@ -907,7 +907,13 @@ elif selected_tab == "🔎 Search Object or Group":
                     elif isinstance(loc, list):
                         group_locations.update(loc)
 
-        group_locations.update(location_map.get(f"GRP({group_id})", []))
+        for loc_entry in location_map.get(f"GRP({group_id})", []):
+            if isinstance(loc_entry, dict):
+                network = loc_entry.get("network", "")
+                use_vpn = loc_entry.get("useVpn", False)
+                label = f"{network} (VPN)" if use_vpn else f"{network} (Local)"
+                group_locations.add(label)
+
         group_rows.append({
             "ID": group_id,
             "Name": group_name,
