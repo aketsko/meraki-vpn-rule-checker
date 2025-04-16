@@ -1080,30 +1080,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         dst_not_found = not dst_locs and destination_input.strip().lower() != "any"
         if dst_not_found and src_locs:
-            with st.expander("🔍 Verdict: VPN / Local / None", expanded=False):
-                st.markdown("#### Resolved Source CIDRs")
-                st.code("\n".join(source_cidrs))
-
-                st.markdown("#### Resolved Destination CIDRs")
-                st.code("\n".join(destination_cidrs))
-
-                st.markdown("#### Source Location Mapping")
-                st.dataframe(pd.DataFrame(list(src_locs), columns=["Location", "useVpn"]))
-
-                st.markdown("#### Destination Location Mapping")
-                st.dataframe(pd.DataFrame(list(dst_locs), columns=["Location", "useVpn"]))
-
-                st.markdown("#### Shared Locations (Local Firewall Eligible)")
-                st.code(", ".join([loc for loc, _ in shared_locs]) if shared_locs else "None")
-
-                st.markdown("#### Evaluation Summary")
-                st.write({
-                    "Show Local Only": show_local_only,
-                    "Show Local + VPN": show_local_and_vpn,
-                    "Show VPN Only": show_vpn_only,
-                    "Destination = any": is_dst_any
-                })
-
             st.info("📍 Destination not found in any network. Evaluating Local Firewall rules based on Source location only.")
             for location in sorted(src_locs):
                 for net_id, info in extended_data.get("network_details", {}).items():
@@ -1147,30 +1123,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         # ---------- LOCAL ONLY ----------
         if show_local_only:
             location = list(shared_locs)[0]
-            with st.expander("🔍 Verdict: VPN / Local / None", expanded=False):
-                st.markdown("#### Resolved Source CIDRs")
-                st.code("\n".join(source_cidrs))
-
-                st.markdown("#### Resolved Destination CIDRs")
-                st.code("\n".join(destination_cidrs))
-
-                st.markdown("#### Source Location Mapping")
-                st.dataframe(pd.DataFrame(list(src_locs), columns=["Location", "useVpn"]))
-
-                st.markdown("#### Destination Location Mapping")
-                st.dataframe(pd.DataFrame(list(dst_locs), columns=["Location", "useVpn"]))
-
-                st.markdown("#### Shared Locations (Local Firewall Eligible)")
-                st.code(", ".join([loc for loc, _ in shared_locs]) if shared_locs else "None")
-
-                st.markdown("#### Evaluation Summary")
-                st.write({
-                    "Show Local Only": show_local_only,
-                    "Show Local + VPN": show_local_and_vpn,
-                    "Show VPN Only": show_vpn_only,
-                    "Destination = any": is_dst_any
-                })
-
             st.subheader(f"🧱 Local Firewall Rules - `{location}`")
             for net_id, info in extended_data.get("network_details", {}).items():
                 if info.get("network_name") == location:
@@ -1197,30 +1149,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         # ---------- LOCAL + VPN ----------
         elif show_local_and_vpn:
             count = len(shared_locs)
-            with st.expander("🔍 Verdict: VPN / Local / None", expanded=False):
-                st.markdown("#### Resolved Source CIDRs")
-                st.code("\n".join(source_cidrs))
-
-                st.markdown("#### Resolved Destination CIDRs")
-                st.code("\n".join(destination_cidrs))
-
-                st.markdown("#### Source Location Mapping")
-                st.dataframe(pd.DataFrame(list(src_locs), columns=["Location", "useVpn"]))
-
-                st.markdown("#### Destination Location Mapping")
-                st.dataframe(pd.DataFrame(list(dst_locs), columns=["Location", "useVpn"]))
-
-                st.markdown("#### Shared Locations (Local Firewall Eligible)")
-                st.code(", ".join([loc for loc, _ in shared_locs]) if shared_locs else "None")
-
-                st.markdown("#### Evaluation Summary")
-                st.write({
-                    "Show Local Only": show_local_only,
-                    "Show Local + VPN": show_local_and_vpn,
-                    "Show VPN Only": show_vpn_only,
-                    "Destination = any": is_dst_any
-                })
-
             st.subheader("🧱 Local Firewall Rules")
 
             # Location filter inside sidebar only
