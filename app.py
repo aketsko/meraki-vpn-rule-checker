@@ -1031,7 +1031,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 for location_name, _ in sorted(shared_locs):
                     for net_id, info in extended_data.get("network_details", {}).items():
                         if info.get("network_name") == location_name:
-                            st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location}</h5>", unsafe_allow_html=True)
+                            st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
                             generate_rule_table(
                                 rules=info.get("firewall_rules", []),
                                 source_port_input=source_port_input,
