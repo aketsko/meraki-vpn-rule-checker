@@ -189,21 +189,24 @@ def generate_rule_table(rules,
         rule_dports_set = set(rule_dports)
         exact_ports = (rule_dports_set == {"any"}) if skip_dport_check else (rule_dports_set == input_dports_set)
 
+
         input_sports_set = set(p.strip() for p in src_ports_input_list if p.strip())
         rule_sports_set = set(rule_sports)
         exact_sports = (rule_sports_set == {"any"}) if skip_sport_check else (rule_sports_set == input_sports_set)
 
         is_exact = full_match and exact_src and exact_dst and exact_ports and exact_sports and exact_proto
+        #if full_match:
+        #    st.write(f"[DEBUG] Rule #{idx+1} Full Match ✅ | exact_src: {exact_src}, exact_dst: {exact_dst}, exact_ports: {exact_ports}, exact_sports: {exact_sports}, exact_proto: {exact_proto}")
 
         if full_match:
             rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
             for port in matched_ports_list:
                 if port not in matched_ports:
                     matched_ports[port] = idx
-            if is_exact and not found_partial_match and first_exact_match_index is None:
+            if is_exact and first_exact_match_index is None:
                 first_exact_match_index = idx
-            elif not is_exact:
-                found_partial_match = True
+            # elif not is_exact:
+            #     found_partial_match = True
 
     for idx, rule in enumerate(rules):
         matched_ports_for_rule = rule_match_ports.get(idx, [])
@@ -232,24 +235,7 @@ def generate_rule_table(rules,
     df = pd.DataFrame(rule_rows)
     df_to_show = df[df["Matched ✅"]] if filter_toggle else df
 
-    # row_style_js = JsCode(f"""
-    # function(params) {{
-    #     if (params.data["Exact Match ✅"] === true) {{
-    #         return {{
-    #             backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
-    #             color: 'white',
-    #             fontWeight: 'bold'
-    #         }};
-    #     }}
-    #     if (params.data["Partial Match 🔶"] === true) {{
-    #         return {{
-    #             backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
-    #             fontWeight: 'bold'
-    #         }};
-    #     }}
-    #     return {{}};
-    # }}
-    # """)
+   
     row_style_js = JsCode(f"""
     function(params) {{
         const isExact = params.data['Exact Match ✅'];
@@ -275,14 +261,6 @@ def generate_rule_table(rules,
 
 
     gb = GridOptionsBuilder.from_dataframe(df_to_show) # Initialize GridOptionsBuilder with a DataFrame
-    # gb.configure_default_column(
-    #     resizable=True,
-    #     wrapText=True,
-    #     autoHeight=True,
-    #     minWidth=20,
-    #     maxWidth=300,
-    #     flex=3  # This ensures columns scale equally to fit the container width
-    # )
     # Configure specific columns to be wider
     gb.configure_column("Comment", flex=3, minWidth=200, wrapText=True, autoHeight=True)
     gb.configure_column("Source", flex=3, minWidth=200, wrapText=True, autoHeight=True)
@@ -1037,39 +1015,30 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             with st.sidebar:
                 st.markdown("### 📍 Location Filter")
                 with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=True):
-                    all_locations = sorted(shared_locs)
+                    all_locations = sorted([loc for loc, _ in shared_locs])
                     st.session_state.setdefault("selected_local_locations", all_locations)
+
                     if st.button("✅ Select All"):
                         st.session_state["selected_local_locations"] = all_locations
                     if st.button("❌ Deselect All"):
                         st.session_state["selected_local_locations"] = []
+
                     selected_locations = st.multiselect(
                         "Pick location(s) to display:",
-                        options=[loc for loc in all_locations],  # if needed, reformat
-                        default=[loc for loc in all_locations],
+                        options=all_locations,
+                        default=st.session_state["selected_local_locations"],
                         key="selected_local_locations"
                     )
 
+            seen_locations = set()
             with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=st.session_state["fw_expand_local"]):
                 for location_name, _ in sorted(shared_locs):
+                    if location_name not in selected_locations:
+                        continue
+                    if location_name in seen_locations:
+                        continue
+                    seen_locations.add(location_name)
                     for net_id, info in extended_data.get("network_details", {}).items():
-                        # if info.get("network_name") == location_name:
-                        #     st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
-                        #     generate_rule_table(
-                        #         rules=info.get("firewall_rules", []),
-                        #         source_port_input=source_port_input,
-                        #         port_input=port_input,
-                        #         protocol=protocol,
-                        #         filter_toggle=st.session_state["fw_filter_toggle"],
-                        #         object_map=object_map,
-                        #         group_map=group_map,
-                        #         highlight_colors=highlight_colors,
-                        #         source_cidrs=source_cidrs,
-                        #         destination_cidrs=destination_cidrs,
-                        #         skip_src_check=skip_src_check,
-                        #         skip_dst_check=skip_dst_check,
-                        #         key=f"local_{location_name}"
-                        #     )
                         if info.get("network_name") == location_name:
                             rules = info.get("firewall_rules", [])
                             st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
@@ -1091,7 +1060,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                     destination_cidrs=destination_cidrs,
                                     skip_src_check=skip_src_check,
                                     skip_dst_check=skip_dst_check,
-                                    key=f"local_{location_name}"
+                                    key=f"local_{net_id}_{location_name}"
                                 )
                             else:
                                 st.warning("No rules found for this location.")
