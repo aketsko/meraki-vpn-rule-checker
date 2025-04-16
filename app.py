@@ -451,74 +451,44 @@ with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not c
     org_id = st.text_input("🆔 Enter your Organization ID", value="")
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
 
-
-    if st.button("📦 Basic Data"):
+   
+    if st.button("📦 Fetch Data"):
+    with st.spinner("🔄 Fetching all API data (basic + extended)..."):
         if api_key and org_id:
-            rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
-            if fetched:
+            try:
+                # Step 1: Fetch basic data
+                rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
+                if not fetched:
+                    st.session_state["fetched_from_api"] = False
+                    st.error("❌ Failed to refresh base data from API.")
+                    return
+
                 st.session_state["rules_data"] = rules_data
                 st.session_state["objects_data"] = objects_data
                 st.session_state["groups_data"] = groups_data
                 st.session_state["object_map"] = get_object_map(objects_data)
                 st.session_state["group_map"] = get_group_map(groups_data)
                 st.session_state["fetched_from_api"] = True
-                st.success("✅ Data refreshed from Meraki API.")
-            else:
+
+                # Step 2: Fetch extended data
+                extended_data = fetch_meraki_data_extended(api_key, org_id)
+                st.session_state["extended_data"] = extended_data
+
+                # Step 3: Build location map
+                object_location_map = build_object_location_map(
+                    st.session_state["objects_data"],
+                    st.session_state["object_map"],
+                    st.session_state["group_map"],
+                    extended_data
+                )
+                st.session_state["object_location_map"] = object_location_map
+
+                st.success("✅ Full data fetched successfully.")
+            except Exception as e:
                 st.session_state["fetched_from_api"] = False
-                st.error("❌ Failed to refresh data from API.")
+                st.error(f"❌ Failed to fetch extended API data: {e}")
         else:
             st.error("❌ Please enter both API key and Org ID.")
-
-   
-    if st.button("➕ Extended Data"):
-        st.session_state["cancel_extended_fetch"] = False
-        st.session_state["fetching_extended"] = True
-
-        progress_bar = st.progress(0)  # Define progress_bar before using it
-        progress_text = st.empty()  # Define progress_text as an empty placeholder
-        def update_progress(current, total, name):
-            ratio = current / total if total else 0
-            ratio = min(max(ratio, 0.0), 1.0)
-            try:
-                progress_bar.progress(ratio)
-                progress_text.markdown(
-                    f"🔄 **Processing network**: ({current}/{total})<br>`{name}`",
-                    unsafe_allow_html=True
-                )
-            except:
-                pass
-
-        try:
-            extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
-            if st.session_state.get("cancel_extended_fetch"):
-                st.info("⛔ Fetch cancelled before completion.")
-                st.session_state["extended_data"] = None
-                st.session_state["object_location_map"] = {}
-            elif "error" in extended_result:
-                st.error(f"❌ Error: {extended_result['error']}")
-                st.session_state["extended_data"] = None
-                st.session_state["object_location_map"] = {}
-            else:
-                st.session_state["extended_data"] = extended_result
-                st.success("✅ Extended Meraki data has been fetched successfully!")
-                with st.spinner("🧠 Mapping objects to VPN locations..."):
-                    location_map = build_object_location_map(
-                        st.session_state["objects_data"],
-                        st.session_state["groups_data"],
-                        extended_result
-                    )
-                    st.session_state["object_location_map"] = location_map
-
-        except Exception as e:
-            st.error(f"❌ Exception: {e}")
-            st.session_state["extended_data"] = None
-            st.session_state["object_location_map"] = {}
-
-        st.session_state["fetching_extended"] = False
-        cancel_button_placeholder = st.empty()  # Define the placeholder
-        cancel_button_placeholder.empty()
-        progress_bar.empty()
-        progress_text.empty()
 
 
 st.sidebar.markdown("📤 Data Import and Export")
