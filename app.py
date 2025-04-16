@@ -189,6 +189,7 @@ def generate_rule_table(rules,
         rule_dports_set = set(rule_dports)
         exact_ports = (rule_dports_set == {"any"}) if skip_dport_check else (rule_dports_set == input_dports_set)
 
+
         input_sports_set = set(p.strip() for p in src_ports_input_list if p.strip())
         rule_sports_set = set(rule_sports)
         exact_sports = (rule_sports_set == {"any"}) if skip_sport_check else (rule_sports_set == input_sports_set)
@@ -200,7 +201,7 @@ def generate_rule_table(rules,
             for port in matched_ports_list:
                 if port not in matched_ports:
                     matched_ports[port] = idx
-            if is_exact and not found_partial_match and first_exact_match_index is None:
+            if is_exact and first_exact_match_index is None:
                 first_exact_match_index = idx
             elif not is_exact:
                 found_partial_match = True

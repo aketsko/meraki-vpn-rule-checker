@@ -94,7 +94,7 @@ def is_exact_subnet_match(search_cidr, rule_cidr):
     try:
         search_net = ipaddress.ip_network(search_cidr)
         rule_net = ipaddress.ip_network(rule_cidr)
-        return search_net.subnet_of(rule_net)
+        return search_net.subnet_of(rule_net) or search_net == rule_net
     except ValueError:
         return False
 
