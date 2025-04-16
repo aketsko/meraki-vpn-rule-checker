@@ -252,7 +252,7 @@ def generate_rule_table(rules,
     """)
     
 
-    gb = GridOptionsBuilder.from_dataframe(df)  # Initialize GridOptionsBuilder with a DataFrame
+    gb = GridOptionsBuilder.from_dataframe(df_to_show) # Initialize GridOptionsBuilder with a DataFrame
     # gb.configure_default_column(
     #     resizable=True,
     #     wrapText=True,
