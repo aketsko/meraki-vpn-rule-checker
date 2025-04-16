@@ -1179,6 +1179,11 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         if info.get("network_name") == location:
                             with st.container():
                                 st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location}</h5>", unsafe_allow_html=True)
+                                st.markdown(f"`[DEBUG] Rendering local rules for: {location}`")
+                                st.markdown(f"`[DEBUG] Network Details Keys: {list(extended_data.get('network_details', {}).keys())}`")
+                                st.markdown(f"`[DEBUG] Matched net_id: {net_id}, Info: {info}`")
+                                st.markdown(f"`[DEBUG] Firewall Rules Count: {len(info.get('firewall_rules', []))}`")
+
                                 generate_rule_table(
                                     rules=info.get("firewall_rules", []),
                                     source_port_input=source_port_input,
