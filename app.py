@@ -962,15 +962,6 @@ elif selected_tab == "🔎 Search Object or Group":
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
-    st.info(f"""
-        **🔍 Debug Info**
-        - SRC CIDRs: `{source_cidrs}`
-        - DST CIDRs: `{destination_cidrs}`
-        - VPN Needed: `{rule_scope.get("vpn_needed")}`
-        - Local Needed: `{rule_scope.get("local_needed")}`
-        - Shared Locations: `{rule_scope.get("shared_locations")}`
-        """)
-
 
     def get_all_locations_for_cidrs(cidrs, location_map):
         locations = set()
@@ -1072,6 +1063,20 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         src_locs = get_all_locations_for_cidrs(source_cidrs, obj_loc_map)
         dst_locs = get_all_locations_for_cidrs(destination_cidrs, obj_loc_map)
         shared_locs = src_locs & dst_locs
+
+
+
+        st.info(f"""
+        ### 🔎 Debug: CIDR → Location Resolution
+        - **Source Input:** `{source_input}`
+        - **Source CIDRs:** `{source_cidrs}`
+        - **Source Locations:** `{sorted(src_locs)}`
+        - **Destination Input:** `{destination_input}`
+        - **Destination CIDRs:** `{destination_cidrs}`
+        - **Destination Locations:** `{sorted(dst_locs)}`
+        - **Shared Locations:** `{sorted(shared_locs)}`
+        """)
+
 
         dst_not_found = not dst_locs and destination_input.strip().lower() != "any"
         if dst_not_found and src_locs:
