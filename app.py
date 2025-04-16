@@ -553,31 +553,31 @@ with st.sidebar.expander("🔽 Upload prepared .json data or create and download
 
   
     # Manual fallback file upload
-    if not st.session_state.get("fetched_from_api", False):
-        rules_file = st.file_uploader("Upload Rules.json", type="json")
-        objects_file = st.file_uploader("Upload Objects.json", type="json")
-        groups_file = st.file_uploader("Upload Object Groups.json", type="json")
+    # if not st.session_state.get("fetched_from_api", False):
+    #     rules_file = st.file_uploader("Upload Rules.json", type="json")
+    #     objects_file = st.file_uploader("Upload Objects.json", type="json")
+    #     groups_file = st.file_uploader("Upload Object Groups.json", type="json")
 
-        if all([rules_file, objects_file, groups_file]):
-            try:
-                rules_file.seek(0)
-                objects_file.seek(0)
-                groups_file.seek(0)
+    #     if all([rules_file, objects_file, groups_file]):
+    #         try:
+    #             rules_file.seek(0)
+    #             objects_file.seek(0)
+    #             groups_file.seek(0)
 
-                st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
-                st.session_state["objects_data"] = load_json_file(objects_file)
-                st.session_state["groups_data"] = load_json_file(groups_file)
-                st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
-                st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-            except Exception as e:
-                st.error(f"❌ Failed to load one or more files: {e}")
+    #             st.session_state["rules_data"] = load_json_file(rules_file).get("rules", [])
+    #             st.session_state["objects_data"] = load_json_file(objects_file)
+    #             st.session_state["groups_data"] = load_json_file(groups_file)
+    #             st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
+    #             st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
+    #         except Exception as e:
+    #             st.error(f"❌ Failed to load one or more files: {e}")
 
-    # Update local variables from session
-    rules_data = st.session_state.get("rules_data", [])
-    objects_data = st.session_state.get("objects_data", [])
-    groups_data = st.session_state.get("groups_data", [])
-    object_map = st.session_state.get("object_map", {})
-    group_map = st.session_state.get("group_map", {})
+    # # Update local variables from session
+    # rules_data = st.session_state.get("rules_data", [])
+    # objects_data = st.session_state.get("objects_data", [])
+    # groups_data = st.session_state.get("groups_data", [])
+    # object_map = st.session_state.get("object_map", {})
+    # group_map = st.session_state.get("group_map", {})
 
     
 
