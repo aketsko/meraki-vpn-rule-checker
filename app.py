@@ -1126,7 +1126,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         )
             st.stop()
 
-        is_dst_any = destination_input.strip().lower() == "any"
+        is_dst_any = "0.0.0.0/0" in destination_cidrs
+
         fully_inside_same_location = (
             len(shared_locs) == 1
             and src_locs.issubset(shared_locs)
