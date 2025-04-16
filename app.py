@@ -232,25 +232,47 @@ def generate_rule_table(rules,
     df = pd.DataFrame(rule_rows)
     df_to_show = df[df["Matched ✅"]] if filter_toggle else df
 
+    # row_style_js = JsCode(f"""
+    # function(params) {{
+    #     if (params.data["Exact Match ✅"] === true) {{
+    #         return {{
+    #             backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
+    #             color: 'white',
+    #             fontWeight: 'bold'
+    #         }};
+    #     }}
+    #     if (params.data["Partial Match 🔶"] === true) {{
+    #         return {{
+    #             backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
+    #             fontWeight: 'bold'
+    #         }};
+    #     }}
+    #     return {{}};
+    # }}
+    # """)
     row_style_js = JsCode(f"""
     function(params) {{
-        if (params.data["Exact Match ✅"] === true) {{
+        const isExact = params.data['Exact Match ✅'];
+        const isPartial = params.data['Partial Match 🔶'];
+        const action = params.data['Action'];
+
+        if (isExact) {{
             return {{
-                backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
+                backgroundColor: action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
                 color: 'white',
                 fontWeight: 'bold'
             }};
         }}
-        if (params.data["Partial Match 🔶"] === true) {{
+        if (isPartial) {{
             return {{
-                backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
+                backgroundColor: action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
                 fontWeight: 'bold'
             }};
         }}
         return {{}};
     }}
     """)
-    
+
 
     gb = GridOptionsBuilder.from_dataframe(df_to_show) # Initialize GridOptionsBuilder with a DataFrame
     # gb.configure_default_column(
@@ -269,6 +291,7 @@ def generate_rule_table(rules,
     grid_options = gb.build()
 
     st.markdown(title_prefix)
+    st.dataframe(df_to_show)
     AgGrid(
         df_to_show,
         gridOptions=grid_options,
