@@ -1049,7 +1049,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         #     )
                         if info.get("network_name") == location:
                             rules = info.get("firewall_rules", [])
-                            st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location}</h5>", unsafe_allow_html=True)
+                            st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
                             st.markdown(f"_Total rules: {len(rules)}_")
 
                             if rules:
