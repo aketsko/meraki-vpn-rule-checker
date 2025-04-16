@@ -572,12 +572,12 @@ with st.sidebar.expander("🔽 Upload prepared .json data or create and download
     #         except Exception as e:
     #             st.error(f"❌ Failed to load one or more files: {e}")
 
-    # # Update local variables from session
-    # rules_data = st.session_state.get("rules_data", [])
-    # objects_data = st.session_state.get("objects_data", [])
-    # groups_data = st.session_state.get("groups_data", [])
-    # object_map = st.session_state.get("object_map", {})
-    # group_map = st.session_state.get("group_map", {})
+    # Update local variables from session
+    rules_data = st.session_state.get("rules_data", [])
+    objects_data = st.session_state.get("objects_data", [])
+    groups_data = st.session_state.get("groups_data", [])
+    object_map = st.session_state.get("object_map", {})
+    group_map = st.session_state.get("group_map", {})
 
     
 
