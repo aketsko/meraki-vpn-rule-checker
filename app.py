@@ -461,7 +461,7 @@ with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not c
                     if not fetched:
                         st.session_state["fetched_from_api"] = False
                         st.error("❌ Failed to refresh base data from API.")
-                        return
+                        st.stop()
 
                     st.session_state["rules_data"] = rules_data
                     st.session_state["objects_data"] = objects_data
