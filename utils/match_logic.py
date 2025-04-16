@@ -134,9 +134,10 @@ def find_object_locations(input_list, object_location_map):
 
 
 def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
-    src_locs = find_object_locations(source_cidrs, obj_location_map)
-    dst_locs = find_object_locations(dest_cidrs, obj_location_map)
+    src_locs = set(find_object_locations(source_cidrs, obj_location_map))
+    dst_locs = set(find_object_locations(dest_cidrs, obj_location_map))
     shared_locs = src_locs & dst_locs
+
 
     src_vpn_locs = set()
     dst_vpn_locs = set()
