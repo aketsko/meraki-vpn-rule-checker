@@ -7,7 +7,7 @@ from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
-from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, find_object_locations, build_object_location_map
+from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, resolve_to_cidrs_supernet_aware, find_object_locations, build_object_location_map
 from streamlit_searchbox import st_searchbox
 #from utils.API import fetch_meraki_data_extended
 
@@ -149,8 +149,8 @@ def generate_rule_table(rules,
 
         src_ids = rule["srcCidr"].split(",") if rule["srcCidr"] != "Any" else ["Any"]
         dst_ids = rule["destCidr"].split(",") if rule["destCidr"] != "Any" else ["Any"]
-        resolved_src_cidrs = resolve_to_cidrs(src_ids, object_map, group_map)
-        resolved_dst_cidrs = resolve_to_cidrs(dst_ids, object_map, group_map)
+        resolved_src_cidrs = resolve_to_cidrs_supernet_aware(src_ids, object_map, group_map)
+        resolved_dst_cidrs = resolve_to_cidrs_supernet_aware(dst_ids, object_map, group_map)
 
         src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
         dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
