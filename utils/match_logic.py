@@ -90,11 +90,15 @@ def resolve_to_cidrs(id_list, object_map, group_map):
     return cidrs
 
 
-def is_exact_subnet_match(search_cidr, rule_cidr):
+def is_exact_subnet_match(search_cidr, rule_cidrs):
+    import ipaddress
     try:
-        search_net = ipaddress.ip_network(search_cidr)
-        rule_net = ipaddress.ip_network(rule_cidr)
-        return search_net.subnet_of(rule_net) or search_net == rule_net
+        search_net = ipaddress.ip_network(search_cidr, strict=False)
+        for rule_cidr in rule_cidrs:
+            rule_net = ipaddress.ip_network(rule_cidr, strict=False)
+            if search_net.subnet_of(rule_net) or search_net == rule_net:
+                return True
+        return False
     except ValueError:
         return False
 

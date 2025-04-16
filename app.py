@@ -195,6 +195,8 @@ def generate_rule_table(rules,
         exact_sports = (rule_sports_set == {"any"}) if skip_sport_check else (rule_sports_set == input_sports_set)
 
         is_exact = full_match and exact_src and exact_dst and exact_ports and exact_sports and exact_proto
+        if full_match:
+            st.write(f"[DEBUG] Rule #{idx+1} Full Match ✅ | exact_src: {exact_src}, exact_dst: {exact_dst}, exact_ports: {exact_ports}, exact_sports: {exact_sports}, exact_proto: {exact_proto}")
 
         if full_match:
             rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
@@ -233,24 +235,7 @@ def generate_rule_table(rules,
     df = pd.DataFrame(rule_rows)
     df_to_show = df[df["Matched ✅"]] if filter_toggle else df
 
-    # row_style_js = JsCode(f"""
-    # function(params) {{
-    #     if (params.data["Exact Match ✅"] === true) {{
-    #         return {{
-    #             backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
-    #             color: 'white',
-    #             fontWeight: 'bold'
-    #         }};
-    #     }}
-    #     if (params.data["Partial Match 🔶"] === true) {{
-    #         return {{
-    #             backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
-    #             fontWeight: 'bold'
-    #         }};
-    #     }}
-    #     return {{}};
-    # }}
-    # """)
+   
     row_style_js = JsCode(f"""
     function(params) {{
         const isExact = params.data['Exact Match ✅'];
@@ -276,14 +261,6 @@ def generate_rule_table(rules,
 
 
     gb = GridOptionsBuilder.from_dataframe(df_to_show) # Initialize GridOptionsBuilder with a DataFrame
-    # gb.configure_default_column(
-    #     resizable=True,
-    #     wrapText=True,
-    #     autoHeight=True,
-    #     minWidth=20,
-    #     maxWidth=300,
-    #     flex=3  # This ensures columns scale equally to fit the container width
-    # )
     # Configure specific columns to be wider
     gb.configure_column("Comment", flex=3, minWidth=200, wrapText=True, autoHeight=True)
     gb.configure_column("Source", flex=3, minWidth=200, wrapText=True, autoHeight=True)
