@@ -1028,9 +1028,11 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                     )
 
             with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=st.session_state["fw_expand_local"]):
-                for location in sorted(shared_locs):
-                    if location not in selected_locations:
+                for location_tuple in sorted(shared_locs):
+                    loc_name = location_tuple[0]
+                    if loc_name not in selected_locations:
                         continue
+
                     for net_id, info in extended_data.get("network_details", {}).items():
                         if info.get("network_name") == location:
                             st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location}</h5>", unsafe_allow_html=True)
