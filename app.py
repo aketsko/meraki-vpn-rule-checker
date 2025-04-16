@@ -453,42 +453,42 @@ with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not c
 
    
     if st.button("📦 Fetch Data"):
-    with st.spinner("🔄 Fetching all API data (basic + extended)..."):
-        if api_key and org_id:
-            try:
-                # Step 1: Fetch basic data
-                rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
-                if not fetched:
+        with st.spinner("🔄 Fetching all API data (basic + extended)..."):
+            if api_key and org_id:
+                try:
+                    # Step 1: Fetch basic data
+                    rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
+                    if not fetched:
+                        st.session_state["fetched_from_api"] = False
+                        st.error("❌ Failed to refresh base data from API.")
+                        return
+
+                    st.session_state["rules_data"] = rules_data
+                    st.session_state["objects_data"] = objects_data
+                    st.session_state["groups_data"] = groups_data
+                    st.session_state["object_map"] = get_object_map(objects_data)
+                    st.session_state["group_map"] = get_group_map(groups_data)
+                    st.session_state["fetched_from_api"] = True
+
+                    # Step 2: Fetch extended data
+                    extended_data = fetch_meraki_data_extended(api_key, org_id)
+                    st.session_state["extended_data"] = extended_data
+
+                    # Step 3: Build location map
+                    object_location_map = build_object_location_map(
+                        st.session_state["objects_data"],
+                        st.session_state["object_map"],
+                        st.session_state["group_map"],
+                        extended_data
+                    )
+                    st.session_state["object_location_map"] = object_location_map
+
+                    st.success("✅ Full data fetched successfully.")
+                except Exception as e:
                     st.session_state["fetched_from_api"] = False
-                    st.error("❌ Failed to refresh base data from API.")
-                    return
-
-                st.session_state["rules_data"] = rules_data
-                st.session_state["objects_data"] = objects_data
-                st.session_state["groups_data"] = groups_data
-                st.session_state["object_map"] = get_object_map(objects_data)
-                st.session_state["group_map"] = get_group_map(groups_data)
-                st.session_state["fetched_from_api"] = True
-
-                # Step 2: Fetch extended data
-                extended_data = fetch_meraki_data_extended(api_key, org_id)
-                st.session_state["extended_data"] = extended_data
-
-                # Step 3: Build location map
-                object_location_map = build_object_location_map(
-                    st.session_state["objects_data"],
-                    st.session_state["object_map"],
-                    st.session_state["group_map"],
-                    extended_data
-                )
-                st.session_state["object_location_map"] = object_location_map
-
-                st.success("✅ Full data fetched successfully.")
-            except Exception as e:
-                st.session_state["fetched_from_api"] = False
-                st.error(f"❌ Failed to fetch extended API data: {e}")
-        else:
-            st.error("❌ Please enter both API key and Org ID.")
+                    st.error(f"❌ Failed to fetch extended API data: {e}")
+            else:
+                st.error("❌ Please enter both API key and Org ID.")
 
 
 st.sidebar.markdown("📤 Data Import and Export")
