@@ -158,10 +158,9 @@ def find_object_locations(input_list, object_location_map):
 
 
 def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
-    src_locs = set(find_object_locations(source_cidrs, obj_location_map))
-    dst_locs = set(find_object_locations(dest_cidrs, obj_location_map))
+    src_locs = find_object_locations(source_cidrs, obj_location_map)
+    dst_locs = find_object_locations(dest_cidrs, obj_location_map)
     shared_locs = src_locs & dst_locs
-
 
     src_vpn_locs = set()
     dst_vpn_locs = set()
@@ -176,8 +175,15 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
             if isinstance(entry, dict) and entry.get("useVpn"):
                 dst_vpn_locs.add(entry.get("network"))
 
-    vpn_needed = bool(src_vpn_locs & dst_vpn_locs) and not shared_locs
-    local_needed = bool(shared_locs or not vpn_needed)
+    # 🔧 Updated logic:
+    # Show VPN if there is at least one (src,dst) pair with useVpn=True and different locations
+    vpn_needed = any(
+        dst != src and dst in dst_vpn_locs and src in src_vpn_locs
+        for src in src_vpn_locs for dst in dst_vpn_locs
+    )
+
+    # Show Local if any shared location exists
+    local_needed = bool(shared_locs)
 
     return {
         "src_location_map": src_locs,
@@ -186,6 +192,7 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
         "vpn_needed": vpn_needed,
         "local_needed": local_needed,
     }
+
 
 def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
     import ipaddress
