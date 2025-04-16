@@ -6,6 +6,7 @@ def build_object_location_map(objects_data, groups_data, extended_data):
     object_location_map = {}
     vpn_subnets_per_network = {}
 
+    # Build network -> list of (subnet, useVpn)
     for net_id, details in extended_data.get("network_details", {}).items():
         network_name = details.get("network_name", net_id)
         subnets = details.get("vpn_settings", {}).get("subnets", [])
@@ -13,7 +14,17 @@ def build_object_location_map(objects_data, groups_data, extended_data):
         vpn_subnets_per_network[network_name] = subnet_entries
 
     all_entries = []
+    # Flatten all subnets from vpn_subnets_per_network into ip_network objects for containment checking
+    declared_subnets = []
+    for net_name, entries in vpn_subnets_per_network.items():
+        for subnet, use_vpn in entries:
+            try:
+                net = ipaddress.ip_network(subnet.strip(), strict=False)
+                declared_subnets.append((net, net_name, use_vpn))
+            except ValueError:
+                continue
 
+    # Match objects to actual subnets from the vpn settings
     for obj in objects_data:
         cidr = obj.get("cidr")
         if not cidr:
@@ -24,19 +35,16 @@ def build_object_location_map(objects_data, groups_data, extended_data):
             continue
 
         matches = []
-        for net_name, subnet_entries in vpn_subnets_per_network.items():
-            for subnet, use_vpn in subnet_entries:
-                try:
-                    vpn_net = ipaddress.ip_network(subnet.strip(), strict=False)
-                    if obj_net.subnet_of(vpn_net) or vpn_net.subnet_of(obj_net) or obj_net == vpn_net:
-                        entry = {"network": net_name, "useVpn": use_vpn}
-                        matches.append(entry)
-                        all_entries.append(entry)
-                except ValueError:
-                    continue
+        for net, net_name, use_vpn in declared_subnets:
+            if obj_net.subnet_of(net) or net.subnet_of(obj_net) or obj_net == net:
+                entry = {"network": net_name, "useVpn": use_vpn}
+                matches.append(entry)
+                all_entries.append(entry)
+
         if matches:
             object_location_map[cidr] = matches
 
+    # Match group entries based on member objects
     for group in groups_data:
         group_id = group.get("id")
         member_ids = group.get("objectIds", [])
@@ -55,11 +63,12 @@ def build_object_location_map(objects_data, groups_data, extended_data):
         if entries:
             object_location_map[group_key] = entries
 
-    # Add a fallback for 'any' / 0.0.0.0/0
+    # Add fallback for "any"
     if all_entries:
-        object_location_map["0.0.0.0/0"] = list({(e['network'], e['useVpn']): e for e in all_entries}.values())
+        object_location_map["0.0.0.0/0"] = list({(e["network"], e["useVpn"]): e for e in all_entries}.values())
 
     return object_location_map
+
 
 
 
