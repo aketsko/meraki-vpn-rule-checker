@@ -1022,19 +1022,15 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         st.session_state["selected_local_locations"] = []
                     selected_locations = st.multiselect(
                         "Pick location(s) to display:",
-                        options=all_locations,
-                        default=st.session_state["selected_local_locations"],
+                        options=[loc for loc in all_locations],  # if needed, reformat
+                        default=[loc for loc in all_locations],
                         key="selected_local_locations"
                     )
 
             with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=st.session_state["fw_expand_local"]):
-                for location_tuple in sorted(shared_locs):
-                    loc_name = location_tuple[0]
-                    if loc_name not in selected_locations:
-                        continue
-
+                for location_name, _ in sorted(shared_locs):
                     for net_id, info in extended_data.get("network_details", {}).items():
-                        if info.get("network_name") == location:
+                        if info.get("network_name") == location_name:
                             st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location}</h5>", unsafe_allow_html=True)
                             generate_rule_table(
                                 rules=info.get("firewall_rules", []),
