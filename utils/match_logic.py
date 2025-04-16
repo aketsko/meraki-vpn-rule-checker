@@ -120,18 +120,32 @@ def find_object_locations(input_list, object_location_map):
     seen = set()
 
     for item in input_list:
-        matches = object_location_map.get(item, [])
-        try:
-            ip_net = ipaddress.ip_network(item, strict=False)
-            for cidr, entries in object_location_map.items():
-                try:
-                    net = ipaddress.ip_network(cidr, strict=False)
-                    if ip_net.subnet_of(net) or net.subnet_of(ip_net) or ip_net == net:
-                        matches.extend(entries)
-                except ValueError:
-                    continue
-        except ValueError:
-            pass  # skip if not CIDR
+        matches = []
+
+        # Direct mapping if available
+        direct = object_location_map.get(item, [])
+        if isinstance(direct, list):
+            matches.extend(direct)
+
+        # Special handling for "any"
+        if item == "0.0.0.0/0":
+            any_match = object_location_map.get("0.0.0.0/0", [])
+            if isinstance(any_match, list):
+                matches.extend(any_match)
+
+        # Avoid fallback to other broader CIDRs unless explicitly needed
+        # Commented this out to prevent false location attribution:
+        # try:
+        #     ip_net = ipaddress.ip_network(item, strict=False)
+        #     for cidr, entries in object_location_map.items():
+        #         try:
+        #             net = ipaddress.ip_network(cidr, strict=False)
+        #             if ip_net.subnet_of(net) or ip_net == net:
+        #                 matches.extend(entries)
+        #         except ValueError:
+        #             continue
+        # except ValueError:
+        #     pass  # skip if not CIDR
 
         for match in matches:
             key = (match["network"], match["useVpn"])
