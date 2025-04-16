@@ -1066,7 +1066,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                     destination_cidrs=destination_cidrs,
                                     skip_src_check=skip_src_check,
                                     skip_dst_check=skip_dst_check,
-                                    key=f"local_{location}"
+                                    key=f"local_{location_name}"
                                 )
                             else:
                                 st.warning("No rules found for this location.")
