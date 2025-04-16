@@ -205,8 +205,8 @@ def generate_rule_table(rules,
                     matched_ports[port] = idx
             if is_exact and first_exact_match_index is None:
                 first_exact_match_index = idx
-            elif not is_exact:
-                found_partial_match = True
+            # elif not is_exact:
+            #     found_partial_match = True
 
     for idx, rule in enumerate(rules):
         matched_ports_for_rule = rule_match_ports.get(idx, [])
@@ -1030,11 +1030,14 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         key="selected_local_locations"
                     )
 
-
+            seen_locations = set()
             with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=st.session_state["fw_expand_local"]):
                 for location_name, _ in sorted(shared_locs):
                     if location_name not in selected_locations:
                         continue
+                    if location_name in seen_locations:
+                        continue
+                    seen_locations.add(location_name)
                     for net_id, info in extended_data.get("network_details", {}).items():
                         if info.get("network_name") == location_name:
                             rules = info.get("firewall_rules", [])
@@ -1057,7 +1060,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                     destination_cidrs=destination_cidrs,
                                     skip_src_check=skip_src_check,
                                     skip_dst_check=skip_dst_check,
-                                    key=f"local_{location_name}"
+                                    key=f"local_{net_id}_{location_name}"
                                 )
                             else:
                                 st.warning("No rules found for this location.")
