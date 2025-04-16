@@ -966,11 +966,14 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         locations = set()
         for cidr in cidrs:
             mapped = location_map.get(cidr, [])
-            if isinstance(mapped, str):
-                locations.add(mapped)
+            if isinstance(mapped, dict):
+                locations.add((mapped.get("network"), mapped.get("useVpn")))
             elif isinstance(mapped, list):
-                locations.update(mapped)
+                for entry in mapped:
+                    if isinstance(entry, dict):
+                        locations.add((entry.get("network"), entry.get("useVpn")))
         return locations
+
 
     # --- Search input helpers ---
     def custom_search(term: str):
