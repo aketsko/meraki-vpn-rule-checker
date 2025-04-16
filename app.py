@@ -195,8 +195,8 @@ def generate_rule_table(rules,
         exact_sports = (rule_sports_set == {"any"}) if skip_sport_check else (rule_sports_set == input_sports_set)
 
         is_exact = full_match and exact_src and exact_dst and exact_ports and exact_sports and exact_proto
-        if full_match:
-            st.write(f"[DEBUG] Rule #{idx+1} Full Match ✅ | exact_src: {exact_src}, exact_dst: {exact_dst}, exact_ports: {exact_ports}, exact_sports: {exact_sports}, exact_proto: {exact_proto}")
+        #if full_match:
+        #    st.write(f"[DEBUG] Rule #{idx+1} Full Match ✅ | exact_src: {exact_src}, exact_dst: {exact_dst}, exact_ports: {exact_ports}, exact_sports: {exact_sports}, exact_proto: {exact_proto}")
 
         if full_match:
             rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
