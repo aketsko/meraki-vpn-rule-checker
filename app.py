@@ -962,6 +962,16 @@ elif selected_tab == "🔎 Search Object or Group":
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
+    st.info(f"""
+    **🔍 Debug Info**
+    - SRC CIDRs: `{source_cidrs}`
+    - DST CIDRs: `{destination_cidrs}`
+    - VPN Needed: `{rule_scope.get("vpn_needed")}`
+    - Local Needed: `{rule_scope.get("local_needed")}`
+    - Shared Locations: `{rule_scope.get("shared_locations")}`
+    """)
+
+
     def get_all_locations_for_cidrs(cidrs, location_map):
         locations = set()
         for cidr in cidrs:
