@@ -1076,6 +1076,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                             st.markdown(f"_Total rules: {len(rules)}_")
 
                             if rules:
+                                st.markdown("#### 🔍 Debug Inputs")
+                                st.code(f"Source CIDRs: {source_cidrs}\nDestination CIDRs: {destination_cidrs}")
                                 generate_rule_table(
                                     rules=rules,
                                     source_port_input=source_port_input,
@@ -1096,6 +1098,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         if show_vpn:
             st.subheader("🌐 VPN Firewall Rules")
+            st.markdown("#### 🔍 Debug Inputs")
+            st.code(f"Source CIDRs: {source_cidrs}\nDestination CIDRs: {destination_cidrs}")
             generate_rule_table(
                 rules=rules_data,
                 source_port_input=source_port_input,

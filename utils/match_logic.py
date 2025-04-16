@@ -70,9 +70,6 @@ def build_object_location_map(objects_data, groups_data, extended_data):
     return object_location_map
 
 
-
-
-
 def resolve_to_cidrs(id_list, object_map, group_map):
     cidrs = []
     for entry in id_list:
@@ -102,33 +99,20 @@ def is_exact_subnet_match(search_cidr, rule_cidr):
         return False
 
 
-# def match_input_to_rule(input_cidrs, rule_cidrs):
-#     for input_cidr in input_cidrs:
-#         for rule_cidr in rule_cidrs:
-#             try:
-#                 input_net = ipaddress.ip_network(input_cidr)
-#                 rule_net = ipaddress.ip_network(rule_cidr)
-#                 if input_net.overlaps(rule_net):
-#                     return True
-#             except ValueError:
-#                 continue
-#     return False
+def match_input_to_rule(rule_cidrs, input_cidr):
+    try:
+        input_net = ipaddress.ip_network(input_cidr, strict=False)
+    except ValueError:
+        return False
 
-def match_input_to_rule(input_cidrs, rule_cidrs):
-    for input_cidr in input_cidrs:
+    for rule in rule_cidrs:
         try:
-            input_net = ipaddress.ip_network(input_cidr)
+            rule_net = ipaddress.ip_network(rule, strict=False)
+            if rule_net.overlaps(input_net) or rule_net.supernet_of(input_net) or rule_net.subnet_of(input_net):
+                return True
         except ValueError:
             continue
-        for rule_cidr in rule_cidrs:
-            try:
-                rule_net = ipaddress.ip_network(rule_cidr)
-                if input_net.subnet_of(rule_net) or rule_net.subnet_of(input_net) or input_net.overlaps(rule_net):
-                    return True
-            except ValueError:
-                continue
     return False
-
 
 def find_object_locations(input_list, object_location_map):
     import ipaddress
