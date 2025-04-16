@@ -130,7 +130,7 @@ def find_object_locations(input_list, object_location_map):
                 seen.add(key)
                 results.append(match)
 
-    return results
+    return set(results)
 
 
 def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
