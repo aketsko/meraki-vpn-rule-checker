@@ -18,6 +18,8 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
+for k,v in default_colours.items():
+    st.session_state.setdefault(k, v)
 
 def load_json_file(uploaded_file):
     try:
@@ -1221,19 +1223,21 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         show_vpn = rule_scope["vpn_needed"]
         show_local = rule_scope["local_needed"]
 
-        with st.expander("🔍 Verdict: VPN / Local / None", expanded=False):
-            st.markdown("#### Resolved Source CIDRs")
-            st.code("\n".join(source_cidrs))
-            st.markdown("#### Resolved Destination CIDRs")
-            st.code("\n".join(destination_cidrs))
-            st.markdown("#### Source Location Mapping")
-            st.dataframe(pd.DataFrame(list(src_locs), columns=["Location", "useVpn"]))
-            st.markdown("#### Destination Location Mapping")
-            st.dataframe(pd.DataFrame(list(dst_locs), columns=["Location", "useVpn"]))
-            st.markdown("#### Shared Locations (Local Firewall Eligible)")
-            st.code(", ".join([loc for loc, _ in shared_locs]) if shared_locs else "None")
-            st.markdown("#### Evaluation Summary")
-            st.write({"Show Local": show_local, "Show VPN": show_vpn})
+
+
+        # with st.expander("🔍 Verdict: VPN / Local / None", expanded=False):
+        #     st.markdown("#### Resolved Source CIDRs")
+        #     st.code("\n".join(source_cidrs))
+        #     st.markdown("#### Resolved Destination CIDRs")
+        #     st.code("\n".join(destination_cidrs))
+        #     st.markdown("#### Source Location Mapping")
+        #     st.dataframe(pd.DataFrame(list(src_locs), columns=["Location", "useVpn"]))
+        #     st.markdown("#### Destination Location Mapping")
+        #     st.dataframe(pd.DataFrame(list(dst_locs), columns=["Location", "useVpn"]))
+        #     st.markdown("#### Shared Locations (Local Firewall Eligible)")
+        #     st.code(", ".join([loc for loc, _ in shared_locs]) if shared_locs else "None")
+        #     st.markdown("#### Evaluation Summary")
+        #     st.write({"Show Local": show_local, "Show VPN": show_vpn})
 
         if show_local:
             st.subheader("🧱 Local Firewall Rules")
