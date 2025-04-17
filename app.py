@@ -183,6 +183,10 @@ def generate_rule_table(
     title_prefix="Rules",
     key="default_grid"
 ):
+    st.info(f"📊 Total incoming rules: {len(rules)}")
+    from utils.match_logic import build_rule_index
+    parsed_rules = build_rule_index(rules)
+    st.info(f"🧠 Parsed rules built: {len(parsed_rules)}")
     from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
     import pandas as pd
 
