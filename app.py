@@ -1027,23 +1027,24 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         dst_port_str = port_input.strip() if port_input.strip().lower() != "any" else "any"
         proto_str = protocol.strip().upper() if protocol.strip().lower() != "any" else "ANY"
 
-        col1, col2 = st.columns([2, 8])
+        col1, col2 = st.columns([1, 10])
         with col1:
             st.subheader("🔍 Traffic Flow")
         with col2:
             with st.expander("### Details", expanded=False):
 
-                col1, col2, col3 = st.columns([4, 4, 1])
+                col1, col2, col3 = st.columns([6, 6, 1])
 
                 def format_boxed(label, value):
                     return f"""
-                    <div style="margin-bottom:0.5rem">
-                        <span style="font-weight: 600; color: #444;">{label}</span><br>
-                        <div style="background-color: #ecf0f1; padding: 6px 10px; border-radius: 5px; margin-top: 2px;">
-                            <code>{value}</code>
+                    <div style="margin-bottom: 0.75rem;">
+                        <span style="font-weight: 600; color: #1a237e; font-size: 1.1rem;">{label}</span><br>
+                        <div style="background-color: #ecf0f1; padding: 10px 14px; border-radius: 8px; margin-top: 4px;">
+                            <code style="font-size: 1.05rem;">{value}</code>
                         </div>
                     </div>
                     """
+
 
                 with col1:
                     st.markdown(format_boxed("Source Object", source_input or "-"), unsafe_allow_html=True)
