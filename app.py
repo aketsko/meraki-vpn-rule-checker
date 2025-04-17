@@ -1150,22 +1150,27 @@ elif selected_tab == "🧠 Optimization Insights":
         st.warning("Extended data not available. Please fetch Meraki data first.")
         st.stop()
     with st.sidebar:
-            st.markdown("### 📍 Location Filter")
-            with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=True):
-                all_locations = sorted([loc for loc, _ in shared_locs])
-                st.session_state.setdefault("optimization_locations", all_locations)
+        st.markdown("### 📍 Location Filter")
 
-                if st.button("✅ Select All"):
-                    st.session_state["optimization_locations"] = all_locations
-                if st.button("❌ Deselect All"):
-                    st.session_state["optimization_locations"] = []
+        # Build list of all available locations
+        networks = extended_data.get("network_details", {})
+        all_locations = sorted(set(info.get("network_name") for info in networks.values() if info.get("network_name")))
 
-                selected_locations = st.multiselect(
-                    "Choose locations to analyze:",
-                    options=all_locations,
-                    default=st.session_state["optimization_locations"],
-                    key="optimization_locations"
-                )
+        with st.expander(f"Collapse - `{len(all_locations)}`", expanded=True):
+            st.session_state.setdefault("optimization_locations", all_locations)
+
+            if st.button("✅ Select All"):
+                st.session_state["optimization_locations"] = all_locations
+            if st.button("❌ Deselect All"):
+                st.session_state["optimization_locations"] = []
+
+            selected_locations = st.multiselect(
+                "Choose locations to analyze:",
+                options=all_locations,
+                default=st.session_state["optimization_locations"],
+                key="optimization_locations"
+            )
+
 
             seen_locations = set()
 
