@@ -1,7 +1,8 @@
 import ipaddress
 from dataclasses import dataclass
-from ipaddress import ip_network, IPv4Network, IPv6Network
-from typing import Tuple, Union
+from ipaddress import ip_network
+from typing import List, Tuple
+import json
 import streamlit as st
 
 @dataclass(frozen=True, slots=True)
@@ -259,24 +260,34 @@ def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
 
 @st.cache_data(show_spinner=False)
 def build_rule_index(raw_rules: list[dict]) -> list[ParsedRule]:
-    idx = []
+    index = []
     for r in raw_rules:
         try:
-            src_cidrs = [c.strip() for c in r.get("srcCidr", "").split(",") if c.strip().lower() != "any"]
-            dst_cidrs = [c.strip() for c in r.get("destCidr", "").split(",") if c.strip().lower() != "any"]
-            src_nets = tuple(ip_network(c, strict=False) for c in src_cidrs)
-            dst_nets = tuple(ip_network(c, strict=False) for c in dst_cidrs)
+            src_raw = r.get("srcCidr", "Any")
+            dst_raw = r.get("destCidr", "Any")
 
-            idx.append(
-                ParsedRule(
-                    action=r.get("policy", "allow").upper(),
-                    src_nets=src_nets,
-                    dst_nets=dst_nets,
-                    proto=r.get("protocol", "any").lower(),
-                    sport=tuple(p.strip() for p in r.get("srcPort", "any").split(",")),
-                    dport=tuple(p.strip() for p in r.get("destPort", "any").split(",")),
-                )
+            src_cidrs = (
+                tuple(ip_network(c.strip(), strict=False) for c in src_raw.split(",") if c.strip().lower() != "any")
+                if src_raw.lower() != "any" else tuple()
             )
-        except Exception:
-            continue  # Skip invalid rules
-    return idx
+            dst_cidrs = (
+                tuple(ip_network(c.strip(), strict=False) for c in dst_raw.split(",") if c.strip().lower() != "any")
+                if dst_raw.lower() != "any" else tuple()
+            )
+
+            proto = r.get("protocol", "any").lower()
+            sport = tuple(p.strip() for p in r.get("srcPort", "any").split(","))
+            dport = tuple(p.strip() for p in r.get("destPort", "any").split(","))
+
+            index.append(ParsedRule(
+                action=r.get("policy", "deny").upper(),
+                src_nets=src_cidrs,
+                dst_nets=dst_cidrs,
+                proto=proto,
+                sport=sport,
+                dport=dport,
+            ))
+        except Exception as e:
+            print(f"[build_rule_index] Rule skipped due to error: {e}")
+            continue
+    return index
