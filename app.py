@@ -788,12 +788,20 @@ elif selected_tab == "🔎 Search Object or Group":
             def location_search(term: str):
                 term = term.strip().lower()
                 locations = set()
-                for entry in location_map.values():
-                    if isinstance(entry, list):
-                        locations.update(entry)
-                    elif isinstance(entry, str):
-                        locations.add(entry)
+                for entry_list in location_map.values():
+                    if isinstance(entry_list, list):
+                        for entry in entry_list:
+                            if isinstance(entry, dict):
+                                locations.add(entry.get("network", ""))
+                            elif isinstance(entry, str):
+                                locations.add(entry)
+                    elif isinstance(entry_list, dict):
+                        locations.add(entry_list.get("network", ""))
+                    elif isinstance(entry_list, str):
+                        locations.add(entry_list)
+
                 return [(loc, loc) for loc in sorted(locations) if term in loc.lower()]
+
 
             location_term = st_searchbox(
                 location_search,
