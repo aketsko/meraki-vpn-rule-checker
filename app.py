@@ -18,7 +18,15 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
-for k,v in default_colours.items():
+# Define default_colours with some example values
+default_colours = {
+    "exact_allow": "#09BC8A",
+    "exact_deny": "#DA2C38",
+    "partial_allow": "#99E2B4",
+    "partial_deny": "#F7EF81"
+}
+
+for k, v in default_colours.items():
     st.session_state.setdefault(k, v)
 
 def load_json_file(uploaded_file):
