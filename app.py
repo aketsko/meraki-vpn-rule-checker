@@ -884,7 +884,7 @@ elif selected_tab == "🔎 Search Object or Group":
             "CIDR": cidr,
             "FQDN": fqdn,
             "Groups": group_name_str,
-            "Network IDs": network_ids,
+            #"Network IDs": network_ids,
             "Location": ", ".join(location_names)
         })
 
@@ -924,7 +924,7 @@ elif selected_tab == "🔎 Search Object or Group":
             "Name": group_name,
             "Type": str(g.get("category", "")),
             "Object Count": str(len(group_objects)),
-            "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
+           # "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
             "Location": ", ".join(sorted(group_locations)) if group_locations else ""})
 
     st.dataframe(safe_dataframe(group_rows))
