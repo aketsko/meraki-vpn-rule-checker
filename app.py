@@ -1148,10 +1148,23 @@ elif selected_tab == "🧠 Optimization Insights":
             (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
         )
 
+    st.markdown("### 🧮 Select Local Firewall Locations")
+    selected_local_rules = []
+    if extended_data:
+        all_locations = sorted(set(info.get("network_name") for info in extended_data.get("network_details", {}).values()))
+        selected_locs = st.multiselect("Include Local Firewall Rules from:", all_locations, default=[])
+
+        for loc in selected_locs:
+            for info in extended_data.get("network_details", {}).values():
+                if info.get("network_name") == loc:
+                    selected_local_rules.extend(info.get("firewall_rules", []))
+
+    combined_rules = rules_data + selected_local_rules
+
     insight_rows = []
     seen_rules = set()
 
-    for i, rule in enumerate(rules_data):
+    for i, rule in enumerate(combined_rules):
         sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
         if sig in seen_rules:
             insight_rows.append((
@@ -1161,9 +1174,8 @@ elif selected_tab == "🧠 Optimization Insights":
         else:
             seen_rules.add(sig)
 
-        # Broad rule exclusion
-        is_last = i == len(rules_data) - 1
-        is_penultimate = i == len(rules_data) - 2
+        is_last = i == len(combined_rules) - 1
+        is_penultimate = i == len(combined_rules) - 2
         is_allow_any = rule["policy"].lower() == "allow"
         is_deny_any = rule["policy"].lower() == "deny"
 
@@ -1171,25 +1183,23 @@ elif selected_tab == "🧠 Optimization Insights":
             and rule["destPort"].lower() == "any"
             and rule["protocol"].lower() == "any"):
             if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
-                pass  # expected, skip
+                pass
             else:
                 insight_rows.append((
                     f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
                     [i+1]
                 ))
 
-        # ✅ Shadowed rule detection
         for j in range(i):
-            if rule_covers(rules_data[j], rule):
+            if rule_covers(combined_rules[j], rule):
                 insight_rows.append((
                     f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
                     [j+1, i+1]
                 ))
                 break
 
-        # Merge opportunities
-        if i < len(rules_data) - 1:
-            next_rule = rules_data[i+1]
+        if i < len(combined_rules) - 1:
+            next_rule = combined_rules[i+1]
             fields_to_compare = ["policy", "srcCidr", "destCidr"]
             if all(rule[f] == next_rule[f] for f in fields_to_compare):
                 if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
@@ -1210,11 +1220,10 @@ elif selected_tab == "🧠 Optimization Insights":
             st.markdown(msg)
             show_rule_summary(rule_indexes)
 
-        st.download_button("📥 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
+        st.download_button("📅 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
     else:
         st.success("✅ No optimization issues detected.")
 
-    # ℹ️ Legend
     st.markdown("---")
     st.subheader("ℹ️ Legend")
     st.markdown("""
@@ -1225,3 +1234,4 @@ elif selected_tab == "🧠 Optimization Insights":
 | ⚠️ **Broad Rule Risk** | `ANY` rule appears early and could shadow everything below               |
 | 🚫 **Shadowed Rule**   | Rule is never reached because an earlier rule already matches its traffic |
 """)
+
