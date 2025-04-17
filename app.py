@@ -1263,7 +1263,7 @@ elif selected_tab == "🧠 Optimization Insights":
         )
 
     for location in selected_locations:
-        st.markdown(f"### 🧠 Optimization for `{location}`")
+        st.markdown(f"### 🧠 Optimization Insights for `{location}`")
         rules = []
         for net_id, info in extended_data.get("network_details", {}).items():
             if info.get("network_name") == location:
@@ -1328,18 +1328,19 @@ elif selected_tab == "🧠 Optimization Insights":
                             [i + 1, i + 2]
                         ))
 
-        if insight_rows:
-            for msg, rule_indexes in insight_rows:
-                st.markdown(msg)
-                for idx in rule_indexes:
-                    show_rule_summary([idx])
-            st.download_button(
-                f"📥 Download Insights for {location}",
-                "\n".join([msg for msg, _ in insight_rows]),
-                file_name=f"optimization_insights_{location}.txt"
-            )
-        else:
-            st.success(f"✅ No optimization issues detected in `{location}`.")
+        with st.expander(f"🧱 Local Rules Optimization Details – {location}", expanded=False):
+            if insight_rows:
+                for msg, rule_indexes in insight_rows:
+                    st.markdown(msg)
+                    for idx in rule_indexes:
+                        show_rule_summary([idx], ruleset=rules, object_map=object_map, group_map=group_map)
+                st.download_button(
+                    f"📥 Download Local Rules Insights – {location}",
+                    "\n".join([msg for msg, _ in insight_rows]),
+                    file_name=f"local_optimization_insights_{location}.txt"
+                )
+            else:
+                st.success(f"✅ No optimization issues detected in `{location}`.")
 
     st.markdown("---")
     st.subheader("ℹ️ Legend")
