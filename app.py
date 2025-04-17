@@ -1031,7 +1031,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         with col1:
             st.subheader("🔍 Traffic Flow")
         with col2:
-            with st.expander("### collapse", expanded=False):
+            with st.expander("### Details", expanded=False):
 
                 col1, col2, col3 = st.columns([4, 4, 1])
 
