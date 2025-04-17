@@ -526,7 +526,11 @@ with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not c
 
 
 st.sidebar.markdown("📤 Data Import and Export")
-with st.sidebar.expander("🔽 Upload prepared .json data or create and download it", expanded=not collapse_expanders):
+if "snapshot_expander_open" not in st.session_state:
+    st.session_state["snapshot_expander_open"] = not collapse_expanders
+
+with st.sidebar.expander("🔽 Upload prepared .json data or create and download it", expanded=st.session_state["snapshot_expander_open"]):
+
 
     # Upload Snapshot to restore everything
     uploaded_snapshot = st.file_uploader("📤 Load Snapshot (.json)", type="json")
@@ -583,6 +587,7 @@ with st.sidebar.expander("🔽 Upload prepared .json data or create and download
 
     # Snapshot creation + download
     if st.button("💾 Create Data Snapshot"):
+        st.session_state["snapshot_expander_open"] = True
         try:
             snapshot_str, snapshot_filename = prepare_snapshot(
                 st.session_state.get("rules_data", []),
