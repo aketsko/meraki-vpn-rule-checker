@@ -1016,6 +1016,42 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         show_vpn = rule_scope["vpn_needed"]
         show_local = rule_scope["local_needed"]
 
+        # 🔍 Traffic Flow Summary Header (Top of Tab)
+        src_obj_str = st.session_state.get("source_input", "-")
+        dst_obj_str = st.session_state.get("destination_input", "-")
+        source_cidrs = st.session_state.get("resolved_source", [])
+        destination_cidrs = st.session_state.get("resolved_destination", [])
+        source_port_input = st.session_state.get("source_port", "any")
+        port_input = st.session_state.get("destination_port", "any")
+        protocol = st.session_state.get("protocol", "any")
+
+        src_cidr_str = ", ".join(source_cidrs) if source_cidrs else "any"
+        dst_cidr_str = ", ".join(destination_cidrs) if destination_cidrs else "any"
+        src_port_str = source_port_input if source_port_input.strip().lower() != "any" else "any"
+        dst_port_str = port_input if port_input.strip().lower() != "any" else "any"
+        proto_str = protocol.upper() if protocol.lower() != "any" else "ANY"
+
+        st.markdown("### 🔍 Traffic Flow")
+
+        col1, col2, col3 = st.columns([4, 4, 1])
+
+        with col1:
+            st.markdown("**Source**")
+            st.code(src_obj_str, line_numbers=False)
+            st.markdown(f"**CIDR:** `{src_cidr_str}`")
+            st.markdown(f"**Port(s):** `{src_port_str}`")
+
+        with col2:
+            st.markdown("**Destination**")
+            st.code(dst_obj_str, line_numbers=False)
+            st.markdown(f"**CIDR:** `{dst_cidr_str}`")
+            st.markdown(f"**Port(s):** `{dst_port_str}`")
+
+        with col3:
+            st.markdown("**Protocol**")
+            st.markdown(f"<div style='margin-top:2.8em'><code>{proto_str}</code></div>", unsafe_allow_html=True)
+
+        st.markdown("---")
 
         if show_local:
             st.subheader("🧱 Local Firewall Rules")
@@ -1038,43 +1074,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                     )
 
             seen_locations = set()
-
-            # 🔍 Traffic Flow Summary Header (Top of Tab)
-            src_obj_str = st.session_state.get("source_input", "-")
-            dst_obj_str = st.session_state.get("destination_input", "-")
-            source_cidrs = st.session_state.get("resolved_source", [])
-            destination_cidrs = st.session_state.get("resolved_destination", [])
-            source_port_input = st.session_state.get("source_port", "any")
-            port_input = st.session_state.get("destination_port", "any")
-            protocol = st.session_state.get("protocol", "any")
-
-            src_cidr_str = ", ".join(source_cidrs) if source_cidrs else "any"
-            dst_cidr_str = ", ".join(destination_cidrs) if destination_cidrs else "any"
-            src_port_str = source_port_input if source_port_input.strip().lower() != "any" else "any"
-            dst_port_str = port_input if port_input.strip().lower() != "any" else "any"
-            proto_str = protocol.upper() if protocol.lower() != "any" else "ANY"
-
-            st.markdown("### 🔍 Traffic Flow")
-
-            col1, col2, col3 = st.columns([4, 4, 1])
-
-            with col1:
-                st.markdown("**Source**")
-                st.code(src_obj_str, line_numbers=False)
-                st.markdown(f"**CIDR:** `{src_cidr_str}`")
-                st.markdown(f"**Port(s):** `{src_port_str}`")
-
-            with col2:
-                st.markdown("**Destination**")
-                st.code(dst_obj_str, line_numbers=False)
-                st.markdown(f"**CIDR:** `{dst_cidr_str}`")
-                st.markdown(f"**Port(s):** `{dst_port_str}`")
-
-            with col3:
-                st.markdown("**Protocol**")
-                st.markdown(f"<div style='margin-top:2.8em'><code>{proto_str}</code></div>", unsafe_allow_html=True)
-
-            st.markdown("---")
 
 
             with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=st.session_state["fw_expand_local"]):
