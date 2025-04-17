@@ -1034,18 +1034,18 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         with col1:
             st.markdown("**Source**")
             st.code(source_input or "-", line_numbers=False)
-            st.markdown(f"**CIDR:** `{src_cidr_str}`")
-            st.markdown(f"**Port(s):** `{src_port_str}`")
+            st.markdown(src_cidr_str or "-")
+            st.markdown(src_port_str)
 
         with col2:
             st.markdown("**Destination**")
             st.code(destination_input or "-", line_numbers=False)
-            st.markdown(f"**CIDR:** `{dst_cidr_str}`")
-            st.markdown(f"**Port(s):** `{dst_port_str}`")
+            st.markdown(dst_cidr_str or "-")
+            st.markdown(dst_port_str)
 
         with col3:
             st.markdown("**Protocol**")
-            st.markdown(f"<div style='margin-top:2.8em'><code>{proto_str}</code></div>", unsafe_allow_html=True)
+            st.markdown(proto_str)
 
         st.markdown("---")
 
