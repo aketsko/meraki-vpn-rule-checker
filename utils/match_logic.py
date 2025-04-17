@@ -1,21 +1,7 @@
 import ipaddress
-from functools import cache
-from dataclasses import dataclass
-from typing import Tuple, Union
-from ipaddress import ip_network, IPv4Network, IPv6Network
-import streamlit as st
-
-@dataclass(frozen=True, slots=True)
-class ParsedRule:
-    action: str
-    src_nets: Tuple[Union[IPv4Network, IPv6Network], ...]
-    dst_nets: Tuple[Union[IPv4Network, IPv6Network], ...]
-    proto: str
-    sport: Tuple[str, ...]
-    dport: Tuple[str, ...]
-
 
 def build_object_location_map(objects_data, groups_data, extended_data):
+    import ipaddress
 
     object_location_map = {}
     vpn_subnets_per_network = {}
@@ -258,36 +244,3 @@ def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
 
     return list(resolved)
 
-@st.cache_data(show_spinner=False)
-def build_rule_index(raw_rules: list[dict]) -> list[ParsedRule]:
-    index = []
-    for rule in raw_rules:
-        try:
-            src_raw = rule.get("srcCidr", "Any")
-            dst_raw = rule.get("destCidr", "Any")
-            proto = rule.get("protocol", "any").lower()
-            src_port_raw = rule.get("srcPort", "Any")
-            dst_port_raw = rule.get("destPort", "Any")
-            action = rule.get("policy", "allow").upper()
-
-            src_cidrs = [c.strip() for c in src_raw.split(",")] if src_raw.lower() != "any" else []
-            dst_cidrs = [c.strip() for c in dst_raw.split(",")] if dst_raw.lower() != "any" else []
-
-            src_nets = tuple(ip_network(c, strict=False) for c in src_cidrs)
-            dst_nets = tuple(ip_network(c, strict=False) for c in dst_cidrs)
-
-            src_ports = tuple(p.strip() for p in src_port_raw.split(",")) if src_port_raw.lower() != "any" else ("any",)
-            dst_ports = tuple(p.strip() for p in dst_port_raw.split(",")) if dst_port_raw.lower() != "any" else ("any",)
-
-            index.append(ParsedRule(
-                action=action,
-                src_nets=src_nets,
-                dst_nets=dst_nets,
-                proto=proto,
-                sport=src_ports,
-                dport=dst_ports,
-            ))
-        except Exception as e:
-            print(f"[build_rule_index] Skipping rule due to error: {e} — {rule}")
-            continue
-    return index
