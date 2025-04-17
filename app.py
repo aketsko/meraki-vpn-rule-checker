@@ -1139,7 +1139,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
 elif selected_tab == "🧠 Optimization Insights":
-
+    extended_data = st.session_state.get("extended_data", {})
     def rule_covers(rule_a, rule_b):
         return (
             (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
