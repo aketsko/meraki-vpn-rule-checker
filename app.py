@@ -1016,7 +1016,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         show_vpn = rule_scope["vpn_needed"]
         show_local = rule_scope["local_needed"]
 
-        # 🔍 Dynamic Traffic Flow Summary (Top of Tab)
+        # 🔍 Traffic Flow Summary (Refined Layout)
         src_cidr_list = resolve_search_input(source_input)
         dst_cidr_list = resolve_search_input(destination_input)
 
@@ -1029,33 +1029,34 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         st.markdown("### 🔍 Traffic Flow")
 
-        col0, col1, col2, col3 = st.columns([2, 4, 4, 1])
-        with col0:
-            st.markdown("")
-            st.code("Object")
-            st.markdown("CIDR")
-            st.markdown("Port")
+        col1, col2, col3 = st.columns([4, 4, 1])
+
+        def format_boxed(label, value):
+            return f"""
+            <div style="margin-bottom:0.5rem">
+                <span style="font-weight: 600; color: #444;">{label}</span><br>
+                <div style="background-color: #ecf0f1; padding: 6px 10px; border-radius: 5px; margin-top: 2px;">
+                    <code>{value}</code>
+                </div>
+            </div>
+            """
 
         with col1:
-            st.markdown("**Source**")
-            st.code(source_input or "-", line_numbers=False)
-            st.markdown(src_cidr_str or "-")
-            st.markdown(src_port_str)
+            st.markdown(format_boxed("Object", source_input or "-"), unsafe_allow_html=True)
+            st.markdown(format_boxed("CIDR", src_cidr_str), unsafe_allow_html=True)
+            st.markdown(format_boxed("Port", src_port_str), unsafe_allow_html=True)
 
         with col2:
-            st.markdown("**Destination**")
-            st.code(destination_input or "-", line_numbers=False)
-            st.markdown(dst_cidr_str or "-")
-            st.markdown(dst_port_str)
+            st.markdown(format_boxed("Object", destination_input or "-"), unsafe_allow_html=True)
+            st.markdown(format_boxed("CIDR", dst_cidr_str), unsafe_allow_html=True)
+            st.markdown(format_boxed("Port", dst_port_str), unsafe_allow_html=True)
 
         with col3:
-            st.markdown("**Protocol**")
-            st.markdown("")
-            st.markdown("")
-            st.markdown(proto_str)
-            
+            st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
+            st.markdown(format_boxed("Protocol", proto_str), unsafe_allow_html=True)
 
         st.markdown("---")
+
 
 
         if show_local:
