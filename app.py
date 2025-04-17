@@ -1139,6 +1139,11 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
 elif selected_tab == "🧠 Optimization Insights":
+    rules_data = st.session_state.get("rules_data", [])
+    objects_data = st.session_state.get("objects_data", [])
+    groups_data = st.session_state.get("groups_data", [])
+    object_map = st.session_state.get("object_map", {})
+    group_map = st.session_state.get("group_map", {})
     extended_data = st.session_state.get("extended_data", {})
     def rule_covers(rule_a, rule_b):
         return (
