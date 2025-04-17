@@ -229,8 +229,9 @@ def generate_rule_table(
         src_match = netmatch(rule.src_nets, src_nets)
         dst_match = netmatch(rule.dst_nets, dst_nets)
 
-        exact_src = all(any(c == r for r in rule.src_nets) for c in src_nets) if src_nets else True
-        exact_dst = all(any(c == r for r in rule.dst_nets) for c in dst_nets) if dst_nets else True
+        
+        exact_src = all(any(c.subnet_of(r) for r in rule.src_nets) for c in src_nets) if src_nets else True
+        exact_dst = all(any(c.subnet_of(r) for r in rule.dst_nets) for c in dst_nets) if dst_nets else True
 
         # --- Combine verdict ---
         full_match = proto_match and port_match and src_match and dst_match
@@ -469,7 +470,7 @@ with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not c
         if not api_key or not org_id:
             st.error("❌ Please enter both API key and Org ID.")
         else:
-            with st.spinner("🔄 Fetching all API data (basic + extended)..."):
+            with st.spinner("🔄 Fetching all API data"):
                 try:
                     # --- Step 1: Fetch basic data ---
                     rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
