@@ -1122,6 +1122,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             # st.markdown("#### 🔍 Debug Inputs")
             # st.code(f"Source CIDRs: {source_cidrs}\nDestination CIDRs: {destination_cidrs}")
             generate_rule_table(
+                st.info(f"🔍 Total rules: {len(df)} | Matching rules: {len(df_to_show)}")
                 rules=rules_data,
                 source_port_input=source_port_input,
                 port_input=port_input,
