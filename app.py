@@ -182,9 +182,11 @@ def generate_rule_table(rules,
         src_ports_input_list = source_port_input.split(",") if not skip_sport_check else ["any"]
         matched_sports_list = [p.strip() for p in src_ports_input_list if p.strip() in rule_sports or "any" in rule_sports]
 
-        sport_match = len(matched_sports_list) > 0
-        port_match = len(matched_ports_list) > 0 and sport_match
+        sport_match = True if skip_sport_check else len(matched_sports_list) > 0
+        port_match = True if skip_dport_check else len(matched_ports_list) > 0
 
+        # Combine both port match checks
+        port_match = port_match and sport_match
         full_match = src_match and dst_match and proto_match and port_match
 
         exact_src = (
