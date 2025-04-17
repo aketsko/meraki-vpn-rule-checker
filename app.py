@@ -255,7 +255,7 @@ def generate_rule_table(
             "Exact Match ✅": idx == first_exact_index,
             "Partial Match 🔶": full_match and idx != first_exact_index
         })
-
+    st.info(f"🔍 Total rules: {len(df)} | Matching rules: {len(df_to_show)}")
     df = pd.DataFrame(matched_rows)
     df_to_show = df[df["Matched ✅"]] if filter_toggle else df
 
@@ -1119,7 +1119,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         if show_vpn:
             st.subheader("🌐 VPN Firewall Rules")
-            st.info(f"🔍 Total rules: {len(df)} | Matching rules: {len(df_to_show)}")
             # st.markdown("#### 🔍 Debug Inputs")
             # st.code(f"Source CIDRs: {source_cidrs}\nDestination CIDRs: {destination_cidrs}")
             generate_rule_table(
