@@ -261,33 +261,33 @@ def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
 @st.cache_data(show_spinner=False)
 def build_rule_index(raw_rules: list[dict]) -> list[ParsedRule]:
     index = []
-    for r in raw_rules:
+    for rule in raw_rules:
         try:
-            src_raw = r.get("srcCidr", "Any")
-            dst_raw = r.get("destCidr", "Any")
+            src_raw = rule.get("srcCidr", "Any")
+            dst_raw = rule.get("destCidr", "Any")
+            proto = rule.get("protocol", "any").lower()
+            src_port_raw = rule.get("srcPort", "Any")
+            dst_port_raw = rule.get("destPort", "Any")
+            action = rule.get("policy", "allow").upper()
 
-            src_cidrs = (
-                tuple(ip_network(c.strip(), strict=False) for c in src_raw.split(",") if c.strip().lower() != "any")
-                if src_raw.lower() != "any" else tuple()
-            )
-            dst_cidrs = (
-                tuple(ip_network(c.strip(), strict=False) for c in dst_raw.split(",") if c.strip().lower() != "any")
-                if dst_raw.lower() != "any" else tuple()
-            )
+            src_cidrs = [c.strip() for c in src_raw.split(",")] if src_raw.lower() != "any" else []
+            dst_cidrs = [c.strip() for c in dst_raw.split(",")] if dst_raw.lower() != "any" else []
 
-            proto = r.get("protocol", "any").lower()
-            sport = tuple(p.strip() for p in r.get("srcPort", "any").split(","))
-            dport = tuple(p.strip() for p in r.get("destPort", "any").split(","))
+            src_nets = tuple(ip_network(c, strict=False) for c in src_cidrs)
+            dst_nets = tuple(ip_network(c, strict=False) for c in dst_cidrs)
+
+            src_ports = tuple(p.strip() for p in src_port_raw.split(",")) if src_port_raw.lower() != "any" else ("any",)
+            dst_ports = tuple(p.strip() for p in dst_port_raw.split(",")) if dst_port_raw.lower() != "any" else ("any",)
 
             index.append(ParsedRule(
-                action=r.get("policy", "deny").upper(),
-                src_nets=src_cidrs,
-                dst_nets=dst_cidrs,
+                action=action,
+                src_nets=src_nets,
+                dst_nets=dst_nets,
                 proto=proto,
-                sport=sport,
-                dport=dport,
+                sport=src_ports,
+                dport=dst_ports,
             ))
         except Exception as e:
-            print(f"[build_rule_index] Rule skipped due to error: {e}")
+            print(f"[build_rule_index] Skipping rule due to error: {e} — {rule}")
             continue
     return index
