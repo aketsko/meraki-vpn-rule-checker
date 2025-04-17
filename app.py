@@ -1042,17 +1042,17 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 """
 
             with col1:
-                st.markdown(format_boxed("Object", source_input or "-"), unsafe_allow_html=True)
-                st.markdown(format_boxed("CIDR", src_cidr_str), unsafe_allow_html=True)
-                st.markdown(format_boxed("Port", src_port_str), unsafe_allow_html=True)
+                st.markdown(format_boxed("Source Object", source_input or "-"), unsafe_allow_html=True)
+                st.markdown(format_boxed("Source CIDR", src_cidr_str), unsafe_allow_html=True)
+                st.markdown(format_boxed("Source Port", src_port_str), unsafe_allow_html=True)
 
             with col2:
-                st.markdown(format_boxed("Object", destination_input or "-"), unsafe_allow_html=True)
-                st.markdown(format_boxed("CIDR", dst_cidr_str), unsafe_allow_html=True)
-                st.markdown(format_boxed("Port", dst_port_str), unsafe_allow_html=True)
+                st.markdown(format_boxed("Destination Object", destination_input or "-"), unsafe_allow_html=True)
+                st.markdown(format_boxed("Destination CIDR", dst_cidr_str), unsafe_allow_html=True)
+                st.markdown(format_boxed("Destination Port", dst_port_str), unsafe_allow_html=True)
 
             with col3:
-                st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
+                #st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
                 st.markdown(format_boxed("Protocol", proto_str), unsafe_allow_html=True)
 
             st.markdown("---")
