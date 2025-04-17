@@ -255,9 +255,10 @@ def generate_rule_table(
             "Exact Match ✅": idx == first_exact_index,
             "Partial Match 🔶": full_match and idx != first_exact_index
         })
-    st.info(f"🔍 Total rules: {len(df)} | Matching rules: {len(df_to_show)}")
+    
     df = pd.DataFrame(matched_rows)
     df_to_show = df[df["Matched ✅"]] if filter_toggle else df
+    st.info(f"🔍 Total rules: {len(df)} | Matching rules: {len(df_to_show)}")
 
     row_style_js = JsCode(f"""
         function(params) {{
