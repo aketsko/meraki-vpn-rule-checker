@@ -157,7 +157,8 @@ def generate_rule_table(rules,
 
         skip_proto_check = protocol.strip().lower() == "any"
         if skip_proto_check:
-            proto_match = rule_protocol == "any"
+            # "any" input should match all protocols
+            proto_match = True
             exact_proto = rule_protocol == "any"
         else:
             proto_match = rule_protocol == protocol.lower() or rule_protocol == "any"
