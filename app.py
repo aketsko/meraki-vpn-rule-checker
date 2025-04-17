@@ -185,14 +185,15 @@ def generate_rule_table(
 ):
     st.info(f"📊 Total incoming rules: {len(rules)}")
     from utils.match_logic import build_rule_index
+    print(f"[🔍 build_rule_index] Raw rules passed: {len(rules)}")
     parsed_rules = build_rule_index(rules)
     st.info(f"🧠 Parsed rules built: {len(parsed_rules)}")
     from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
     import pandas as pd
 
-    # --- Build parsed rule index only once ---
-    from utils.match_logic import build_rule_index
-    parsed_rules = build_rule_index(rules)
+    # # --- Build parsed rule index only once ---
+    # from utils.match_logic import build_rule_index
+    # parsed_rules = build_rule_index(rules)
 
     # --- Resolve and parse search inputs ---
     try:
@@ -1104,6 +1105,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                             if rules:
                                 # st.markdown("#### 🔍 Debug Inputs")
                                 # st.code(f"Source CIDRs: {source_cidrs}\nDestination CIDRs: {destination_cidrs}")
+                                
                                 generate_rule_table(
                                     rules=rules,
                                     source_port_input=source_port_input,
@@ -1126,6 +1128,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             st.subheader("🌐 VPN Firewall Rules")
             # st.markdown("#### 🔍 Debug Inputs")
             # st.code(f"Source CIDRs: {source_cidrs}\nDestination CIDRs: {destination_cidrs}")
+            print(f"[📊 VPN table] Total rules going in: {len(rules_data)}")
             generate_rule_table(
                 rules=rules_data,
                 source_port_input=source_port_input,
