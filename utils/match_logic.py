@@ -1,8 +1,8 @@
 import ipaddress
+from functools import cache
 from dataclasses import dataclass
-from ipaddress import ip_network
-from typing import List, Tuple
-import json
+from typing import Tuple, Union
+from ipaddress import ip_network, IPv4Network, IPv6Network
 import streamlit as st
 
 @dataclass(frozen=True, slots=True)
