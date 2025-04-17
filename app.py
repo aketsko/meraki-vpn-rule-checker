@@ -1068,8 +1068,10 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             st.subheader("🧱 Local Firewall Rules")
             with st.sidebar:
                 st.markdown("### 📍 Location Filter")
-                with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=True):
-                    all_locations = sorted([loc for loc, _ in shared_locs])
+                networks = extended_data.get("network_details", {})
+                all_locations = sorted(set(info.get("network_name") for info in networks.values() if info.get("network_name")))
+                with st.expander(f"Collapse - `{len(all_locations)}`", expanded=True):
+
                     st.session_state.setdefault("selected_local_locations", all_locations)
 
                     if st.button("✅ Select All"):
