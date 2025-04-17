@@ -1005,30 +1005,38 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     obj_loc_map = st.session_state.get("object_location_map", {})
     extended_data = st.session_state.get("extended_data", {})
 
-    # 🔎 Traffic Flow Description
-    src_obj_str = source_input if 'source_input' in st.session_state else "-"
-    dst_obj_str = destination_input if 'destination_input' in st.session_state else "-"
+    # 🔍 Traffic Flow Description Layout
+    src_obj_str = st.session_state.get("source_input", "-")
+    dst_obj_str = st.session_state.get("destination_input", "-")
     src_cidr_str = ", ".join(source_cidrs) if source_cidrs else "any"
     dst_cidr_str = ", ".join(destination_cidrs) if destination_cidrs else "any"
     src_port_str = source_port_input if source_port_input.lower() != "any" else "any"
     dst_port_str = port_input if port_input.lower() != "any" else "any"
     proto_str = protocol.upper() if protocol.lower() != "any" else "ANY"
+
     st.markdown("### 🔍 Traffic Flow")
+
     col1, col2, col3 = st.columns([4, 4, 1])
+
     with col1:
         st.markdown("**Source**")
-        st.markdown(f"`{src_obj_str}`")
-        st.markdown(f"CIDR: `{src_cidr_str}`")
-        st.markdown(f"Port(s): `{src_port_str}`")
+        st.code(src_obj_str, line_numbers=False)
+        st.markdown(f"**CIDR:** `{src_cidr_str}`")
+        st.markdown(f"**Port(s):** `{src_port_str}`")
+
     with col2:
         st.markdown("**Destination**")
-        st.markdown(f"`{dst_obj_str}`")
-        st.markdown(f"CIDR: `{dst_cidr_str}`")
-        st.markdown(f"Port(s): `{dst_port_str}`")
+        st.code(dst_obj_str, line_numbers=False)
+        st.markdown(f"**CIDR:** `{dst_cidr_str}`")
+        st.markdown(f"**Port(s):** `{dst_port_str}`")
+
     with col3:
         st.markdown("**Protocol**")
         st.markdown(f"<div style='margin-top:2.8em'><code>{proto_str}</code></div>", unsafe_allow_html=True)
-    st.markdown(title_prefix)
+
+    st.markdown("---")
+    st.markdown(f"### {title_prefix}")
+
 
 
 
