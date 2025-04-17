@@ -1147,29 +1147,26 @@ elif selected_tab == "🧠 Optimization Insights":
     if not extended_data:
         st.warning("Extended data not available. Please fetch Meraki data first.")
         st.stop()
+    with st.sidebar:
+            st.markdown("### 📍 Location Filter")
+            with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=True):
+                all_locations = sorted([loc for loc, _ in shared_locs])
+                st.session_state.setdefault("optimization_locations", all_locations)
 
-    st.subheader("📍 Select Locations for Optimization Scan")
+                if st.button("✅ Select All"):
+                    st.session_state["optimization_locations"] = all_locations
+                if st.button("❌ Deselect All"):
+                    st.session_state["optimization_locations"] = []
 
-    all_locations = sorted([
-        info.get("network_name")
-        for info in extended_data.get("network_details", {}).values()
-        if "firewall_rules" in info
-    ])
-    st.session_state.setdefault("optimization_locations", all_locations)
+                selected_locations = st.multiselect(
+                    "Choose locations to analyze:",
+                    options=all_locations,
+                    default=st.session_state["optimization_locations"],
+                    key="optimization_locations"
+                )
 
-    col1, col2 = st.columns([1, 5])
-    with col1:
-        if st.button("✅ Select All Locations"):
-            st.session_state["optimization_locations"] = all_locations
-        if st.button("❌ Deselect All Locations"):
-            st.session_state["optimization_locations"] = []
+            seen_locations = set()
 
-    selected_locations = st.multiselect(
-        "Choose locations to analyze:",
-        options=all_locations,
-        default=st.session_state["optimization_locations"],
-        key="optimization_locations"
-    )
 
     def rule_covers(rule_a, rule_b):
         return (
