@@ -1017,18 +1017,14 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         show_local = rule_scope["local_needed"]
 
         # 🔍 Dynamic Traffic Flow Summary (Top of Tab)
-        source_input = st.session_state.get("source_raw_input", "-")
-        destination_input = st.session_state.get("destination_raw_input", "-")
-        source_cidrs = st.session_state.get("resolved_source", []) or []
-        destination_cidrs = st.session_state.get("resolved_destination", []) or []
-        source_port_input = st.session_state.get("source_port", "any")
-        destination_port_input = st.session_state.get("destination_port", "any")
-        protocol = st.session_state.get("protocol", "any")
+        src_cidr_list = resolve_search_input(source_input)
+        dst_cidr_list = resolve_search_input(destination_input)
 
-        src_cidr_str = ", ".join(source_cidrs) if source_cidrs else "any"
-        dst_cidr_str = ", ".join(destination_cidrs) if destination_cidrs else "any"
+        src_cidr_str = ", ".join(src_cidr_list) if src_cidr_list else "any"
+        dst_cidr_str = ", ".join(dst_cidr_list) if dst_cidr_list else "any"
+
         src_port_str = source_port_input.strip() if source_port_input.strip().lower() != "any" else "any"
-        dst_port_str = destination_port_input.strip() if destination_port_input.strip().lower() != "any" else "any"
+        dst_port_str = port_input.strip() if port_input.strip().lower() != "any" else "any"
         proto_str = protocol.strip().upper() if protocol.strip().lower() != "any" else "ANY"
 
         st.markdown("### 🔍 Traffic Flow")
