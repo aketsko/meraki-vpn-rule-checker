@@ -1149,6 +1149,85 @@ elif selected_tab == "🧠 Optimization Insights":
     if not extended_data:
         st.warning("Extended data not available. Please fetch Meraki data first.")
         st.stop()
+    
+    st.markdown("## 🌐 Optimization Insights for VPN Firewall Rules")
+
+    vpn_rules = st.session_state.get("rules_data", [])
+    vpn_insights = []
+    vpn_seen = set()
+
+    def rule_covers(rule_a, rule_b):
+        return (
+            (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
+            (rule_a["destCidr"] == "Any" or rule_a["destCidr"] == rule_b["destCidr"]) and
+            (rule_a["destPort"].lower() == "any" or rule_a["destPort"] == rule_b["destPort"]) and
+            (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
+        )
+
+    for i, rule in enumerate(vpn_rules):
+        sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
+        if sig in vpn_seen:
+            vpn_insights.append((
+                f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
+                [i + 1]
+            ))
+        else:
+            vpn_seen.add(sig)
+
+        is_last = i == len(vpn_rules) - 1
+        is_penultimate = i == len(vpn_rules) - 2
+        is_allow_any = rule["policy"].lower() == "allow"
+        is_deny_any = rule["policy"].lower() == "deny"
+
+        if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
+                and rule["destPort"].lower() == "any"
+                and rule["protocol"].lower() == "any"):
+            if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
+                pass
+            else:
+                vpn_insights.append((
+                    f"⚠️ **Broad Rule Risk** at index {i + 1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
+                    [i + 1]
+                ))
+
+        for j in range(i):
+            if rule_covers(vpn_rules[j], rule):
+                vpn_insights.append((
+                    f"🚫 **Shadowed Rule** at index {i + 1}: unreachable due to broader rule at index {j + 1}.",
+                    [j + 1, i + 1]
+                ))
+                break
+
+        if i < len(vpn_rules) - 1:
+            next_rule = vpn_rules[i + 1]
+            fields_to_compare = ["policy", "srcCidr", "destCidr"]
+            if all(rule[f] == next_rule[f] for f in fields_to_compare):
+                if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
+                    vpn_insights.append((
+                        f"🔄 **Merge Candidate** at index {i + 1} & {i + 2}: same action/source/destination, different ports.",
+                        [i + 1, i + 2]
+                    ))
+                elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
+                    if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
+                        continue
+                    vpn_insights.append((
+                        f"🔄 **Merge Candidate** at index {i + 1} & {i + 2}: same action/src/dst/ports, different protocol.",
+                        [i + 1, i + 2]
+                    ))
+
+    if vpn_insights:
+        for msg, rule_indexes in vpn_insights:
+            st.markdown(msg)
+            for idx in rule_indexes:
+                show_rule_summary([idx])
+        st.download_button(
+            "📥 Download VPN Rule Insights",
+            "\n".join([msg for msg, _ in vpn_insights]),
+            file_name="vpn_optimization_insights.txt"
+        )
+    else:
+        st.success("✅ No optimization issues detected in VPN rules.")
+
     with st.sidebar:
         st.markdown("### 📍 Location Filter")
 
