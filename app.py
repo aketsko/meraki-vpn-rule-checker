@@ -9,6 +9,10 @@ from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
 from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, resolve_to_cidrs_supernet_aware, find_object_locations, build_object_location_map
 from streamlit_searchbox import st_searchbox
+from dataclasses import dataclass
+from functools import cache
+from ipaddress import ip_network
+from utils.match_logic import ParsedRule
 #from utils.API import fetch_meraki_data_extended
 
 # ------------------ PAGE SETUP ------------------
@@ -28,6 +32,38 @@ default_colours = {
 
 for k, v in default_colours.items():
     st.session_state.setdefault(k, v)
+
+@st.cache_data(show_spinner=False)
+def build_rule_index(raw_rules: list[dict]):
+    from ipaddress import ip_network
+    from dataclasses import dataclass
+    @dataclass(frozen=True, slots=True)
+    class ParsedRule:
+        action: str
+        src_nets: tuple
+        dst_nets: tuple
+        proto: str
+        sport: tuple
+        dport: tuple
+
+    idx = []
+    for r in raw_rules:
+        idx.append(
+            ParsedRule(
+                action=r["policy"].upper(),
+                src_nets=tuple(ip_network(c.strip(), strict=False)
+                               for c in r["srcCidr"].split(",")
+                               if c.lower() != "any"),
+                dst_nets=tuple(ip_network(c.strip(), strict=False)
+                               for c in r["destCidr"].split(",")
+                               if c.lower() != "any"),
+                proto=r["protocol"].lower(),
+                sport=tuple(p.strip() for p in r.get("srcPort", "any").split(",")),
+                dport=tuple(p.strip() for p in r["destPort"].split(",")),
+            )
+        )
+    return idx
+
 
 def load_json_file(uploaded_file):
     try:
@@ -131,7 +167,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-def generate_rule_table(rules, 
+def generate_rule_table(
+    rules,
     source_port_input,
     port_input,
     protocol,
@@ -146,133 +183,101 @@ def generate_rule_table(rules,
     title_prefix="Rules",
     key="default_grid"
 ):
-    rule_rows = []
-    rule_match_ports = {}
-    matched_ports = {}
-    found_partial_match = False
-    first_exact_match_index = None
+    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+    import pandas as pd
 
-    for idx, rule in enumerate(rules):
-        rule_protocol = rule["protocol"].lower()
-        rule_dports = [p.strip() for p in rule["destPort"].split(",")] if rule["destPort"].lower() != "any" else ["any"]
-        rule_sports = [p.strip() for p in rule.get("srcPort", "").split(",")] if rule.get("srcPort", "").lower() != "any" else ["any"]
+    # --- Build parsed rule index only once ---
+    from utils.match_logic import build_rule_index
+    parsed_rules = build_rule_index(rules)
 
-        src_ids = rule["srcCidr"].split(",") if rule["srcCidr"] != "Any" else ["Any"]
-        dst_ids = rule["destCidr"].split(",") if rule["destCidr"] != "Any" else ["Any"]
-        resolved_src_cidrs = resolve_to_cidrs_supernet_aware(src_ids, object_map, group_map)
-        resolved_dst_cidrs = resolve_to_cidrs_supernet_aware(dst_ids, object_map, group_map)
+    # --- Resolve and parse search inputs ---
+    try:
+        src_nets = [ip_network(c, strict=False) for c in source_cidrs if not skip_src_check]
+    except Exception:
+        src_nets = []
 
-        src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
-        dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
+    try:
+        dst_nets = [ip_network(c, strict=False) for c in destination_cidrs if not skip_dst_check]
+    except Exception:
+        dst_nets = []
 
-        skip_proto_check = protocol.strip().lower() == "any"
-        if skip_proto_check:
-            # "any" input should match all protocols
-            proto_match = True
-            exact_proto = rule_protocol == "any"
-        else:
-            proto_match = rule_protocol == protocol.lower() or rule_protocol == "any"
-            exact_proto = rule_protocol == protocol.lower()
+    proto = protocol.strip().lower()
+    dports = set(p.strip() for p in port_input.split(",") if p.strip()) if port_input.lower() != "any" else {"any"}
+    sports = set(p.strip() for p in source_port_input.split(",") if p.strip()) if source_port_input.lower() != "any" else {"any"}
 
-        dports_to_loop = port_input.split(",") if port_input.strip().lower() != "any" else ["any"]
-        skip_dport_check = port_input.strip().lower() == "any"
-        matched_ports_list = dports_to_loop if skip_dport_check else [p for p in dports_to_loop if p in rule_dports or "any" in rule_dports]
+    matched_rows = []
+    first_exact_index = None
+    found_partial = False
 
-        skip_sport_check = source_port_input.strip().lower() == "any"
-        src_ports_input_list = source_port_input.split(",") if not skip_sport_check else ["any"]
-        matched_sports_list = [p.strip() for p in src_ports_input_list if p.strip() in rule_sports or "any" in rule_sports]
+    for idx, rule in enumerate(parsed_rules):
+        # --- Protocol ---
+        proto_match = rule.proto == "any" or proto == "any" or rule.proto == proto
+        exact_proto = proto != "any" and rule.proto == proto
 
-        sport_match = len(matched_sports_list) > 0
-        port_match = len(matched_ports_list) > 0 and sport_match
+        # --- Port Matching ---
+        port_match = ("any" in rule.dport or "any" in dports or dports & set(rule.dport)) and \
+                     ("any" in rule.sport or "any" in sports or sports & set(rule.sport))
+        exact_ports = set(rule.dport) == dports if "any" not in dports else False
+        exact_sports = set(rule.sport) == sports if "any" not in sports else False
 
-        full_match = src_match and dst_match and proto_match and port_match
+        # --- Network Matching ---
+        def netmatch(rule_nets, search_nets):
+            if not search_nets:
+                return True
+            return any(r.subnet_of(s) or s.subnet_of(r) or r == s for r in rule_nets for s in search_nets)
 
-        exact_src = (
-            True if skip_src_check and "0.0.0.0/0" in resolved_src_cidrs
-            else all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
-        )
-        exact_dst = (
-            True if skip_dst_check and "0.0.0.0/0" in resolved_dst_cidrs
-            else all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
-        )
+        src_match = netmatch(rule.src_nets, src_nets)
+        dst_match = netmatch(rule.dst_nets, dst_nets)
 
-        input_dports_set = set(p.strip() for p in dports_to_loop if p.strip())
-        rule_dports_set = set(rule_dports)
-        exact_ports = (rule_dports_set == {"any"}) if skip_dport_check else (rule_dports_set == input_dports_set)
+        exact_src = all(any(c == r for r in rule.src_nets) for c in src_nets) if src_nets else True
+        exact_dst = all(any(c == r for r in rule.dst_nets) for c in dst_nets) if dst_nets else True
 
-
-        input_sports_set = set(p.strip() for p in src_ports_input_list if p.strip())
-        rule_sports_set = set(rule_sports)
-        exact_sports = (rule_sports_set == {"any"}) if skip_sport_check else (rule_sports_set == input_sports_set)
-
-        is_exact = full_match and exact_src and exact_dst and exact_ports and exact_sports and exact_proto
-        #if full_match:
-        #    st.write(f"[DEBUG] Rule #{idx+1} Full Match ✅ | exact_src: {exact_src}, exact_dst: {exact_dst}, exact_ports: {exact_ports}, exact_sports: {exact_sports}, exact_proto: {exact_proto}")
+        # --- Combine verdict ---
+        full_match = proto_match and port_match and src_match and dst_match
+        is_exact = full_match and exact_src and exact_dst and exact_proto and exact_ports and exact_sports
 
         if full_match:
-            rule_match_ports.setdefault(idx, []).extend(matched_ports_list)
-            for port in matched_ports_list:
-                if port not in matched_ports:
-                    matched_ports[port] = idx
-            if is_exact and first_exact_match_index is None:
-                first_exact_match_index = idx
-            # elif not is_exact:
-            #     found_partial_match = True
+            if is_exact and not found_partial and first_exact_index is None:
+                first_exact_index = idx
+            elif not is_exact:
+                found_partial = True
 
-    for idx, rule in enumerate(rules):
-        matched_ports_for_rule = rule_match_ports.get(idx, [])
-        matched_any = len(matched_ports_for_rule) > 0
-        is_exact_match = idx == first_exact_match_index
-        is_partial_match = matched_any and not is_exact_match
-
-        source_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["srcCidr"].split(",")]
-        dest_names = [id_to_name(cidr.strip(), object_map, group_map) for cidr in rule["destCidr"].split(",")]
-
-        rule_rows.append({
+        matched_rows.append({
             "Rule Index": idx + 1,
-            "Action": rule["policy"].upper(),
-            "Comment": rule.get("comment", ""),
-            "Source": ", ".join(source_names),
-            "Source Port": rule.get("srcPort", ""),
-            "Destination": ", ".join(dest_names),
-            "Ports": rule["destPort"],
-            "Protocol": rule["protocol"],
-            "Matched Ports": ", ".join(matched_ports_for_rule),
-            "Matched ✅": matched_any,
-            "Exact Match ✅": is_exact_match,
-            "Partial Match 🔶": is_partial_match
+            "Action": rule.action,
+            "Source": ", ".join([id_to_name(c, object_map, group_map) for c in rules[idx]["srcCidr"].split(",")]),
+            "Source Port": rules[idx].get("srcPort", ""),
+            "Destination": ", ".join([id_to_name(c, object_map, group_map) for c in rules[idx]["destCidr"].split(",")]),
+            "Ports": rules[idx]["destPort"],
+            "Protocol": rules[idx]["protocol"],
+            "Matched ✅": full_match,
+            "Exact Match ✅": idx == first_exact_index,
+            "Partial Match 🔶": full_match and idx != first_exact_index
         })
 
-    df = pd.DataFrame(rule_rows)
+    df = pd.DataFrame(matched_rows)
     df_to_show = df[df["Matched ✅"]] if filter_toggle else df
 
-   
     row_style_js = JsCode(f"""
-    function(params) {{
-        const isExact = params.data['Exact Match ✅'];
-        const isPartial = params.data['Partial Match 🔶'];
-        const action = params.data['Action'];
-
-        if (isExact) {{
-            return {{
-                backgroundColor: action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
-                color: 'white',
-                fontWeight: 'bold'
-            }};
+        function(params) {{
+            if (params.data["Exact Match ✅"] === true) {{
+                return {{
+                    backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["exact_allow"]}' : '{highlight_colors["exact_deny"]}',
+                    color: 'white',
+                    fontWeight: 'bold'
+                }};
+            }}
+            if (params.data["Partial Match 🔶"] === true) {{
+                return {{
+                    backgroundColor: params.data.Action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
+                    fontWeight: 'bold'
+                }};
+            }}
+            return {{}};
         }}
-        if (isPartial) {{
-            return {{
-                backgroundColor: action === "ALLOW" ? '{highlight_colors["partial_allow"]}' : '{highlight_colors["partial_deny"]}',
-                fontWeight: 'bold'
-            }};
-        }}
-        return {{}};
-    }}
     """)
 
-
-    gb = GridOptionsBuilder.from_dataframe(df_to_show) # Initialize GridOptionsBuilder with a DataFrame
-    # Configure specific columns to be wider
+    gb = GridOptionsBuilder.from_dataframe(df_to_show)
     gb.configure_column("Comment", flex=3, minWidth=200, wrapText=True, autoHeight=True)
     gb.configure_column("Source", flex=3, minWidth=200, wrapText=True, autoHeight=True)
     gb.configure_column("Destination", flex=3, minWidth=200, wrapText=True, autoHeight=True)
@@ -280,7 +285,6 @@ def generate_rule_table(rules,
     grid_options = gb.build()
 
     st.markdown(title_prefix)
-#    st.dataframe(df_to_show)
     AgGrid(
         df_to_show,
         gridOptions=grid_options,
@@ -290,7 +294,6 @@ def generate_rule_table(rules,
         allow_unsafe_jscode=True,
         key=key
     )
-
 # ------------------ API CONFIG ------------------
 def get_api_headers(api_key, org_id):
     return {
@@ -481,6 +484,10 @@ with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not c
                         st.session_state["group_map"] = get_group_map(groups_data)
                         st.session_state["fetched_from_api"] = True
 
+                        # ✅ Build VPN rule index
+                        from utils.match_logic import build_rule_index
+                        st.session_state["rule_index"] = build_rule_index(rules_data)
+
                         # --- Step 2: Fetch extended data ---
                         st.session_state["cancel_extended_fetch"] = False
                         st.session_state["fetching_extended"] = True
@@ -521,6 +528,14 @@ with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not c
                                         extended_result
                                     )
                                     st.session_state["object_location_map"] = location_map
+
+                                # ✅ Build rule indexes for Local Firewall Rules
+                                local_indexes = {}
+                                for net_id, details in extended_result.get("network_details", {}).items():
+                                    rules = details.get("firewall_rules", [])
+                                    if rules:
+                                        local_indexes[net_id] = build_rule_index(rules)
+                                st.session_state["local_rule_indexes"] = local_indexes
 
                         except Exception as e:
                             st.error(f"❌ Exception during extended data fetch: {e}")
