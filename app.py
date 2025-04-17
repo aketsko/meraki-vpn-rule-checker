@@ -1139,12 +1139,38 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
 elif selected_tab == "🧠 Optimization Insights":
-    rules_data = st.session_state.get("rules_data", [])
-    objects_data = st.session_state.get("objects_data", [])
-    groups_data = st.session_state.get("groups_data", [])
+    # Load from session
+    extended_data = st.session_state.get("extended_data", {})
     object_map = st.session_state.get("object_map", {})
     group_map = st.session_state.get("group_map", {})
-    extended_data = st.session_state.get("extended_data", {})
+
+    if not extended_data:
+        st.warning("Extended data not available. Please fetch Meraki data first.")
+        st.stop()
+
+    st.subheader("📍 Select Locations for Optimization Scan")
+
+    all_locations = sorted([
+        info.get("network_name")
+        for info in extended_data.get("network_details", {}).values()
+        if "firewall_rules" in info
+    ])
+    st.session_state.setdefault("optimization_locations", all_locations)
+
+    col1, col2 = st.columns([1, 5])
+    with col1:
+        if st.button("✅ Select All Locations"):
+            st.session_state["optimization_locations"] = all_locations
+        if st.button("❌ Deselect All Locations"):
+            st.session_state["optimization_locations"] = []
+
+    selected_locations = st.multiselect(
+        "Choose locations to analyze:",
+        options=all_locations,
+        default=st.session_state["optimization_locations"],
+        key="optimization_locations"
+    )
+
     def rule_covers(rule_a, rule_b):
         return (
             (rule_a["srcCidr"] == "Any" or rule_a["srcCidr"] == rule_b["srcCidr"]) and
@@ -1153,81 +1179,83 @@ elif selected_tab == "🧠 Optimization Insights":
             (rule_a["protocol"].lower() == "any" or rule_a["protocol"] == rule_b["protocol"])
         )
 
-    st.markdown("### 🧮 Select Local Firewall Locations")
-    selected_local_rules = []
-    if extended_data:
-        all_locations = sorted(set(info.get("network_name") for info in extended_data.get("network_details", {}).values()))
-        selected_locs = st.multiselect("Include Local Firewall Rules from:", all_locations, default=[])
-
-        for loc in selected_locs:
-            for info in extended_data.get("network_details", {}).values():
-                if info.get("network_name") == loc:
-                    selected_local_rules.extend(info.get("firewall_rules", []))
-
-    combined_rules = rules_data + selected_local_rules
-
-    insight_rows = []
-    seen_rules = set()
-
-    for i, rule in enumerate(combined_rules):
-        sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
-        if sig in seen_rules:
-            insight_rows.append((
-                f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
-                [i+1]
-            ))
-        else:
-            seen_rules.add(sig)
-
-        is_last = i == len(combined_rules) - 1
-        is_penultimate = i == len(combined_rules) - 2
-        is_allow_any = rule["policy"].lower() == "allow"
-        is_deny_any = rule["policy"].lower() == "deny"
-
-        if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
-            and rule["destPort"].lower() == "any"
-            and rule["protocol"].lower() == "any"):
-            if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
-                pass
-            else:
-                insight_rows.append((
-                    f"⚠️ **Broad Rule Risk** at index {i+1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
-                    [i+1]
-                ))
-
-        for j in range(i):
-            if rule_covers(combined_rules[j], rule):
-                insight_rows.append((
-                    f"🚫 **Shadowed Rule** at index {i+1}: unreachable due to broader rule at index {j+1}.",
-                    [j+1, i+1]
-                ))
+    for location in selected_locations:
+        st.markdown(f"### 🧠 Optimization for `{location}`")
+        rules = []
+        for net_id, info in extended_data.get("network_details", {}).items():
+            if info.get("network_name") == location:
+                rules = info.get("firewall_rules", [])
                 break
 
-        if i < len(combined_rules) - 1:
-            next_rule = combined_rules[i+1]
-            fields_to_compare = ["policy", "srcCidr", "destCidr"]
-            if all(rule[f] == next_rule[f] for f in fields_to_compare):
-                if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
+        if not rules:
+            st.info("No rules found for this location.")
+            continue
+
+        insight_rows = []
+        seen_rules = set()
+
+        for i, rule in enumerate(rules):
+            sig = (rule["policy"], rule["protocol"], rule["srcCidr"], rule["destCidr"], rule["destPort"])
+            if sig in seen_rules:
+                insight_rows.append((
+                    f"🔁 **Duplicate Rule** at index {i + 1}: same action, protocol, source, destination, and port.",
+                    [i + 1]
+                ))
+            else:
+                seen_rules.add(sig)
+
+            is_last = i == len(rules) - 1
+            is_penultimate = i == len(rules) - 2
+            is_allow_any = rule["policy"].lower() == "allow"
+            is_deny_any = rule["policy"].lower() == "deny"
+
+            if (rule["srcCidr"] == "Any" and rule["destCidr"] == "Any"
+                    and rule["destPort"].lower() == "any"
+                    and rule["protocol"].lower() == "any"):
+                if (is_allow_any and is_last) or (is_deny_any and is_penultimate):
+                    pass  # skip acceptable final rules
+                else:
                     insight_rows.append((
-                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/source/destination, different ports.",
-                        [i+1, i+2]
-                    ))
-                elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
-                    if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
-                        continue
-                    insight_rows.append((
-                        f"🔄 **Merge Candidate** at index {i+1} & {i+2}: same action/src/dst/ports, different protocol.",
-                        [i+1, i+2]
+                        f"⚠️ **Broad Rule Risk** at index {i + 1}: `{rule['policy'].upper()} ANY to ANY on ANY` — may shadow rules below.",
+                        [i + 1]
                     ))
 
-    if insight_rows:
-        for msg, rule_indexes in insight_rows:
-            st.markdown(msg)
-            show_rule_summary(rule_indexes)
+            for j in range(i):
+                if rule_covers(rules[j], rule):
+                    insight_rows.append((
+                        f"🚫 **Shadowed Rule** at index {i + 1}: unreachable due to broader rule at index {j + 1}.",
+                        [j + 1, i + 1]
+                    ))
+                    break
 
-        st.download_button("📅 Download Insights", "\n".join([msg for msg, _ in insight_rows]), file_name="optimization_insights.txt")
-    else:
-        st.success("✅ No optimization issues detected.")
+            if i < len(rules) - 1:
+                next_rule = rules[i + 1]
+                fields_to_compare = ["policy", "srcCidr", "destCidr"]
+                if all(rule[f] == next_rule[f] for f in fields_to_compare):
+                    if rule["destPort"] != next_rule["destPort"] and rule["protocol"] == next_rule["protocol"]:
+                        insight_rows.append((
+                            f"🔄 **Merge Candidate** at index {i + 1} & {i + 2}: same action/source/destination, different ports.",
+                            [i + 1, i + 2]
+                        ))
+                    elif rule["destPort"] == next_rule["destPort"] and rule["protocol"] != next_rule["protocol"]:
+                        if rule["destPort"].lower() != "any" and next_rule["destPort"].lower() != "any":
+                            continue
+                        insight_rows.append((
+                            f"🔄 **Merge Candidate** at index {i + 1} & {i + 2}: same action/src/dst/ports, different protocol.",
+                            [i + 1, i + 2]
+                        ))
+
+        if insight_rows:
+            for msg, rule_indexes in insight_rows:
+                st.markdown(msg)
+                show_rule_summary(rule_indexes, ruleset=rules, object_map=object_map, group_map=group_map)
+            st.download_button(
+                f"📥 Download Insights for {location}",
+                "\n".join([msg for msg, _ in insight_rows]),
+                file_name=f"optimization_insights_{location}.txt"
+            )
+        else:
+            st.success(f"✅ No optimization issues detected in `{location}`.")
 
     st.markdown("---")
     st.subheader("ℹ️ Legend")
