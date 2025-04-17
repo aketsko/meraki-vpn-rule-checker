@@ -827,19 +827,42 @@ elif selected_tab == "🔎 Search Object or Group":
 
     st.subheader("🔹 Matching Network Objects")
     object_rows = []
+
     for o in filtered_objs:
+        obj_id = o.get("id", "")
         cidr = o.get("cidr", "")
-        location = location_map.get(cidr) or ", ".join(location_map.get(f"OBJ({o.get('id')})", []))
+        fqdn = o.get("fqdn", "")
+        group_ids = o.get("groupIds", [])
+        network_ids = o.get("networkIds", [])
+
+        # Find group names that include this object
+        matching_groups = [g.get("name") for g in groups_data if obj_id in g.get("objectIds", [])]
+        group_name_str = ", ".join(matching_groups)
+
+        # Resolve locations to simple network names
+        loc_entries = location_map.get(cidr, []) + location_map.get(f"OBJ({obj_id})", [])
+        location_names = []
+        for entry in loc_entries:
+            if isinstance(entry, dict):
+                location_names.append(entry.get("network"))
+            elif isinstance(entry, str):
+                location_names.append(entry)
+
+        location_names = sorted(set(location_names))
+
         object_rows.append({
-            "ID": o.get("id", ""),
+            "ID": obj_id,
             "Name": o.get("name", ""),
             "CIDR": cidr,
-            "FQDN": o.get("fqdn", ""),
-            "Group IDs": o.get("groupIds", []),
-            "Network IDs": o.get("networkIds", []),
-            "Location": location
+            "FQDN": fqdn,
+            "Groups": group_name_str,
+            "Network IDs": network_ids,
+            "Location": ", ".join(location_names)
         })
+
     st.dataframe(safe_dataframe(object_rows))
+
+
 
     st.subheader("🔸 Matching Object Groups")
     group_rows = []
