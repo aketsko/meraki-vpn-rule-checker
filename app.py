@@ -1027,35 +1027,39 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         dst_port_str = port_input.strip() if port_input.strip().lower() != "any" else "any"
         proto_str = protocol.strip().upper() if protocol.strip().lower() != "any" else "ANY"
 
-        with st.expander("### 🔍 Traffic Flow", expanded=True):
-
-            col1, col2, col3 = st.columns([4, 4, 1])
-
-            def format_boxed(label, value):
-                return f"""
-                <div style="margin-bottom:0.5rem">
-                    <span style="font-weight: 600; color: #444;">{label}</span><br>
-                    <div style="background-color: #ecf0f1; padding: 6px 10px; border-radius: 5px; margin-top: 2px;">
-                        <code>{value}</code>
-                    </div>
-                </div>
-                """
-
+        col1, col2 = st.columns([2, 8])
             with col1:
-                st.markdown(format_boxed("Source Object", source_input or "-"), unsafe_allow_html=True)
-                st.markdown(format_boxed("Source CIDR", src_cidr_str), unsafe_allow_html=True)
-                st.markdown(format_boxed("Source Port", src_port_str), unsafe_allow_html=True)
-
+                st.markdown("<h2 style='text-align: center;'>🔍 Traffic Flow</h2>", unsafe_allow_html=True )
             with col2:
-                st.markdown(format_boxed("Destination Object", destination_input or "-"), unsafe_allow_html=True)
-                st.markdown(format_boxed("Destination CIDR", dst_cidr_str), unsafe_allow_html=True)
-                st.markdown(format_boxed("Destination Port", dst_port_str), unsafe_allow_html=True)
+                with st.expander("### 🔍 Traffic Flow Details", expanded=True):
 
-            with col3:
-                #st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
-                st.markdown(format_boxed("Protocol", proto_str), unsafe_allow_html=True)
+                    col1, col2, col3 = st.columns([4, 4, 1])
 
-            st.markdown("---")
+                    def format_boxed(label, value):
+                        return f"""
+                        <div style="margin-bottom:0.5rem">
+                            <span style="font-weight: 600; color: #444;">{label}</span><br>
+                            <div style="background-color: #ecf0f1; padding: 6px 10px; border-radius: 5px; margin-top: 2px;">
+                                <code>{value}</code>
+                            </div>
+                        </div>
+                        """
+
+                    with col1:
+                        st.markdown(format_boxed("Source Object", source_input or "-"), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Source CIDR", src_cidr_str), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Source Port", src_port_str), unsafe_allow_html=True)
+
+                    with col2:
+                        st.markdown(format_boxed("Destination Object", destination_input or "-"), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Destination CIDR", dst_cidr_str), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Destination Port", dst_port_str), unsafe_allow_html=True)
+
+                    with col3:
+                        #st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
+                        st.markdown(format_boxed("Protocol", proto_str), unsafe_allow_html=True)
+
+                    st.markdown("---")
 
 
 
