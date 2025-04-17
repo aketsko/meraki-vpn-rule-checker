@@ -1029,7 +1029,12 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         st.markdown("### 🔍 Traffic Flow")
 
-        col1, col2, col3 = st.columns([4, 4, 1])
+        col0, col1, col2, col3 = st.columns([2, 4, 4, 1])
+        with col0:
+            st.markdown("")
+            st.code("Object")
+            st.markdown("CIDR")
+            st.markdown("Port")
 
         with col1:
             st.markdown("**Source**")
@@ -1045,7 +1050,10 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         with col3:
             st.markdown("**Protocol**")
+            st.markdown("")
+            st.markdown("")
             st.markdown(proto_str)
+            
 
         st.markdown("---")
 
