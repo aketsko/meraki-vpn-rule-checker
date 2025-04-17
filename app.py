@@ -827,14 +827,28 @@ elif selected_tab == "🔎 Search Object or Group":
         def obj_matches_location(o):
             obj_id = o.get("id", "")
             cidr = o.get("cidr", "")
-            return (
-                location_term in location_map.get(f"OBJ({obj_id})", []) or
-                location_term in location_map.get(cidr, [])
-            )
+            entries = location_map.get(f"OBJ({obj_id})", []) + location_map.get(cidr, [])
+            for entry in entries:
+                if isinstance(entry, dict):
+                    if entry.get("network", "") == location_term:
+                        return True
+                elif isinstance(entry, str):
+                    if entry == location_term:
+                        return True
+            return False
 
         def grp_matches_location(g):
             grp_id = g.get("id", "")
-            return location_term in location_map.get(f"GRP({grp_id})", [])
+            entries = location_map.get(f"GRP({grp_id})", [])
+            for entry in entries:
+                if isinstance(entry, dict):
+                    if entry.get("network", "") == location_term:
+                        return True
+                elif isinstance(entry, str):
+                    if entry == location_term:
+                        return True
+            return False
+
 
         filtered_objs = [o for o in filtered_objs if obj_matches_location(o)]
         filtered_grps = [g for g in filtered_grps if grp_matches_location(g)]
