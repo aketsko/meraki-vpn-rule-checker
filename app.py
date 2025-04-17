@@ -926,7 +926,7 @@ elif selected_tab == "🔎 Search Object or Group":
                     "CIDR": cidr,
                     "FQDN": o.get("fqdn", ""),
                     "Group Names": ", ".join(group_names),
-                    "Network IDs": ", ".join(map(str, o.get("networkIds", []))),
+                    #"Network IDs": ", ".join(map(str, o.get("networkIds", []))),
                     "Location": ", ".join(sorted(locations))
                 })
 
