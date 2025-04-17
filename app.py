@@ -1029,9 +1029,9 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         col1, col2 = st.columns([2, 8])
         with col1:
-            st.markdown("<h2 style='text-align: center;'>🔍 Traffic Flow</h2>", unsafe_allow_html=True )
+            st.markdown("🔍 Traffic Flow")
         with col2:
-            with st.expander("### 🔍 Traffic Flow Details", expanded=True):
+            with st.expander("### collapse", expanded=False):
 
                 col1, col2, col3 = st.columns([4, 4, 1])
 
