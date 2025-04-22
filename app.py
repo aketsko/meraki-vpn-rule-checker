@@ -82,18 +82,33 @@ def get_invalid_objects(objects_data):
     invalid_objects = []
 
     for obj in objects_data:
-        cidr = obj.get("cidr", "")
+        cidr = obj.get("cidr", "").strip()
         name = obj.get("name", "(unnamed)")
         obj_id = obj.get("id", "")
 
+        # Optional: allow missing CIDRs if that's valid in your context
         if not cidr:
-            invalid_objects.append({"ID": obj_id, "Name": name, "CIDR": "", "Reason": "Missing CIDR"})
-            continue
+            continue  # Assume valid if no CIDR is defined
+
         try:
-            ipaddress.ip_network(cidr, strict=False)
+            net = ipaddress.ip_network(cidr, strict=False)
+            if str(net.network_address) != cidr.split("/")[0]:
+                invalid_objects.append({
+                    "ID": obj_id,
+                    "Name": name,
+                    "CIDR": cidr,
+                    "Reason": f"CIDR not base address. Expected {net.network_address}/{net.prefixlen}"
+                })
         except ValueError as e:
-            invalid_objects.append({"ID": obj_id, "Name": name, "CIDR": cidr, "Reason": str(e)})
+            invalid_objects.append({
+                "ID": obj_id,
+                "Name": name,
+                "CIDR": cidr,
+                "Reason": f"Invalid CIDR: {e}"
+            })
+
     return invalid_objects
+
 
 def show_rule_summary(indexes):
     rows = []
