@@ -456,261 +456,149 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 st.sidebar.header("☰ Menu")
 st.session_state["api_data_expander"] = False
-#collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data") or st.session_state["api_data_expander"])
+collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data") or st.session_state["api_data_expander"])
 
-# st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
-# with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not collapse_expanders):
+st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
+with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not collapse_expanders):
 
-#     org_id = st.text_input("🆔 Enter your Organization ID", value="")
-#     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
+    org_id = st.text_input("🆔 Enter your Organization ID", value="")
+    api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
 
-#     if st.button("📦 Fetch Data"):
-#         if not api_key or not org_id:
-#             st.error("❌ Please enter both API key and Org ID.")
-#         else:
-#             with st.spinner("🔄 Fetching all API data..."):
-#                 try:
-#                     # --- Step 1: Fetch basic data ---
-#                     rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
-#                     if not fetched:
-#                         st.session_state["fetched_from_api"] = False
-#                         st.error("❌ Failed to refresh base data from API.")
-#                     else:
-#                         st.session_state["rules_data"] = rules_data
-#                         st.session_state["objects_data"] = objects_data
-#                         st.session_state["groups_data"] = groups_data
-#                         st.session_state["object_map"] = get_object_map(objects_data)
-#                         st.session_state["group_map"] = get_group_map(groups_data)
-#                         st.session_state["fetched_from_api"] = True
+    if st.button("📦 Fetch Data"):
+        if not api_key or not org_id:
+            st.error("❌ Please enter both API key and Org ID.")
+        else:
+            with st.spinner("🔄 Fetching all API data..."):
+                try:
+                    # --- Step 1: Fetch basic data ---
+                    rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
+                    if not fetched:
+                        st.session_state["fetched_from_api"] = False
+                        st.error("❌ Failed to refresh base data from API.")
+                    else:
+                        st.session_state["rules_data"] = rules_data
+                        st.session_state["objects_data"] = objects_data
+                        st.session_state["groups_data"] = groups_data
+                        st.session_state["object_map"] = get_object_map(objects_data)
+                        st.session_state["group_map"] = get_group_map(groups_data)
+                        st.session_state["fetched_from_api"] = True
 
-#                         # --- Step 2: Fetch extended data ---
-#                         st.session_state["cancel_extended_fetch"] = False
-#                         st.session_state["fetching_extended"] = True
+                        # --- Step 2: Fetch extended data ---
+                        st.session_state["cancel_extended_fetch"] = False
+                        st.session_state["fetching_extended"] = True
 
-#                         progress_bar = st.progress(0)
-#                         progress_text = st.empty()
+                        progress_bar = st.progress(0)
+                        progress_text = st.empty()
 
-#                         def update_progress(current, total, name):
-#                             ratio = current / total if total else 0
-#                             ratio = min(max(ratio, 0.0), 1.0)
-#                             try:
-#                                 progress_bar.progress(ratio)
-#                                 progress_text.markdown(
-#                                     f"🔄 **Processing network**: ({current}/{total})<br>`{name}`",
-#                                     unsafe_allow_html=True
-#                                 )
-#                             except:
-#                                 pass
+                        def update_progress(current, total, name):
+                            ratio = current / total if total else 0
+                            ratio = min(max(ratio, 0.0), 1.0)
+                            try:
+                                progress_bar.progress(ratio)
+                                progress_text.markdown(
+                                    f"🔄 **Processing network**: ({current}/{total})<br>`{name}`",
+                                    unsafe_allow_html=True
+                                )
+                            except:
+                                pass
 
-#                         try:
-#                             extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
-#                             if st.session_state.get("cancel_extended_fetch"):
-#                                 st.info("⛔ Fetch cancelled before completion.")
-#                                 st.session_state["extended_data"] = None
-#                                 st.session_state["object_location_map"] = {}
-#                             elif "error" in extended_result:
-#                                 st.error(f"❌ Error: {extended_result['error']}")
-#                                 st.session_state["extended_data"] = None
-#                                 st.session_state["object_location_map"] = {}
-#                             else:
-#                                 st.session_state["extended_data"] = extended_result
-#                                 st.success("✅ Extended Meraki data fetched successfully.")
+                        try:
+                            extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
+                            if st.session_state.get("cancel_extended_fetch"):
+                                st.info("⛔ Fetch cancelled before completion.")
+                                st.session_state["extended_data"] = None
+                                st.session_state["object_location_map"] = {}
+                            elif "error" in extended_result:
+                                st.error(f"❌ Error: {extended_result['error']}")
+                                st.session_state["extended_data"] = None
+                                st.session_state["object_location_map"] = {}
+                            else:
+                                st.session_state["extended_data"] = extended_result
+                                st.success("✅ Extended Meraki data fetched successfully.")
 
-#                                 with st.spinner("🧠 Mapping objects to VPN locations..."):
-#                                     location_map = build_object_location_map(
-#                                         st.session_state["objects_data"],
-#                                         st.session_state["groups_data"],
-#                                         extended_result
-#                                     )
-#                                     st.session_state["object_location_map"] = location_map
+                                with st.spinner("🧠 Mapping objects to VPN locations..."):
+                                    location_map = build_object_location_map(
+                                        st.session_state["objects_data"],
+                                        st.session_state["groups_data"],
+                                        extended_result
+                                    )
+                                    st.session_state["object_location_map"] = location_map
 
-#                         except Exception as e:
-#                             st.error(f"❌ Exception during extended data fetch: {e}")
-#                             st.session_state["extended_data"] = None
-#                             st.session_state["object_location_map"] = {}
+                        except Exception as e:
+                            st.error(f"❌ Exception during extended data fetch: {e}")
+                            st.session_state["extended_data"] = None
+                            st.session_state["object_location_map"] = {}
 
-#                         st.session_state["fetching_extended"] = False
-#                         progress_bar.empty()
-#                         progress_text.empty()
+                        st.session_state["fetching_extended"] = False
+                        progress_bar.empty()
+                        progress_text.empty()
 
-#                 except Exception as e:
-#                     st.error(f"❌ Exception during data fetch: {e}")
-#                     st.session_state["fetched_from_api"] = False
-
-
-# st.sidebar.markdown("📤 Data Import and Export")
-# if "snapshot_expander_open" not in st.session_state:
-#     st.session_state["snapshot_expander_open"] = not collapse_expanders
-
-# with st.sidebar.expander("🔽 Upload prepared .json data or create and download it", expanded=st.session_state["snapshot_expander_open"]):
+                except Exception as e:
+                    st.error(f"❌ Exception during data fetch: {e}")
+                    st.session_state["fetched_from_api"] = False
 
 
-#     # Upload Snapshot to restore everything
-#     uploaded_snapshot = st.file_uploader("📤 Load Snapshot (.json)", type="json")
-#     if uploaded_snapshot:
-#         try:
-#             snapshot = json.load(uploaded_snapshot)
+st.sidebar.markdown("📤 Data Import and Export")
+if "snapshot_expander_open" not in st.session_state:
+    st.session_state["snapshot_expander_open"] = not collapse_expanders
 
-#             st.session_state["rules_data"] = snapshot.get("rules_data", [])
-#             st.session_state["objects_data"] = snapshot.get("objects_data", [])
-#             st.session_state["groups_data"] = snapshot.get("groups_data", [])
-#             st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
-#             st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-#             st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
-#             st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Added
-#             st.session_state["fetched_from_api"] = True  # Emulate success
-
-#             network_count = len(st.session_state["extended_data"].get("network_map", {}))
-#             snapshot_msg = st.empty()
-#             snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
-#             snapshot_msg.empty()
-
-#         except Exception as e:
-#             st.error(f"❌ Failed to load snapshot: {e}")
+with st.sidebar.expander("🔽 Upload prepared .json data or create and download it", expanded=st.session_state["snapshot_expander_open"]):
 
 
-#     # Update local variables from session
-#     rules_data = st.session_state.get("rules_data", [])
-#     objects_data = st.session_state.get("objects_data", [])
-#     groups_data = st.session_state.get("groups_data", [])
-#     object_map = st.session_state.get("object_map", {})
-#     group_map = st.session_state.get("group_map", {})
+    # Upload Snapshot to restore everything
+    uploaded_snapshot = st.file_uploader("📤 Load Snapshot (.json)", type="json")
+    if uploaded_snapshot:
+        try:
+            snapshot = json.load(uploaded_snapshot)
+
+            st.session_state["rules_data"] = snapshot.get("rules_data", [])
+            st.session_state["objects_data"] = snapshot.get("objects_data", [])
+            st.session_state["groups_data"] = snapshot.get("groups_data", [])
+            st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
+            st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
+            st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
+            st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Added
+            st.session_state["fetched_from_api"] = True  # Emulate success
+
+            network_count = len(st.session_state["extended_data"].get("network_map", {}))
+            snapshot_msg = st.empty()
+            snapshot_msg.success(f"📤 Snapshot loaded. Networks: {network_count}, Rules: {len(st.session_state['rules_data'])}")
+            snapshot_msg.empty()
+
+        except Exception as e:
+            st.error(f"❌ Failed to load snapshot: {e}")
+
+
+    # Update local variables from session
+    rules_data = st.session_state.get("rules_data", [])
+    objects_data = st.session_state.get("objects_data", [])
+    groups_data = st.session_state.get("groups_data", [])
+    object_map = st.session_state.get("object_map", {})
+    group_map = st.session_state.get("group_map", {})
 
     
 
-#     # Snapshot creation + download
-#     if st.button("💾 Create Data Snapshot"):
-#         st.session_state["snapshot_expander_open"] = True
-#         try:
-#             snapshot_str, snapshot_filename = prepare_snapshot(
-#                 st.session_state.get("rules_data", []),
-#                 st.session_state.get("objects_data", []),
-#                 st.session_state.get("groups_data", []),
-#                 st.session_state.get("extended_data", {}),
-#                 st.session_state.get("object_location_map", {})
-#             )
-
-#             st.download_button(
-#                 label="📥 Download API Snapshot",
-#                 data=snapshot_str,
-#                 file_name=snapshot_filename,
-#                 mime="application/json",
-#                 key="auto_snapshot_download"
-#             )
-#         except Exception as e:
-#             st.error(f"❌ Snapshot error: {e}")
-
-
-if selected_tab == "📊 Overview":
-    # ☁️ Connect to Meraki Dashboard
-    st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
-    with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not collapse_expanders):
-        org_id = st.text_input("🆔 Enter your Organization ID", value="")
-        api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
-
-        if st.button("📦 Fetch Data"):
-            if not api_key or not org_id:
-                st.error("❌ Please enter both API key and Org ID.")
-            else:
-                with st.spinner("🔄 Fetching all API data (basic + extended)..."):
-                    try:
-                        # Step 1: Basic data
-                        rules_data, objects_data, groups_data, fetched = fetch_meraki_data(api_key, org_id)
-                        if not fetched:
-                            st.session_state["fetched_from_api"] = False
-                            st.error("❌ Failed to refresh base data from API.")
-                        else:
-                            st.session_state["rules_data"] = rules_data
-                            st.session_state["objects_data"] = objects_data
-                            st.session_state["groups_data"] = groups_data
-                            st.session_state["object_map"] = get_object_map(objects_data)
-                            st.session_state["group_map"] = get_group_map(groups_data)
-                            st.session_state["fetched_from_api"] = True
-
-                            # Step 2: Extended data
-                            st.session_state["cancel_extended_fetch"] = False
-                            st.session_state["fetching_extended"] = True
-
-                            progress_bar = st.progress(0)
-                            progress_text = st.empty()
-
-                            def update_progress(current, total, name):
-                                ratio = current / total if total else 0
-                                ratio = min(max(ratio, 0.0), 1.0)
-                                try:
-                                    progress_bar.progress(ratio)
-                                    progress_text.markdown(
-                                        f"🔄 **Processing network**: ({current}/{total})<br>`{name}`",
-                                        unsafe_allow_html=True
-                                    )
-                                except:
-                                    pass
-
-                            try:
-                                extended_result = fetch_meraki_data_extended(api_key, org_id, update_progress=update_progress)
-                                if st.session_state.get("cancel_extended_fetch"):
-                                    st.info("⛔ Fetch cancelled before completion.")
-                                    st.session_state["extended_data"] = None
-                                    st.session_state["object_location_map"] = {}
-                                elif "error" in extended_result:
-                                    st.error(f"❌ Error: {extended_result['error']}")
-                                    st.session_state["extended_data"] = None
-                                    st.session_state["object_location_map"] = {}
-                                else:
-                                    st.session_state["extended_data"] = extended_result
-                                    st.success("✅ Extended Meraki data fetched successfully.")
-                                    with st.spinner("🧠 Mapping objects to VPN locations..."):
-                                        location_map = build_object_location_map(
-                                            st.session_state["objects_data"],
-                                            st.session_state["groups_data"],
-                                            extended_result
-                                        )
-                                        st.session_state["object_location_map"] = location_map
-
-                            except Exception as e:
-                                st.error(f"❌ Exception during extended data fetch: {e}")
-                                st.session_state["extended_data"] = None
-                                st.session_state["object_location_map"] = {}
-
-                            st.session_state["fetching_extended"] = False
-                            progress_bar.empty()
-                            progress_text.empty()
-                    except Exception as e:
-                        st.error(f"❌ Exception during data fetch: {e}")
-                        st.session_state["fetched_from_api"] = False
-
-    # 📤 Data Import and Export
-    st.sidebar.markdown("📤 Data Import and Export")
-    with st.sidebar.expander("📥 Load / Save Data Snapshot", expanded=False):
-        if st.button("📤 Create Data Snapshot"):
-            snapshot = {
-                "rules_data": st.session_state.get("rules_data", []),
-                "objects_data": st.session_state.get("objects_data", []),
-                "groups_data": st.session_state.get("groups_data", []),
-                "extended_data": st.session_state.get("extended_data", {}),
-                "object_location_map": st.session_state.get("object_location_map", {})
-            }
-            st.download_button(
-                "💾 Download Snapshot",
-                json.dumps(snapshot, indent=2),
-                file_name="meraki_snapshot.json",
-                mime="application/json"
+    # Snapshot creation + download
+    if st.button("💾 Create Data Snapshot"):
+        st.session_state["snapshot_expander_open"] = True
+        try:
+            snapshot_str, snapshot_filename = prepare_snapshot(
+                st.session_state.get("rules_data", []),
+                st.session_state.get("objects_data", []),
+                st.session_state.get("groups_data", []),
+                st.session_state.get("extended_data", {}),
+                st.session_state.get("object_location_map", {})
             )
 
-        uploaded_snapshot = st.file_uploader("📂 Upload Snapshot (JSON)", type="json")
-        if uploaded_snapshot:
-            try:
-                snapshot = json.load(uploaded_snapshot)
-                st.session_state["rules_data"] = snapshot.get("rules_data", [])
-                st.session_state["objects_data"] = snapshot.get("objects_data", [])
-                st.session_state["groups_data"] = snapshot.get("groups_data", [])
-                st.session_state["extended_data"] = snapshot.get("extended_data", {})
-                st.session_state["object_location_map"] = snapshot.get("object_location_map", {})
-                st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
-                st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
-                st.success("✅ Snapshot loaded successfully.")
-            except Exception as e:
-                st.error(f"❌ Failed to load snapshot: {e}")
+            st.download_button(
+                label="📥 Download API Snapshot",
+                data=snapshot_str,
+                file_name=snapshot_filename,
+                mime="application/json",
+                key="auto_snapshot_download"
+            )
+        except Exception as e:
+            st.error(f"❌ Snapshot error: {e}")
 
 
 
@@ -765,8 +653,6 @@ selected_tab = st.session_state.active_tab
 
 
 if selected_tab == "📘 Overview":
-    
-    
     data_loaded = (
         st.session_state.get("rules_data")
         and st.session_state.get("objects_data")
