@@ -1056,14 +1056,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
         if show_local:
-            seen_locations = set()
-            unique_location_names = sorted(set(loc for loc, _ in shared_locs))
-            seen_locations = set()
-            for location_name in unique_location_names:
-                if location_name in seen_locations:
-                    continue
-                seen_locations.add(location_name)
-
             st.subheader("🧱 Local Firewall Rules")
             with st.sidebar:
                 location_filter_title = f"📍 Location Filter ({len(shared_locs)} found)"
@@ -1086,12 +1078,11 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
 
-            
-            
+            seen_locations = set()
+
 
             with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=st.session_state["fw_expand_local"]):
-                
-                for location_name in unique_location_names:
+                for location_name, _ in sorted(shared_locs):
                     if location_name not in selected_locations:
                         continue
                     if location_name in seen_locations:
