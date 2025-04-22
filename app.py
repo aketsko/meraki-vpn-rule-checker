@@ -1069,7 +1069,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             with st.sidebar:
                 st.markdown("### 📍 Location Filter")
                 networks = extended_data.get("network_details", {})
-                all_locations = sorted(set(info.get("network_name") for info in networks.values() if info.get("network_name")))
+                all_locations = sorted(loc for loc, _ in shared_locs)
                 with st.expander(f"Collapse - `{len(all_locations)}`", expanded=True):
 
                     st.session_state.setdefault("selected_local_locations", all_locations)
