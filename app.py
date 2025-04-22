@@ -780,7 +780,7 @@ if selected_tab == "📘 Overview":
                 if rules:
                     for rule in rules:
                         selected_rules.append({
-                            "Action": rule.get("policy", "").upper(),
+                            "Policy": rule.get("policy", "").upper(),
                             "Protocol": rule.get("protocol", ""),
                             "Source": ", ".join(id_to_name(cid.strip(), object_map, group_map) for cid in rule["srcCidr"].split(",")),
                             "Source Port": rule.get("srcPort", ""),
@@ -798,14 +798,14 @@ if selected_tab == "📘 Overview":
 
                     row_style_js = JsCode("""
                     function(params) {
-                        if (params.data.policy === "allow" || params.data.policy === "allow") {
+                        if (params.data.Policy === "allow" || params.data.policy === "allow") {
                             return {
                                 backgroundColor: '#99E2B4',
                                 color: '#155724',
                                 fontWeight: 'bold'
                             };
                         }
-                        if (params.data.policy === "deny" || params.data.policy === "deny") {
+                        if (params.data.Policy === "deny" || params.data.policy === "deny") {
                             return {
                                 backgroundColor: '#F7EF81',
                                 color: '#721c24',
