@@ -605,9 +605,6 @@ st.session_state["api_data_expander"] = False
 
 
 # -------------- MANUAL TAB HANDLING ----------------
-# Tab selector
-tabs = ["📊 Overview", "🛡️ Search in Firewall and VPN Rules", "🔎 Search Object or Group", "🧠 Optimization Insights"]
-selected_tab = st.sidebar.radio("📁 Select Tab", tabs)
 
 with st.container():
     col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
@@ -647,8 +644,11 @@ with st.container():
     with col_right:
         col_b, col_n, col_o, col_g, col_r = st.columns(5)
         col_b.text("")
+        rules_data = st.session_state.get("rules_data", [])
         col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
+        objects_data = st.session_state.get("objects_data", [])
         col_o.metric("🌐 Objects", f"{len(objects_data)}")
+        groups_data = st.session_state.get("groups_data", [])
         col_g.metric("🗃️ Groups", f"{len(groups_data)}")
         network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
         col_n.metric("🏢 Networks", network_count)
@@ -662,6 +662,7 @@ if selected_tab == "📘 Overview":
     
     # ☁️ Connect to Meraki Dashboard
     st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
+    collapse_expanders = False  # Initialize with a default value
     with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not collapse_expanders):
         org_id = st.text_input("🆔 Enter your Organization ID", value="")
         api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
