@@ -537,7 +537,7 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=not collapse_expanders):
                     st.error(f"❌ Exception during data fetch: {e}")
                     st.session_state["fetched_from_api"] = False
 
-st.sidebar.markdown("📤 Data Import and Export")
+    st.sidebar.markdown("📤 Data Import and Export")
 # if "snapshot_expander_open" not in st.session_state:
 #     st.session_state["snapshot_expander_open"] = not collapse_expanders
 
