@@ -742,7 +742,7 @@ if selected_tab == "📘 Overview":
                     continue
 
                 rows.append({
-                    "Subnet Name": cidr,
+                   # "Subnet Name": cidr,
                     "CIDR": cidr,
                     "In VPN": "✅" if use_vpn else "❌",
                     "Objects": ", ".join(matched_objects) if matched_objects else "—"
@@ -784,6 +784,32 @@ if selected_tab == "📘 Overview":
                     gb = GridOptionsBuilder.from_dataframe(df)
                     gb.configure_default_column(filter=True, sortable=True, resizable=True, wrapText=True, autoHeight=True)
                     gb.configure_grid_options(domLayout="autoHeight")
+                    grid_options = gb.build()
+
+                    st.markdown(f"📄 Showing **{len(selected_rules)}** rules for `{selected_loc}`")
+                    row_style_js = JsCode("""
+                    function(params) {
+                        if (params.data.Action === "allow" || params.data.Action === "ALLOW") {
+                            return {
+                                backgroundColor: '#d4edda',
+                                color: '#155724',
+                                fontWeight: 'bold'
+                            };
+                        }
+                        if (params.data.Action === "deny" || params.data.Action === "DENY") {
+                            return {
+                                backgroundColor: '#f8d7da',
+                                color: '#721c24',
+                                fontWeight: 'bold'
+                            };
+                        }
+                        return {};
+                    }
+                    """)
+
+                    gb = GridOptionsBuilder.from_dataframe(df)
+                    gb.configure_default_column(filter=True, sortable=True, resizable=True, wrapText=True, autoHeight=True)
+                    gb.configure_grid_options(getRowStyle=row_style_js, domLayout="autoHeight")
                     grid_options = gb.build()
 
                     st.markdown(f"📄 Showing **{len(selected_rules)}** rules for `{selected_loc}`")
