@@ -556,7 +556,7 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=not collapse_expanders):
             st.session_state["object_map"] = get_object_map(st.session_state["objects_data"])
             st.session_state["group_map"] = get_group_map(st.session_state["groups_data"])
             st.session_state["extended_data"] = snapshot.get("extended_api_data", {})
-            st.session_state["object_location_map"] = snapshot.get("location_map", {})  # ✅ Added
+            st.session_state["object_location_map"] = snapshot.get("location_map", {})  
             st.session_state["fetched_from_api"] = True  # Emulate success
 
             network_count = len(st.session_state["extended_data"].get("network_map", {}))
@@ -773,7 +773,7 @@ elif selected_tab == "🔎 Search Object or Group":
 
     # --- Sidebar Controls ---
     with st.sidebar:
-        st.markdown("### 📍 Location Filters")
+        #st.markdown("### 📍 Location Filters")
         search_term = st.text_input("Search by name or CIDR:", "").lower()
 
         location_term = None
