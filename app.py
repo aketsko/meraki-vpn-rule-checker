@@ -805,7 +805,17 @@ if selected_tab == "📘 Overview":
                         return {};
                     }
                     """)
-
+                    for rule in rules:
+                        selected_rules.append({
+                            "Action": rule.get("policy", "").upper(),
+                            "Protocol": rule.get("protocol", ""),
+                            "Source": ", ".join(id_to_name(cid.strip(), object_map, group_map) for cid in rule["srcCidr"].split(",")),
+                            "Source Port": rule.get("srcPort", ""),
+                            "Destination": ", ".join(id_to_name(cid.strip(), object_map, group_map) for cid in rule["destCidr"].split(",")),
+                            "Destination Port": rule.get("destPort", ""),
+                            "Comment": rule.get("comment", ""),
+                        })
+                        
                     gb = GridOptionsBuilder.from_dataframe(df)
                     gb.configure_default_column(filter=True, sortable=True, resizable=True, wrapText=True, autoHeight=True)
                     gb.configure_grid_options(getRowStyle=row_style_js, domLayout="autoHeight")
