@@ -1081,7 +1081,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             seen_locations = set()
 
 
-            with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=st.session_state["fw_expand_local"]):
+            with st.expander(f"Collapse - `{len(set(loc for loc, _ in shared_locs))}`", expanded=st.session_state["fw_expand_local"]):
                 for location_name in all_locations:
                     if location_name not in selected_locations:
                         continue
@@ -1101,7 +1101,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                     #     if info.get("network_name") == location_name:
                     #         rules = info.get("firewall_rules", [])
                         st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
-                        st.markdown(f"_Total rules: {len(set(loc for loc, _ in shared_locs))}_")
+                        st.markdown(f"_Total rules: {len(rules)}_")
                         if rules:
    #                         with st.expander(f"Collapse - `{location_name}`", expanded=st.session_state["fw_expand_local"]):
                              generate_rule_table(
