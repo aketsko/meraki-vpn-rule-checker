@@ -1036,9 +1036,8 @@ elif selected_tab == "🔎 Search Object or Group":
                     st.write(f"📝 **Metadata**: {s.get('metadata', []) or '—'}")
         if not found:
             st.info("No matching subnet found in VPN settings.")
-    st.markdown("---")
-    st.subheader("🔸 Matching Object Groups")
-
+        st.markdown("---")
+        st.subheader("🔸 Matching Object Groups")
         group_rows = []
         for g in filtered_grps:
             members = g.get("objectIds", [])
