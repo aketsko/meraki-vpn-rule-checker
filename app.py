@@ -754,7 +754,50 @@ if selected_tab == "📘 Overview":
             else:
                 st.info("No subnets found for this network.")
 
+            st.markdown("---")
+           # st.subheader("🧱 View Local Firewall Rules by Location")
 
+            extended_data = st.session_state.get("extended_data", {})
+            network_details = extended_data.get("network_details", {}) if extended_data else {}
+
+            all_locations = sorted(
+                info.get("network_name", "")
+                for info in network_details.values()
+                if info.get("firewall_rules")
+            )
+
+            if not all_locations:
+                st.info("No local firewall rule data available. Please fetch extended data.")
+            else:
+                selected_loc = st.selectbox("Select a location:", options=all_locations, key="overview_fw_location")
+
+                selected_rules = []
+                for net_id, info in network_details.items():
+                    if info.get("network_name") == selected_loc:
+                        selected_rules = info.get("firewall_rules", [])
+                        break
+
+                if selected_rules:
+                    df = pd.DataFrame(selected_rules)
+                    if "comment" in df.columns:
+                        df.rename(columns={"comment": "Comment"}, inplace=True)
+                    gb = GridOptionsBuilder.from_dataframe(df)
+                    gb.configure_default_column(filter=True, sortable=True, resizable=True, wrapText=True, autoHeight=True)
+                    gb.configure_grid_options(domLayout="autoHeight")
+                    grid_options = gb.build()
+
+                    st.markdown(f"📄 Showing **{len(selected_rules)}** rules for `{selected_loc}`")
+                    AgGrid(
+                        df,
+                        gridOptions=grid_options,
+                        enable_enterprise_modules=False,
+                        fit_columns_on_grid_load=True,
+                        use_container_width=True,
+                        allow_unsafe_jscode=True,
+                        key="overview_local_fw_table"
+                    )
+                else:
+                    st.warning("No firewall rules found for this location.")
 
 elif selected_tab == "🔎 Search Object or Group":
 
