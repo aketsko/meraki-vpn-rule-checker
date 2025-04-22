@@ -1079,10 +1079,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
             seen_locations = set()
-            for location_name in unique_location_names:
-                if location_name in seen_locations:
-                    continue
-                seen_locations.add(location_name)
+            
 
             with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=st.session_state["fw_expand_local"]):
                 unique_location_names = sorted(set(loc for loc, _ in shared_locs))
