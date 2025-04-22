@@ -601,7 +601,61 @@ st.session_state["api_data_expander"] = False
 #             st.error(f"❌ Snapshot error: {e}")
 
 
-if selected_tab == "📊 Overview":
+
+
+
+# -------------- MANUAL TAB HANDLING ----------------
+with st.container():
+    col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
+
+    # LEFT: Label + Selectbox
+    with col_left:
+        st.markdown(" 📘-🔎-🛡️-🧠 Choose the module:")
+        tab_names = ["📘 Overview", "🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
+
+        if "active_tab" not in st.session_state:
+            st.session_state.active_tab = tab_names[0]  # Default
+
+        def on_tab_change():
+            st.session_state.active_tab = st.session_state["selected_tab"]
+
+        st.selectbox(
+            "Select Tab",
+            tab_names,
+            index=tab_names.index(st.session_state.active_tab),
+            key="selected_tab",
+            on_change=on_tab_change,
+            label_visibility="collapsed"
+        )
+
+    # Detect tab switch and collapse expanders if not on startup tab
+    if "last_active_tab" not in st.session_state:
+        st.session_state.last_active_tab = st.session_state.active_tab
+
+    # When user changes tab, collapse API/Data expanders
+    if st.session_state.active_tab != st.session_state.last_active_tab:
+        if st.session_state.active_tab != "☁️ API & Snapshot":
+            st.session_state["api_data_expander"] = False
+        st.session_state.last_active_tab = st.session_state.active_tab
+
+
+    # RIGHT: Metrics
+    with col_right:
+        col_b, col_n, col_o, col_g, col_r = st.columns(5)
+        col_b.text("")
+        col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
+        col_o.metric("🌐 Objects", f"{len(objects_data)}")
+        col_g.metric("🗃️ Groups", f"{len(groups_data)}")
+        network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
+        col_n.metric("🏢 Networks", network_count)
+
+
+# Update active_tab variable
+selected_tab = st.session_state.active_tab
+
+
+if selected_tab == "📘 Overview":
+    
     # ☁️ Connect to Meraki Dashboard
     st.sidebar.markdown("☁️ Connect to Meraki Dashboard")
     with st.sidebar.expander("🔽 Fetch Data from Meraki Dashboard", expanded=not collapse_expanders):
@@ -712,59 +766,7 @@ if selected_tab == "📊 Overview":
             except Exception as e:
                 st.error(f"❌ Failed to load snapshot: {e}")
 
-
-
-# -------------- MANUAL TAB HANDLING ----------------
-with st.container():
-    col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
-
-    # LEFT: Label + Selectbox
-    with col_left:
-        st.markdown(" 📘-🔎-🛡️-🧠 Choose the module:")
-        tab_names = ["📘 Overview", "🔎 Search Object or Group", "🛡️ Search in Firewall and VPN Rules", "🧠 Optimization Insights"]
-
-        if "active_tab" not in st.session_state:
-            st.session_state.active_tab = tab_names[0]  # Default
-
-        def on_tab_change():
-            st.session_state.active_tab = st.session_state["selected_tab"]
-
-        st.selectbox(
-            "Select Tab",
-            tab_names,
-            index=tab_names.index(st.session_state.active_tab),
-            key="selected_tab",
-            on_change=on_tab_change,
-            label_visibility="collapsed"
-        )
-
-    # Detect tab switch and collapse expanders if not on startup tab
-    if "last_active_tab" not in st.session_state:
-        st.session_state.last_active_tab = st.session_state.active_tab
-
-    # When user changes tab, collapse API/Data expanders
-    if st.session_state.active_tab != st.session_state.last_active_tab:
-        if st.session_state.active_tab != "☁️ API & Snapshot":
-            st.session_state["api_data_expander"] = False
-        st.session_state.last_active_tab = st.session_state.active_tab
-
-
-    # RIGHT: Metrics
-    with col_right:
-        col_b, col_n, col_o, col_g, col_r = st.columns(5)
-        col_b.text("")
-        col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
-        col_o.metric("🌐 Objects", f"{len(objects_data)}")
-        col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-        network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
-        col_n.metric("🏢 Networks", network_count)
-
-
-# Update active_tab variable
-selected_tab = st.session_state.active_tab
-
-
-if selected_tab == "📘 Overview":
+    
     data_loaded = (
         st.session_state.get("rules_data")
         and st.session_state.get("objects_data")
