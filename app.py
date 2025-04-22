@@ -1081,7 +1081,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             seen_locations = set()
 
 
-            with st.expander(f"Collapse - `{len(set(loc for loc, _ in shared_locs))}`", expanded=st.session_state["fw_expand_local"]):
+            with st.expander(f"Collapse - `{len(selected_locations)}`", expanded=st.session_state["fw_expand_local"]):
                 for location_name in all_locations:
                     if location_name not in selected_locations:
                         continue
