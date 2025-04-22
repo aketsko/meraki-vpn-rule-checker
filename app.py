@@ -634,21 +634,28 @@ with st.container():
         st.session_state.last_active_tab = st.session_state.active_tab
 
     # When user changes tab, collapse API/Data expanders
-    if st.session_state.active_tab != st.session_state.last_active_tab:
-        if st.session_state.active_tab != "☁️ API & Snapshot":
-            st.session_state["api_data_expander"] = False
-        st.session_state.last_active_tab = st.session_state.active_tab
+    # if st.session_state.active_tab != st.session_state.last_active_tab:
+    #     if st.session_state.active_tab != "☁️ API & Snapshot":
+    #         st.session_state["api_data_expander"] = False
+    #     st.session_state.last_active_tab = st.session_state.active_tab
 
 
     # RIGHT: Metrics
-    with col_right:
+    with col_right: 
         col_b, col_n, col_o, col_g, col_r = st.columns(5)
         col_b.text("")
-        col_r.metric("🛡️ VPN Rules", f"{len(rules_data)}")
-        col_o.metric("🌐 Objects", f"{len(objects_data)}")
-        col_g.metric("🗃️ Groups", f"{len(groups_data)}")
-        network_count = len(st.session_state.get("extended_data", {}).get("network_map", {}))
-        col_n.metric("🏢 Networks", network_count)
+
+        rules = st.session_state.get("rules_data")
+        objects = st.session_state.get("objects_data")
+        groups = st.session_state.get("groups_data")
+        extended = st.session_state.get("extended_data", {})
+        networks = extended.get("network_map", {}) if isinstance(extended, dict) else {}
+
+        col_r.metric("🛡️ VPN Rules", f"{len(rules) if rules else '-'}")
+        col_o.metric("🌐 Objects", f"{len(objects) if objects else '-'}")
+        col_g.metric("🗃️ Groups", f"{len(groups) if groups else '-'}")
+        col_n.metric("🏢 Networks", f"{len(networks) if networks else '-'}")
+
 
 
 # Update active_tab variable
