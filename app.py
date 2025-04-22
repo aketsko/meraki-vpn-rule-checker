@@ -774,11 +774,11 @@ if selected_tab == "📘 Overview":
                 selected_rules = []
                 for net_id, info in network_details.items():
                     if info.get("network_name") == selected_loc:
-                        selected_rules = info.get("firewall_rules", [])
+                        rules = info.get("firewall_rules", [])
                         break
-
+                       
                 if selected_rules:
-                    for rule in selected_rules:
+                    for rule in rules:
                         selected_rules.append({
                             "Action": rule.get("policy", "").upper(),
                             "Protocol": rule.get("protocol", ""),
