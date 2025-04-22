@@ -734,9 +734,13 @@ if selected_tab == "📘 Overview":
 
         # Try to find the matching network if a valid CIDR was entered
         auto_selected_network = None
+        cidr_valid = False
+        cidr_matched = False
+
         if search_cidr:
             try:
                 search_net = ipaddress.ip_network(search_cidr, strict=False)
+                cidr_valid = True
                 for nid, info in network_details.items():
                     for s in info.get("vpn_settings", {}).get("subnets", []):
                         cidr = s.get("localSubnet")
@@ -745,15 +749,19 @@ if selected_tab == "📘 Overview":
                                 net = ipaddress.ip_network(cidr, strict=False)
                                 if net == search_net:
                                     auto_selected_network = info.get("network_name")
+                                    cidr_matched = True
                                     break
                             except:
                                 continue
-                    if auto_selected_network:
+                    if cidr_matched:
                         break
             except ValueError:
                 st.warning("❌ Invalid CIDR format. Example: 192.168.1.0/24")
+
+        # Notify user if CIDR is valid but not found
         if cidr_valid and not cidr_matched:
             st.warning(f"⚠️ No matching network found for subnet `{search_cidr}`")
+
         # Final dropdown (with auto-selection if applicable)
         selected_network = st.selectbox(
             "🏢 Choose a Network",
