@@ -1069,12 +1069,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                     if st.button("❌ Deselect All", key="loc_deselect_all"):
                         st.session_state["selected_local_locations"] = []
 
-                    st.session_state["selected_local_locations"] = st.multiselect(
-                        "Pick location(s) to display:",
-                        options=all_locations,
-                        default=st.session_state["selected_local_locations"],
-                        key="selected_local_locations"
-                    )
+                st.multiselect(
+                    "Pick location(s) to display:",
+                    options=all_locations,
+                    default=st.session_state["selected_local_locations"],
+                    key="selected_local_locations"
+                )
+
 
 
             seen_locations = set()
@@ -1130,7 +1131,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 key="vpn_table"
             )
 
-            
+
         st.sidebar.markdown("🔘 Set Colors")
         with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
             st.markdown("Adjust the colors used to highlight rule matches:")
