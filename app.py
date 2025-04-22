@@ -988,7 +988,8 @@ elif selected_tab == "🔎 Search Object or Group":
             )
 
     location_map = st.session_state.get("object_location_map", {})
-
+    extended_data = st.session_state.get("extended_data", {})
+    network_details = extended_data.get("network_details", {})
 
     invalid_objects = get_invalid_objects(objects_data)
     if invalid_objects:
@@ -1004,10 +1005,7 @@ elif selected_tab == "🔎 Search Object or Group":
                 mime="application/json"
             )
 
-
-    # --- Sidebar Controls ---
     with st.sidebar:
-        #st.markdown("### 📍 Location Filters")
         search_term = st.text_input("Search by name or CIDR:", "").lower()
 
         location_term = None
@@ -1077,7 +1075,34 @@ elif selected_tab == "🔎 Search Object or Group":
             "Network IDs": ", ".join(map(str, o.get("networkIds", []))),
             "Location": ", ".join(sorted(locations))
         })
-    st.dataframe(safe_dataframe(object_rows))
+
+    if object_rows:
+        df_objects = safe_dataframe(object_rows)
+        gb = GridOptionsBuilder.from_dataframe(df_objects)
+        gb.configure_column("CIDR", headerTooltip="Click to view subnet details")
+        gb.configure_column("Location", headerTooltip="Click to show all matching locations")
+        gb.configure_grid_options(onCellClicked="function(e) { return e; }", enableBrowserTooltips=True)
+
+        obj_grid = AgGrid(df_objects, gridOptions=gb.build(), allow_unsafe_jscode=True, key="matching_objects_grid")
+        clicked_col = obj_grid.get("cell_clicked", {}).get("colId", "")
+        clicked_val = obj_grid.get("cell_clicked", {}).get("value", "")
+
+        if clicked_col == "CIDR":
+            st.markdown("### 🔍 Subnet Details")
+            found = False
+            for net_info in network_details.values():
+                for s in net_info.get("vpn_settings", {}).get("subnets", []):
+                    if s.get("localSubnet") == clicked_val:
+                        found = True
+                        st.write(f"📍 **Network**: {net_info['network_name']}")
+                        st.write(f"🔌 **In VPN**: {'✅' if s.get('useVpn') else '❌'}")
+                        st.write(f"📝 **Metadata**: {s.get('metadata', []) or '—'}")
+            if not found:
+                st.info("No matching subnet found in VPN settings.")
+
+        elif clicked_col == "Location":
+            st.markdown("### 📍 All Matching Locations")
+            st.write(clicked_val.split(", "))
 
     st.subheader("🔸 Matching Object Groups")
     group_rows = []
@@ -1108,9 +1133,42 @@ elif selected_tab == "🔎 Search Object or Group":
             "Type": str(g.get("category", "")),
             "Object Count": str(len(group_objects)),
             "Network IDs": ", ".join(map(str, g.get("networkIds", []))) if "networkIds" in g else "",
-            "Location": ", ".join(sorted(group_locations)) if group_locations else ""})
+            "Location": ", ".join(sorted(group_locations)) if group_locations else ""
+        })
 
-    st.dataframe(safe_dataframe(group_rows))
+    if group_rows:
+        df_groups = safe_dataframe(group_rows)
+        gb = GridOptionsBuilder.from_dataframe(df_groups)
+        gb.configure_column("Object Count", headerTooltip="Click to show member details")
+        gb.configure_column("Location", headerTooltip="Click to show matching locations")
+        gb.configure_grid_options(onCellClicked="function(e) { return e; }", enableBrowserTooltips=True)
+
+        grp_grid = AgGrid(df_groups, gridOptions=gb.build(), allow_unsafe_jscode=True, key="matching_groups_grid")
+        clicked_grp_col = grp_grid.get("cell_clicked", {}).get("colId", "")
+        clicked_grp_val = grp_grid.get("cell_clicked", {}).get("value", "")
+        selected_grp = grp_grid.get("selected_rows", [])
+
+        if clicked_grp_col == "Object Count" and selected_grp:
+            group_id = selected_grp[0].get("ID")
+            group_data = next((g for g in groups_data if str(g.get("id")) == group_id), None)
+            if group_data:
+                member_objs = [object_map[oid] for oid in group_data.get("objectIds", []) if oid in object_map]
+                st.markdown(f"### 👥 Members of Group `{group_data['name']}`")
+                st.dataframe(safe_dataframe([
+                    {
+                        "ID": o.get("id", ""),
+                        "Name": o.get("name", ""),
+                        "CIDR": o.get("cidr", ""),
+                        "Location": ", ".join(
+                            f"{loc['network']} ({'VPN' if loc['useVpn'] else 'Local'})"
+                            for loc in location_map.get(o.get("cidr", ""), [])
+                        )
+                    } for o in member_objs
+                ]), use_container_width=True)
+
+        elif clicked_grp_col == "Location":
+            st.markdown("### 📍 All Matching Locations")
+            st.write(clicked_grp_val.split(", "))
 
     if filtered_grps:
         selected_group = st.selectbox(
@@ -1152,7 +1210,6 @@ elif selected_tab == "🔎 Search Object or Group":
                 st.info("This group has no valid or displayable objects.")
     else:
         st.info("No groups match the current search.")
-
 
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
