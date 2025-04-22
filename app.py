@@ -1058,7 +1058,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         if show_local:
             st.subheader("🧱 Local Firewall Rules")
             with st.sidebar:
-                location_filter_title = f"📍 Location Filter ({len(shared_locs)} found)"
+                location_filter_title = f"📍 Location Filter ({len(set(loc for loc, _ in shared_locs))} found)
                 all_locations = sorted(set(loc for loc, _ in shared_locs))
                 st.session_state.setdefault("selected_local_locations", all_locations)
 
