@@ -483,7 +483,7 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
                     if vlan_cidr:
                         try:
                             net = ipaddress.ip_network(vlan_cidr, strict=False)
-                            if net == target or net.subnet_of(target) or target.subnet_of(net):
+                            if net == target:
                                 s["metadata"].append({
                                     "name": vlan.get("name", "Unnamed VLAN"),
                                     "type": "vlan"
@@ -496,7 +496,7 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
                     if route_cidr:
                         try:
                             net = ipaddress.ip_network(route_cidr, strict=False)
-                            if net == target or net.subnet_of(target) or target.subnet_of(net):
+                            if net == target:
                                 s["metadata"].append({
                                     "name": route.get("name", "Unnamed Route"),
                                     "type": "staticRoute"
