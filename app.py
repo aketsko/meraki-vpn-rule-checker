@@ -77,6 +77,23 @@ def resolve_search_input(input_str):
             return [object_map[obj_id]["cidr"] for obj_id in group["objectIds"] if obj_id in object_map and "cidr" in object_map[obj_id]]
     return [input_str]
 
+def get_invalid_objects(objects_data):
+    import ipaddress
+    invalid_objects = []
+
+    for obj in objects_data:
+        cidr = obj.get("cidr", "")
+        name = obj.get("name", "(unnamed)")
+        obj_id = obj.get("id", "")
+
+        if not cidr:
+            invalid_objects.append({"ID": obj_id, "Name": name, "CIDR": "", "Reason": "Missing CIDR"})
+            continue
+        try:
+            ipaddress.ip_network(cidr, strict=False)
+        except ValueError as e:
+            invalid_objects.append({"ID": obj_id, "Name": name, "CIDR": cidr, "Reason": str(e)})
+    return invalid_objects
 
 def show_rule_summary(indexes):
     rows = []
@@ -940,6 +957,20 @@ elif selected_tab == "🔎 Search Object or Group":
             )
 
     location_map = st.session_state.get("object_location_map", {})
+
+
+    invalid_objects = get_invalid_objects(objects_data)
+    if invalid_objects:
+        st.subheader("⚠️ Objects with Invalid CIDRs")
+        df_invalid = pd.DataFrame(invalid_objects)
+        st.dataframe(df_invalid, use_container_width=True)
+        st.download_button(
+            "📥 Download Invalid CIDRs Report",
+            data=df_invalid.to_json(orient="records", indent=2),
+            file_name="invalid_objects_cidr_report.json",
+            mime="application/json"
+        )
+
 
     # --- Sidebar Controls ---
     with st.sidebar:
