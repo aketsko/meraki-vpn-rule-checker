@@ -860,10 +860,14 @@ if selected_tab == "📘 Overview":
             for s in vpn_subnets:
                 cidr = s.get("localSubnet")
                 use_vpn = s.get("useVpn", False)  # This is a Python boolean
-                if "metadata" in s:
-                    meta = s.get("metadata")
-                    Subnet_Name = meta["name"] 
-                    Type = meta["type"]
+                metadata = s.get("metadata", [])
+                if metadata:
+                    Subnet_Name = metadata[0].get("name", "")
+                    Type = metadata[0].get("type", "")
+                else:
+                    Subnet_Name = ""
+                    Type = ""
+
                 
                 if not cidr:
                     continue
