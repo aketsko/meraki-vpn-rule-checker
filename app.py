@@ -357,6 +357,21 @@ def fetch_meraki_data(api_key, org_id):
         st.warning(f"API fetch error: {e}")
         return [], [], [], False
 
+def filter_valid_objects(objects_data):
+    import ipaddress
+    valid = []
+    for obj in objects_data:
+        cidr = obj.get("cidr", "")
+        if not cidr:
+            continue
+        try:
+            net = ipaddress.ip_network(cidr, strict=False)
+            if str(net.network_address) == cidr.split("/")[0]:
+                valid.append(obj)
+        except:
+            continue
+    return valid
+
 
 def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, base_url="https://api.meraki.com/api/v1"):
     headers = {
@@ -1139,6 +1154,10 @@ elif selected_tab == "🔎 Search Object or Group":
 
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
+    all_objects = st.session_state.get("objects_data", [])
+    objects_data = filter_valid_objects(all_objects)
+    object_map = get_object_map(objects_data)
+    group_map = get_group_map(st.session_state.get("groups_data", []))
 
     def get_all_locations_for_cidrs(cidrs, location_map):
         locations = set()
