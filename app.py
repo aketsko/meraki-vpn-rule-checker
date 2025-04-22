@@ -325,102 +325,6 @@ def fetch_meraki_data(api_key, org_id):
         st.warning(f"API fetch error: {e}")
         return [], [], [], False
 
-# def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, base_url="https://api.meraki.com/api/v1"):
-#     headers = {
-#         "X-Cisco-Meraki-API-Key": api_key,
-#         "Content-Type": "application/json",
-#     }
-
-#     try:
-#         with st.spinner("🔄 Fetching network list..."):
-#             networks_url = f"{base_url}/organizations/{org_id}/networks"
-#             networks_resp = requests.get(networks_url, headers=headers)
-#             networks = networks_resp.json() if networks_resp.ok else []
-#             if not networks:
-#                 raise Exception("No networks retrieved")
-
-#         network_map = {net["name"]: net["id"] for net in networks}
-#         extended_data = {}
-#         location_map = {}
-
-#         progress_bar = st.progress(0)
-#         total = len(networks)
-
-#         for i, net in enumerate(networks, start=1):
-#             if update_progress:
-#                 update_progress(i, total, net["name"])
-#             if st.session_state.get("cancel_extended_fetch"):
-#                 raise Exception("Fetch cancelled by user.")
-
-#             network_id = net["id"]
-#             network_name = net["name"]
-
-#             vpn_url = f"{base_url}/networks/{network_id}/appliance/vpn/siteToSiteVpn"
-#             rules_url = f"{base_url}/networks/{network_id}/appliance/firewall/l3FirewallRules"
-
-#             vpn_resp = requests.get(vpn_url, headers=headers)
-#             rules_resp = requests.get(rules_url, headers=headers)
-
-#             vpn_data = vpn_resp.json() if vpn_resp.ok else {}
-#             rules_data = rules_resp.json() if rules_resp.ok else {}
-
-#             extended_data[network_id] = {
-#                 "network_name": network_name,
-#                 "vpn_settings": vpn_data,
-#                 "firewall_rules": rules_data.get("rules", [])
-#             }
-
-#         # Build location mapping
-#         obj_map = st.session_state.get("object_map", {})
-#         grp_map = st.session_state.get("group_map", {})
-#         location_map = {}
-
-#         for network_id, data in extended_data.items():
-#             subnets = [s.get("localSubnet") for s in data.get("vpn_settings", {}).get("subnets", []) if "localSubnet" in s]
-#             network_name = data.get("network_name")
-
-#             for obj_id, obj in obj_map.items():
-#                 if "cidr" in obj:
-#                     try:
-#                         ip = ipaddress.ip_network(obj["cidr"], strict=False)
-#                         for subnet in subnets:
-#                             net = ipaddress.ip_network(subnet, strict=False)
-#                             if ip.subnet_of(net) or ip == net:
-#                                 location_map.setdefault(f"OBJ({obj_id})", []).append(network_name)
-#                     except:
-#                         continue
-
-#             for grp_id, group in grp_map.items():
-#                 members = group.get("objectIds", [])
-#                 for m in members:
-#                     member_obj = obj_map.get(m)
-#                     if member_obj and "cidr" in member_obj:
-#                         try:
-#                             ip = ipaddress.ip_network(member_obj["cidr"], strict=False)
-#                             for subnet in subnets:
-#                                 net = ipaddress.ip_network(subnet, strict=False)
-#                                 if ip.subnet_of(net) or ip == net:
-#                                     location_map.setdefault(f"GRP({grp_id})", []).append(network_name)
-#                         except:
-#                             continue
-
-#         progress_bar.empty()
-#         return {
-#             "networks": networks,
-#             "network_map": network_map,
-#             "network_details": extended_data,
-#             "location_map": location_map
-#         }
-
-#     except Exception as e:
-#         st.error(f"❌ Error: {e}")
-#         return {
-#             "error": str(e),
-#             "networks": [],
-#             "network_map": {},
-#             "network_details": {},
-#             "location_map": {}
-#         }
 
 def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, base_url="https://api.meraki.com/api/v1"):
     headers = {
@@ -676,12 +580,6 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=not collapse_expanders):
                     st.error(f"❌ Exception during data fetch: {e}")
                     st.session_state["fetched_from_api"] = False
 
-#    st.sidebar.markdown("📤 Data Import and Export")
-# if "snapshot_expander_open" not in st.session_state:
-#     st.session_state["snapshot_expander_open"] = not collapse_expanders
-
-# with st.sidebar.expander("🔽 Upload prepared .json data or create and download it", expanded=st.session_state["snapshot_expander_open"]):
-
 
     # Upload Snapshot to restore everything
     uploaded_snapshot = st.file_uploader("📤 Load Snapshot (.json)", type="json")
@@ -830,7 +728,37 @@ if selected_tab == "📘 Overview":
         network_details = extended_data.get("network_details", {})
         network_names = sorted([v["network_name"] for v in network_details.values()])
 
-        selected_network = st.selectbox("🏢 Choose a Network", options=network_names)
+       # selected_network = st.selectbox("🏢 Choose a Network", options=network_names)
+        # Optional search for a subnet
+        search_cidr = st.text_input("🔍 Search by Subnet (CIDR, e.g. 192.168.1.0/24)", "").strip()
+
+        # Try to find the matching network if a valid CIDR was entered
+        auto_selected_network = None
+        if search_cidr:
+            try:
+                search_net = ipaddress.ip_network(search_cidr, strict=False)
+                for nid, info in network_details.items():
+                    for s in info.get("vpn_settings", {}).get("subnets", []):
+                        cidr = s.get("localSubnet")
+                        if cidr:
+                            try:
+                                net = ipaddress.ip_network(cidr, strict=False)
+                                if net == search_net:
+                                    auto_selected_network = info.get("network_name")
+                                    break
+                            except:
+                                continue
+                    if auto_selected_network:
+                        break
+            except ValueError:
+                st.warning("❌ Invalid CIDR format. Example: 192.168.1.0/24")
+
+        # Final dropdown (with auto-selection if applicable)
+        selected_network = st.selectbox(
+            "🏢 Choose a Network",
+            options=network_names,
+            index=network_names.index(auto_selected_network) if auto_selected_network in network_names else 0
+        )
 
         # Display table after network selected
         if selected_network:
