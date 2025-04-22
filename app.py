@@ -786,7 +786,6 @@ if selected_tab == "📘 Overview":
                     gb.configure_grid_options(domLayout="autoHeight")
                     grid_options = gb.build()
 
-                    st.markdown(f"📄 Showing **{len(selected_rules)}** rules for `{selected_loc}`")
                     row_style_js = JsCode("""
                     function(params) {
                         if (params.data.policy === "allow" || params.data.policy === "allow") {
