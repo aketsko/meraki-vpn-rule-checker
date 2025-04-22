@@ -605,6 +605,10 @@ st.session_state["api_data_expander"] = False
 
 
 # -------------- MANUAL TAB HANDLING ----------------
+# Tab selector
+tabs = ["📊 Overview", "🛡️ Search in Firewall and VPN Rules", "🔎 Search Object or Group", "🧠 Optimization Insights"]
+selected_tab = st.sidebar.radio("📁 Select Tab", tabs)
+
 with st.container():
     col_left, col_right = st.columns([3, 5])  # Adjust width ratio as needed
 
