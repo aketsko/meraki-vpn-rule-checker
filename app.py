@@ -1058,7 +1058,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         if show_local:
             st.subheader("🧱 Local Firewall Rules")
             with st.sidebar:
-                location_filter_title = f"📍 Location Filter ({len(set(loc for loc, _ in shared_locs))} found)
+                location_filter_title = f"📍 Location Filter ({len(set(loc for loc, _ in shared_locs))} found)"
                 all_locations = sorted(set(loc for loc, _ in shared_locs))
                 st.session_state.setdefault("selected_local_locations", all_locations)
 
@@ -1101,7 +1101,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                     #     if info.get("network_name") == location_name:
                     #         rules = info.get("firewall_rules", [])
                         st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
-                        st.markdown(f"_Total rules: {len(rules)}_")
+                        st.markdown(f"_Total rules: {len(set(loc for loc, _ in shared_locs))}_")
                         if rules:
    #                         with st.expander(f"Collapse - `{location_name}`", expanded=st.session_state["fw_expand_local"]):
                              generate_rule_table(
