@@ -1021,81 +1021,86 @@ elif selected_tab == "🔎 Search Object or Group":
     df_obj = pd.DataFrame(object_rows)
     st.dataframe(df_obj, use_container_width=True)
 
-    selected_obj = st.selectbox("⬇️ Show subnet metadata for CIDR:", options=[r["CIDR"] for r in object_rows] if object_rows else [], index=0 if object_rows else None)
+    obj_grid = AgGrid(df_obj, allow_unsafe_jscode=True, enable_enterprise_modules=False, use_container_width=True, key="object_grid")
+    selected_obj = obj_grid.get("selected_rows", [])
     if selected_obj:
-        st.markdown("### 🔍 Subnet Metadata")
+        cidr_clicked = selected_obj[0].get("CIDR")
+        st.markdown("### 🔍 Subnet Metadata for Selected CIDR")
+        found = False
         for net_info in network_details.values():
             for s in net_info.get("vpn_settings", {}).get("subnets", []):
-                if s.get("localSubnet") == selected_obj:
+                if s.get("localSubnet") == cidr_clicked:
+                    found = True
                     st.write(f"📍 **Network**: {net_info['network_name']}")
                     st.write(f"🔌 **In VPN**: {'✅' if s.get('useVpn') else '❌'}")
                     st.write(f"📝 **Metadata**: {s.get('metadata', []) or '—'}")
-
+        if not found:
+            st.info("No matching subnet found in VPN settings.")
     st.markdown("---")
     st.subheader("🔸 Matching Object Groups")
 
-    group_rows = []
-    for g in filtered_grps:
-        members = g.get("objectIds", [])
-        locs = set()
-        for oid in members:
-            obj = object_map.get(oid)
-            if obj:
-                cidr = obj.get("cidr", "")
-                for e in location_map.get(cidr, []) + location_map.get(f"OBJ({oid})", []):
-                    if isinstance(e, dict):
-                        locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
-        for e in location_map.get(f"GRP({g['id']})", []):
-            if isinstance(e, dict):
-                locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
-        group_rows.append({
-            "ID": g["id"],
-            "Name": g["name"],
-            "Object Count": len(members),
-            "Location": ", ".join(sorted(locs))
-        })
+        group_rows = []
+        for g in filtered_grps:
+            members = g.get("objectIds", [])
+            locs = set()
+            for oid in members:
+                obj = object_map.get(oid)
+                if obj:
+                    cidr = obj.get("cidr", "")
+                    for e in location_map.get(cidr, []) + location_map.get(f"OBJ({oid})", []):
+                        if isinstance(e, dict):
+                            locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
+            for e in location_map.get(f"GRP({g['id']})", []):
+                if isinstance(e, dict):
+                    locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
+            group_rows.append({
+                "ID": g["id"],
+                "Name": g["name"],
+                "Object Count": len(members),
+                "Location": ", ".join(sorted(locs))
+            })
 
-    df_grps = pd.DataFrame(group_rows)
-    st.dataframe(df_grps, use_container_width=True)
+        df_grps = pd.DataFrame(group_rows)
+        st.dataframe(df_grps, use_container_width=True)
 
-    selected_grp = st.selectbox("⬇️ Show members of group:", options=[g["Name"] for g in group_rows] if group_rows else [], index=0 if group_rows else None)
-    if selected_grp:
-        group_obj = next((g for g in group_rows if g["Name"] == selected_grp), None)
-        if group_obj:
-            group_id = group_obj["ID"]
-            members = [object_map[oid] for oid in group_map.get(group_id, {}).get("objectIds", []) if oid in object_map]
-            st.markdown(f"### 👥 Members of `{selected_grp}`")
+        selected_grp = st.selectbox("⬇️ Show members of group:", options=[g["Name"] for g in group_rows] if group_rows else [], index=0 if group_rows else None)
+        if selected_grp:
+            group_obj = next((g for g in group_rows if g["Name"] == selected_grp), None)
+            if group_obj:
+                group_id = group_obj["ID"]
+                members = [object_map[oid] for oid in group_map.get(group_id, {}).get("objectIds", []) if oid in object_map]
+                st.markdown(f"### 👥 Members of `{selected_grp}`")
+                st.dataframe(safe_dataframe([
+                    {
+                        "ID": o.get("id"),
+                        "Name": o.get("name"),
+                        "CIDR": o.get("cidr"),
+                        "Location": ", ".join(
+                            f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})"
+                            for e in location_map.get(o.get("cidr", ""), [])
+                            if isinstance(e, dict)
+                        )
+                    } for o in members
+                ]), use_container_width=True)
+
+        st.markdown("---")
+        selected_location = st.selectbox("📍 Show all matches for location:", options=sorted({l for row in object_rows + group_rows for l in row.get("Location", "").split(", ") if l.strip()}))
+        if selected_location:
+            st.markdown(f"### 🌐 Objects matching: `{selected_location}`")
             st.dataframe(safe_dataframe([
                 {
                     "ID": o.get("id"),
                     "Name": o.get("name"),
                     "CIDR": o.get("cidr"),
-                    "Location": ", ".join(
+                    "FQDN": o.get("fqdn"),
+                    "Location": ", ".join(sorted(
                         f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})"
                         for e in location_map.get(o.get("cidr", ""), [])
                         if isinstance(e, dict)
-                    )
-                } for o in members
+                    ))
+                } for o in objects_data if selected_location in ", ".join(
+                    f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})" for e in location_map.get(o.get("cidr", ""), []) if isinstance(e, dict))
             ]), use_container_width=True)
-
-    st.markdown("---")
-    selected_location = st.selectbox("📍 Show all matches for location:", options=sorted({l for row in object_rows + group_rows for l in row.get("Location", "").split(", ") if l.strip()}))
-    if selected_location:
-        st.markdown(f"### 🌐 Objects matching: `{selected_location}`")
-        st.dataframe(safe_dataframe([
-            {
-                "ID": o.get("id"),
-                "Name": o.get("name"),
-                "CIDR": o.get("cidr"),
-                "FQDN": o.get("fqdn"),
-                "Location": ", ".join(sorted(
-                    f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})"
-                    for e in location_map.get(o.get("cidr", ""), [])
-                    if isinstance(e, dict)
-                ))
-            } for o in objects_data if selected_location in ", ".join(
-                f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})" for e in location_map.get(o.get("cidr", ""), []) if isinstance(e, dict))
-        ]), use_container_width=True)
 
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
