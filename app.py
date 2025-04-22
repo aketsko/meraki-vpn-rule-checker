@@ -975,15 +975,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
         expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
 
-        st.sidebar.markdown("🔘 Set Colors")
-        with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
-            st.markdown("Adjust the colors used to highlight rule matches:")
-            def color_slider(label, key, default_hex):
-                return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
-            color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
-            color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
-            color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
-            color_slider("Described traffic is partially DENIED. This rule can affect the traffic. To investigate further, make the search more specific.", key="partial_deny", default_hex="#F7EF81")
+
 
         highlight_colors = {
             "exact_allow": st.session_state.get("exact_allow", "#09BC8A"),
@@ -1067,45 +1059,27 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         if show_local:
             st.subheader("🧱 Local Firewall Rules")
             with st.sidebar:
-                st.markdown("### 📍 Location Filter")
-                networks = extended_data.get("network_details", {})
+                location_filter_title = f"📍 Location Filter ({len(shared_locs)} found)"
                 all_locations = sorted(loc for loc, _ in shared_locs)
-                with st.expander(f"Collapse - `{len(all_locations)}`", expanded=True):
+                st.session_state.setdefault("selected_local_locations", all_locations)
 
-                    st.session_state.setdefault("selected_local_locations", all_locations)
-
-                    if st.button("✅ Select All"):
+                with st.expander(location_filter_title, expanded=True):
+                    if st.button("✅ Select All", key="loc_select_all"):
                         st.session_state["selected_local_locations"] = all_locations
-                    if st.button("❌ Deselect All"):
+                    if st.button("❌ Deselect All", key="loc_deselect_all"):
                         st.session_state["selected_local_locations"] = []
 
-                    selected_locations = st.multiselect(
+                    st.session_state["selected_local_locations"] = st.multiselect(
                         "Pick location(s) to display:",
                         options=all_locations,
                         default=st.session_state["selected_local_locations"],
                         key="selected_local_locations"
                     )
 
+
             seen_locations = set()
 
-        st.sidebar.markdown("🔘 Set Colors")
-        with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
-            st.markdown("Adjust the colors used to highlight rule matches:")
-            def color_slider(label, key, default_hex):
-                return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
-            color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
-            color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
-            color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
-            color_slider("Described traffic is partially DENIED. This rule can affect the traffic. To investigate further, make the search more specific.", key="partial_deny", default_hex="#F7EF81")
 
-        highlight_colors = {
-            "exact_allow": st.session_state.get("exact_allow", "#09BC8A"),
-            "exact_deny": st.session_state.get("exact_deny", "#DA2C38"),
-            "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
-            "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
-        }
-        
-        if show_local:
             with st.expander(f"Collapse - `{len(shared_locs)}`", expanded=st.session_state["fw_expand_local"]):
                 for location_name, _ in sorted(shared_locs):
                     if location_name not in selected_locations:
@@ -1156,6 +1130,16 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 key="vpn_table"
             )
 
+            
+        st.sidebar.markdown("🔘 Set Colors")
+        with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
+            st.markdown("Adjust the colors used to highlight rule matches:")
+            def color_slider(label, key, default_hex):
+                return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
+            color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
+            color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
+            color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
+            color_slider("Described traffic is partially DENIED. This rule can affect the traffic. To investigate further, make the search more specific.", key="partial_deny", default_hex="#F7EF81")
 
 elif selected_tab == "🧠 Optimization Insights":
     # Load from session
