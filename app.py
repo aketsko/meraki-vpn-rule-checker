@@ -1026,9 +1026,7 @@ elif selected_tab == "🔎 Search Object or Group":
             "⬇️ Show subnet metadata for CIDR:",
             options=[f"{r['Name']} ({r['CIDR']})" for r in object_rows] if object_rows else [],
             index=0 if object_rows else None
-)
-
-    
+)   
     #selected_obj = df_obj.get("selected_rows", [])
     if selected_obj:
         selected_cidr = selected_obj.split("(")[-1].strip(")")
