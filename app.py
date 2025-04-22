@@ -1335,7 +1335,7 @@ elif selected_tab == "🧠 Optimization Insights":
                 for msg, rule_indexes in insight_rows:
                     st.markdown(msg)
                     for idx in rule_indexes:
-                        show_rule_summary([idx], ruleset=rules, object_map=object_map, group_map=group_map)
+                        show_rule_summary([idx])
                 st.download_button(
                     f"📥 Download Local Rules Insights – {location}",
                     "\n".join([msg for msg, _ in insight_rows]),
