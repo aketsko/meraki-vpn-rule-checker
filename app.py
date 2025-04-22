@@ -822,7 +822,7 @@ if selected_tab == "📘 Overview":
                     gb.configure_grid_options(getRowStyle=row_style_js, domLayout="autoHeight")
                     grid_options = gb.build()
 
-                    st.markdown(f"📄 Showing **{len(selected_rules)}** rules for `{selected_loc}` - '{network_id}'")
+                    st.markdown(f"📄 Showing **{len(selected_rules)}** rules for `{selected_loc}` - {network_id}")
                     AgGrid(
                         df,
                         gridOptions=grid_options,
