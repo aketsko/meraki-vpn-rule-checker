@@ -732,23 +732,18 @@ if selected_tab == "📘 Overview":
        # Optional search for a subnet
         
         with st.sidebar:
-            # Smart search: CIDR/IP or partial name match
-            search_input = st.text_input(
-                "🔍 Search by Subnet IP/CIDR or Name (e.g. `192.168.1.0` or `Sales`)", ""
-            ).strip()
+            search_cidr = st.text_input("🔍 Search by IP or Subnet (e.g. 192.168.1.0 or 192.168.1.0/24)", "").strip()
 
             auto_selected_network = None
             cidr_valid = False
             cidr_matched = False
-            name_matched = False
 
-            if search_input:
-                # Try to interpret as CIDR/IP
+            if search_cidr:
                 try:
-                    cidr_input = search_input
-                    if "/" not in cidr_input and any(c.isdigit() for c in cidr_input):
-                        cidr_input += "/32"
-                    search_net = ipaddress.ip_network(cidr_input, strict=False)
+                    # Auto-add /32 if no mask given (IP-only)
+                    if "/" not in search_cidr:
+                        search_cidr += "/32"
+                    search_net = ipaddress.ip_network(search_cidr, strict=False)
                     cidr_valid = True
 
                     for nid, info in network_details.items():
@@ -757,7 +752,7 @@ if selected_tab == "📘 Overview":
                             if cidr:
                                 try:
                                     net = ipaddress.ip_network(cidr, strict=False)
-                                    if search_net.subnet_of(net) or net == search_net or net.subnet_of(search_net):
+                                    if search_net.subnet_of(net) or search_net == net or net.subnet_of(search_net):
                                         auto_selected_network = info.get("network_name")
                                         cidr_matched = True
                                         break
@@ -767,37 +762,16 @@ if selected_tab == "📘 Overview":
                             break
 
                 except ValueError:
-                    # Not a CIDR — treat as name search
-                    pass
+                    st.warning("❌ Invalid format. Example: 192.168.1.0 or 192.168.1.0/24")
 
-                # If not matched by CIDR, try searching metadata name
-                if not cidr_matched:
-                    term = search_input.lower()
-                    for nid, info in network_details.items():
-                        for s in info.get("vpn_settings", {}).get("subnets", []):
-                            for m in s.get("metadata", []):
-                                if term in m.get("name", "").lower():
-                                    auto_selected_network = info.get("network_name")
-                                    name_matched = True
-                                    break
-                            if name_matched:
-                                break
-                        if name_matched:
-                            break
+            if cidr_valid and not cidr_matched:
+                st.warning(f"⚠️ No matching network found for `{search_cidr}`")
 
-            # Feedback
-            if cidr_valid and not cidr_matched and not name_matched:
-                st.warning(f"⚠️ CIDR `{search_input}` is valid, but no matching subnet found.")
-            elif not cidr_valid and not name_matched and search_input:
-                st.warning(f"⚠️ No subnet name matched `{search_input}`")
-
-            # Dropdown with optional auto-selection
             selected_network = st.selectbox(
                 "🏢 Choose a Network",
                 options=network_names,
                 index=network_names.index(auto_selected_network) if auto_selected_network in network_names else 0
             )
-
 
 
         # Display table after network selected
