@@ -759,7 +759,7 @@ if selected_tab == "📘 Overview":
 
             extended_data = st.session_state.get("extended_data", {})
             network_details = extended_data.get("network_details", {}) if extended_data else {}
-
+            network_id = extended_data.get("network_map", {}).get(selected_network, None)
             all_locations = sorted(
                 info.get("network_name", "")
                 for info in network_details.values()
@@ -822,7 +822,7 @@ if selected_tab == "📘 Overview":
                     gb.configure_grid_options(getRowStyle=row_style_js, domLayout="autoHeight")
                     grid_options = gb.build()
 
-                    st.markdown(f"📄 Showing **{len(selected_rules)}** rules for `{selected_loc}`")
+                    st.markdown(f"📄 Showing **{len(selected_rules)}** rules for `{selected_loc}` - '{network_id}'")
                     AgGrid(
                         df,
                         gridOptions=grid_options,
