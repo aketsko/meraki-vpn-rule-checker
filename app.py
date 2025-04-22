@@ -1029,7 +1029,10 @@ elif selected_tab == "🔎 Search Object or Group":
                 if s.get("localSubnet") == selected_obj:
                     st.write(f"📍 **Network**: {net_info['network_name']}")
                     st.write(f"🔌 **In VPN**: {'✅' if s.get('useVpn') else '❌'}")
-                    st.write(f"📝 **Metadata**: {s.get('metadata', []) or '—'}")
+                    for meta in s.get('metadata', []):
+                        st.write(f"📝 **Name**: {meta.get('name', '—')} | Type: {meta.get('type', '—')}")
+                    if not s.get('metadata'):
+                        st.write("📝 No metadata available.")
 
     st.markdown("---")
     st.subheader("🔸 Matching Object Groups")
