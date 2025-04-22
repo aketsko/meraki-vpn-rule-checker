@@ -1022,14 +1022,20 @@ elif selected_tab == "🔎 Search Object or Group":
     st.dataframe(df_obj, use_container_width=True)
     
     with st.sidebar:
-        selected_obj = st.selectbox("⬇️ Show subnet metadata for CIDR:", options=[r["CIDR"] for r in object_rows] if object_rows else [], index=0 if object_rows else None)
+        selected_obj = st.selectbox(
+            "⬇️ Show subnet metadata for CIDR:",
+            options=[f"{r['Name']} ({r['CIDR']})" for r in object_rows] if object_rows else [],
+            index=0 if object_rows else None
+)
+
     
     #selected_obj = df_obj.get("selected_rows", [])
     if selected_obj:
+        selected_cidr = selected_obj.split("(")[-1].strip(")")
         st.markdown("### 🔍 Subnet Metadata")
         for net_info in network_details.values():
             for s in net_info.get("vpn_settings", {}).get("subnets", []):
-                if s.get("localSubnet") == selected_obj:
+                if s.get("localSubnet") == selected_cidr:
                     st.write(f"📍 **Network**: {net_info['network_name']}")
                     st.write(f"🔌 **In VPN**: {'✅' if s.get('useVpn') else '❌'}")
                     for meta in s.get('metadata', []):
