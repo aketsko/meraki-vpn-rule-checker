@@ -790,14 +790,14 @@ if selected_tab == "📘 Overview":
                     function(params) {
                         if (params.data.policy === "allow" || params.data.policy === "allow") {
                             return {
-                                backgroundColor: '#d4edda',
+                                backgroundColor: '#99E2B4',
                                 color: '#155724',
                                 fontWeight: 'bold'
                             };
                         }
                         if (params.data.policy === "deny" || params.data.policy === "deny") {
                             return {
-                                backgroundColor: '#f8d7da',
+                                backgroundColor: '#F7EF81',
                                 color: '#721c24',
                                 fontWeight: 'bold'
                             };
