@@ -1020,8 +1020,9 @@ elif selected_tab == "🔎 Search Object or Group":
 
     df_obj = pd.DataFrame(object_rows)
     st.dataframe(df_obj, use_container_width=True)
-
-    selected_obj = st.selectbox("⬇️ Show subnet metadata for CIDR:", options=[r["CIDR"] for r in object_rows] if object_rows else [], index=0 if object_rows else None)
+    
+    with st.sidebar:
+        selected_obj = st.selectbox("⬇️ Show subnet metadata for CIDR:", options=[r["CIDR"] for r in object_rows] if object_rows else [], index=0 if object_rows else None)
     
     #selected_obj = df_obj.get("selected_rows", [])
     if selected_obj:
@@ -1063,8 +1064,8 @@ elif selected_tab == "🔎 Search Object or Group":
 
     df_grps = pd.DataFrame(group_rows)
     st.dataframe(df_grps, use_container_width=True)
-    with st.sidebar:
-        selected_grp = st.selectbox("⬇️ Show members of group:", options=[g["Name"] for g in group_rows] if group_rows else [], index=0 if group_rows else None)
+    
+    selected_grp = st.selectbox("⬇️ Show members of group:", options=[g["Name"] for g in group_rows] if group_rows else [], index=0 if group_rows else None)
     if selected_grp:
         group_obj = next((g for g in group_rows if g["Name"] == selected_grp), None)
         if group_obj:
