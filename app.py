@@ -789,14 +789,14 @@ if selected_tab == "📘 Overview":
                     st.markdown(f"📄 Showing **{len(selected_rules)}** rules for `{selected_loc}`")
                     row_style_js = JsCode("""
                     function(params) {
-                        if (params.data.Action === "allow" || params.data.Action === "ALLOW") {
+                        if (params.data.policy === "allow" || params.data.policy === "allow") {
                             return {
                                 backgroundColor: '#d4edda',
                                 color: '#155724',
                                 fontWeight: 'bold'
                             };
                         }
-                        if (params.data.Action === "deny" || params.data.Action === "DENY") {
+                        if (params.data.policy === "deny" || params.data.policy === "deny") {
                             return {
                                 backgroundColor: '#f8d7da',
                                 color: '#721c24',
