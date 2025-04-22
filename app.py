@@ -729,25 +729,28 @@ if selected_tab == "📘 Overview":
         network_names = sorted([v["network_name"] for v in network_details.values()])
 
        # selected_network = st.selectbox("🏢 Choose a Network", options=network_names)
-        # Optional search for a subnet
-        search_cidr = st.text_input("🔍 Search by Subnet (CIDR, e.g. 192.168.1.0/24)", "").strip()
+       # Optional search for a subnet
+        search_cidr = st.text_input("🔍 Search by IP or Subnet (e.g. 192.168.1.0 or 192.168.1.0/24)", "").strip()
 
-        # Try to find the matching network if a valid CIDR was entered
         auto_selected_network = None
         cidr_valid = False
         cidr_matched = False
 
         if search_cidr:
             try:
+                # Auto-add /32 if no mask given (IP-only)
+                if "/" not in search_cidr:
+                    search_cidr += "/32"
                 search_net = ipaddress.ip_network(search_cidr, strict=False)
                 cidr_valid = True
+
                 for nid, info in network_details.items():
                     for s in info.get("vpn_settings", {}).get("subnets", []):
                         cidr = s.get("localSubnet")
                         if cidr:
                             try:
                                 net = ipaddress.ip_network(cidr, strict=False)
-                                if net == search_net:
+                                if search_net.subnet_of(net) or search_net == net or net.subnet_of(search_net):
                                     auto_selected_network = info.get("network_name")
                                     cidr_matched = True
                                     break
@@ -755,19 +758,19 @@ if selected_tab == "📘 Overview":
                                 continue
                     if cidr_matched:
                         break
+
             except ValueError:
-                st.warning("❌ Invalid CIDR format. Example: 192.168.1.0/24")
+                st.warning("❌ Invalid format. Example: 192.168.1.0 or 192.168.1.0/24")
 
-        # Notify user if CIDR is valid but not found
         if cidr_valid and not cidr_matched:
-            st.warning(f"⚠️ No matching network found for subnet `{search_cidr}`")
+            st.warning(f"⚠️ No matching network found for `{search_cidr}`")
 
-        # Final dropdown (with auto-selection if applicable)
         selected_network = st.selectbox(
             "🏢 Choose a Network",
             options=network_names,
             index=network_names.index(auto_selected_network) if auto_selected_network in network_names else 0
         )
+
 
         # Display table after network selected
         if selected_network:
