@@ -632,6 +632,19 @@ with st.container():
     # Detect tab switch and collapse expanders if not on startup tab
     if "last_active_tab" not in st.session_state:
         st.session_state.last_active_tab = st.session_state.active_tab
+    # Ensure data is always initialized to prevent reference errors in non-overview tabs
+    rules_data = st.session_state.get("rules_data", [])
+    objects_data = st.session_state.get("objects_data", [])
+    groups_data = st.session_state.get("groups_data", [])
+    object_map = st.session_state.get("object_map", get_object_map(objects_data) if objects_data else {})
+    group_map = st.session_state.get("group_map", get_group_map(groups_data) if groups_data else {})
+    extended_data = st.session_state.get("extended_data", {})
+
+    # Save them back if newly built
+    if "object_map" not in st.session_state and objects_data:
+        st.session_state["object_map"] = object_map
+    if "group_map" not in st.session_state and groups_data:
+        st.session_state["group_map"] = group_map
 
     # When user changes tab, collapse API/Data expanders
     # if st.session_state.active_tab != st.session_state.last_active_tab:
