@@ -380,6 +380,7 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
     }
 
     try:
+        center_running()
         with st.spinner("🔄 Fetching network list..."):
             networks_url = f"{base_url}/organizations/{org_id}/networks"
             networks_resp = requests.get(networks_url, headers=headers)
