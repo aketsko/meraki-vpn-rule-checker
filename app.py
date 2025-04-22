@@ -752,7 +752,8 @@ if selected_tab == "📘 Overview":
                         break
             except ValueError:
                 st.warning("❌ Invalid CIDR format. Example: 192.168.1.0/24")
-
+        if cidr_valid and not cidr_matched:
+            st.warning(f"⚠️ No matching network found for subnet `{search_cidr}`")
         # Final dropdown (with auto-selection if applicable)
         selected_network = st.selectbox(
             "🏢 Choose a Network",
