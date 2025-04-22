@@ -769,7 +769,7 @@ if selected_tab == "📘 Overview":
             if not all_locations:
                 st.info("No local firewall rule data available. Please fetch extended data.")
             else:
-                selected_loc = st.selectbox("Select a location:", options=all_locations, key="overview_fw_location")
+                selected_loc = selected_network
 
                 selected_rules = []
                 for net_id, info in network_details.items():
