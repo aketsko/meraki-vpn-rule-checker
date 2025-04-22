@@ -1092,7 +1092,7 @@ elif selected_tab == "🔎 Search Object or Group":
                 allow_unsafe_jscode=True,
                 use_container_width=True,
                 fit_columns_on_grid_load=True,
-                key="objects_table"
+                key="objects_table_grid"
             )
 
             selected_obj = grid_response.get("selected_rows", [])
@@ -1161,7 +1161,7 @@ elif selected_tab == "🔎 Search Object or Group":
             allow_unsafe_jscode=True,
             use_container_width=True,
             fit_columns_on_grid_load=True,
-            key="groups_table"
+            key="groups_table_grid"
         )
 
         selected_grp = group_grid.get("selected_rows", [])
