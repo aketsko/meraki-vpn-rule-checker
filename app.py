@@ -777,7 +777,7 @@ if selected_tab == "📘 Overview":
                         rules = info.get("firewall_rules", [])
                         break
                        
-                if selected_rules:
+                if rules:
                     for rule in rules:
                         selected_rules.append({
                             "Action": rule.get("policy", "").upper(),
