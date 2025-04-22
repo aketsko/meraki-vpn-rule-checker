@@ -860,6 +860,11 @@ if selected_tab == "📘 Overview":
             for s in vpn_subnets:
                 cidr = s.get("localSubnet")
                 use_vpn = s.get("useVpn", False)  # This is a Python boolean
+                if "metadata" in s:
+                    meta = s["metadata"]
+                    Subnet_Name = meta["name"] 
+                    Type = meta["type"]
+                
                 if not cidr:
                     continue
 
@@ -881,7 +886,8 @@ if selected_tab == "📘 Overview":
                     continue
 
                 rows.append({
-                   # "Subnet Name": cidr,
+                    "Subnet Name": Subnet_Name,
+                    "Type": Type,
                     "CIDR": cidr,
                     "In VPN": "✅" if use_vpn else "❌",
                     "Objects": ", ".join(matched_objects) if matched_objects else "—"
