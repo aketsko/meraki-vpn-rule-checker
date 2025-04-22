@@ -975,22 +975,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
         expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
 
-        st.sidebar.markdown("🔘 Set Colors")
-        with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
-            st.markdown("Adjust the colors used to highlight rule matches:")
-            def color_slider(label, key, default_hex):
-                return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
-            color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
-            color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
-            color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
-            color_slider("Described traffic is partially DENIED. This rule can affect the traffic. To investigate further, make the search more specific.", key="partial_deny", default_hex="#F7EF81")
 
-        highlight_colors = {
-            "exact_allow": st.session_state.get("exact_allow", "#09BC8A"),
-            "exact_deny": st.session_state.get("exact_deny", "#DA2C38"),
-            "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
-            "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
-        }
 
     if not st.session_state["fw_dynamic_update"]:
         st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
@@ -1138,6 +1123,22 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 skip_dst_check=skip_dst_check,
                 key="vpn_table"
             )
+        st.sidebar.markdown("🔘 Set Colors")
+        with st.sidebar.expander("🟢 🟡 🔴", expanded=False):
+            st.markdown("Adjust the colors used to highlight rule matches:")
+            def color_slider(label, key, default_hex):
+                return st.color_picker(label, value=st.session_state.get(key, default_hex), key=key)
+            color_slider("Described traffic is fully ALLOWED. No rule after this one will affect the traffic. ", key="exact_allow", default_hex="#09BC8A")
+            color_slider("Described traffic is partially ALLOWED. This rule can affect the traffic. To investigate further, make the search more specific. ", key="partial_allow", default_hex="#99E2B4")
+            color_slider("Described traffic is fully DENIED. No rule after this one will affect the traffic.", key="exact_deny", default_hex="#DA2C38")
+            color_slider("Described traffic is partially DENIED. This rule can affect the traffic. To investigate further, make the search more specific.", key="partial_deny", default_hex="#F7EF81")
+
+        highlight_colors = {
+            "exact_allow": st.session_state.get("exact_allow", "#09BC8A"),
+            "exact_deny": st.session_state.get("exact_deny", "#DA2C38"),
+            "partial_allow": st.session_state.get("partial_allow", "#99E2B4"),
+            "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
+        }
 
 
 elif selected_tab == "🧠 Optimization Insights":
