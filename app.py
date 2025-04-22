@@ -1075,6 +1075,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                     default=st.session_state["selected_local_locations"],
                     key="selected_local_locations"
                 )
+                selected_locations = st.session_state["selected_local_locations"]
 
 
 
