@@ -646,11 +646,11 @@ with st.container():
     if "group_map" not in st.session_state and groups_data:
         st.session_state["group_map"] = group_map
 
-    # When user changes tab, collapse API/Data expanders
-    # if st.session_state.active_tab != st.session_state.last_active_tab:
-    #     if st.session_state.active_tab != "☁️ API & Snapshot":
-    #         st.session_state["api_data_expander"] = False
-    #     st.session_state.last_active_tab = st.session_state.active_tab
+    When user changes tab, collapse API/Data expanders
+    if st.session_state.active_tab != st.session_state.last_active_tab:
+        if st.session_state.active_tab != "☁️ API & Snapshot":
+            st.session_state["api_data_expander"] = False
+        st.session_state.last_active_tab = st.session_state.active_tab
 
 
     # RIGHT: Metrics
