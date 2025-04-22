@@ -798,14 +798,14 @@ if selected_tab == "📘 Overview":
 
                     row_style_js = JsCode("""
                     function(params) {
-                        if (params.data.Policy === "allow" || params.data.policy === "allow") {
+                        if (params.data.Policy === "allow" || params.data.Policy === "ALLOW") {
                             return {
                                 backgroundColor: '#99E2B4',
                                 color: '#155724',
                                 fontWeight: 'bold'
                             };
                         }
-                        if (params.data.Policy === "deny" || params.data.policy === "deny") {
+                        if (params.data.Policy === "deny" || params.data.Policy === "DENY") {
                             return {
                                 backgroundColor: '#F7EF81',
                                 color: '#721c24',
