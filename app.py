@@ -458,13 +458,13 @@ st.sidebar.header("☰ Menu")
 st.session_state["api_data_expander"] = False
 collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data") or st.session_state["api_data_expander"])
 
-st.sidebar.markdown("☁️ Load Meraki Dashboard Data")
+st.sidebar.markdown("📦 Load Meraki Dashboard Data")
 with st.sidebar.expander("🔽 Fetch Data", expanded=not collapse_expanders):
 
     org_id = st.text_input("🆔 Enter your Organization ID", value="")
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
 
-    if st.button("📦 Fetch Data from API"):
+    if st.button("☁️ Fetch Data from API"):
         if not api_key or not org_id:
             st.error("❌ Please enter both API key and Org ID.")
         else:
@@ -537,7 +537,7 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=not collapse_expanders):
                     st.error(f"❌ Exception during data fetch: {e}")
                     st.session_state["fetched_from_api"] = False
 
-    st.sidebar.markdown("📤 Data Import and Export")
+#    st.sidebar.markdown("📤 Data Import and Export")
 # if "snapshot_expander_open" not in st.session_state:
 #     st.session_state["snapshot_expander_open"] = not collapse_expanders
 
