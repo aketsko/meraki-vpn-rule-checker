@@ -1253,7 +1253,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         st.markdown(format_boxed("Source Object", st.session_state["snapshot"]["src"] or "-"), unsafe_allow_html=True)
                         st.markdown(format_boxed("Source CIDR", src_cidr_str), unsafe_allow_html=True)
                         st.markdown(format_boxed("Source Port", st.session_state["snapshot"]["src_port"]), unsafe_allow_html=True)
-                        st.markdown(format_boxed("Source Location", src_locs), unsafe_allow_html=True)
+                        #st.markdown(format_boxed("Source Location", src_locs), unsafe_allow_html=True)
 
                     with col2:
                         st.markdown(format_boxed("Destination Object", st.session_state["snapshot"]["dst"] or "-"), unsafe_allow_html=True)
