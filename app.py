@@ -1170,6 +1170,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         if st.button("🔍 Search"):
             st.session_state["rule_check_triggered"] = True
+            st.session_state["snapshot"] = {
+                "src": source_input,
+                "dst": destination_input,
+                "src_port": source_port_input,
+                "dst_port": port_input,
+                "protocol": protocol,
+            }
         if not st.session_state["rule_check_triggered"]:
             st.info("Press **Search** to evaluate traffic flow.")
             st.stop()
@@ -1191,10 +1198,10 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         st.stop()
 
     from utils.match_logic import evaluate_rule_scope_from_inputs
-    source_cidrs = resolve_search_input(source_input)
-    destination_cidrs = resolve_search_input(destination_input)
-    skip_src_check = source_input.strip().lower() == "any"
-    skip_dst_check = destination_input.strip().lower() == "any"
+    source_cidrs = resolve_search_input(st.session_state["snapshot"]["src"])
+    destination_cidrs = resolve_search_input(st.session_state["snapshot"]["dst"])
+    skip_src_check = st.session_state["snapshot"]["src"].strip().lower() == "any"
+    skip_dst_check = st.session_state["snapshot"]["dst"].strip().lower() == "any"
 
     obj_loc_map = st.session_state.get("object_location_map", {})
     extended_data = st.session_state.get("extended_data", {})
@@ -1213,15 +1220,15 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         # 🔍 Traffic Flow Summary (Refined Layout)
         if st.session_state.get("rule_check_triggered", False):
-            src_cidr_list = resolve_search_input(source_input)
-            dst_cidr_list = resolve_search_input(destination_input)
+            src_cidr_list = resolve_search_input(st.session_state["snapshot"]["src"])
+            dst_cidr_list = resolve_search_input(st.session_state["snapshot"]["dst"])
 
             src_cidr_str = ", ".join(src_cidr_list) if src_cidr_list else "any"
             dst_cidr_str = ", ".join(dst_cidr_list) if dst_cidr_list else "any"
 
-            src_port_str = source_port_input.strip() if source_port_input.strip().lower() != "any" else "any"
-            dst_port_str = port_input.strip() if port_input.strip().lower() != "any" else "any"
-            proto_str = protocol.strip().upper() if protocol.strip().lower() != "any" else "ANY"
+            src_port_str = st.session_state["snapshot"]["src_port"].strip() if st.session_state["snapshot"]["src_port"].strip().lower() != "any" else "any"
+            dst_port_str = st.session_state["snapshot"]["dst_port"].strip() if st.session_state["snapshot"]["dst_port"].strip().lower() != "any" else "any"
+            proto_str = st.session_state["snapshot"]["protocol"].strip().upper() if st.session_state["snapshot"]["protocol"].strip().lower() != "any" else "ANY"
 
             col1, col2 = st.columns([1, 10])
             with col1:
@@ -1243,18 +1250,18 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
                     with col1:
-                        st.markdown(format_boxed("Source Object", source_input or "-"), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Source Object", st.session_state["snapshot"]["src"] or "-"), unsafe_allow_html=True)
                         st.markdown(format_boxed("Source CIDR", src_cidr_str), unsafe_allow_html=True)
-                        st.markdown(format_boxed("Source Port", src_port_str), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Source Port", st.session_state["snapshot"]["src_port"]), unsafe_allow_html=True)
 
                     with col2:
-                        st.markdown(format_boxed("Destination Object", destination_input or "-"), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Destination Object", st.session_state["snapshot"]["dst"] or "-"), unsafe_allow_html=True)
                         st.markdown(format_boxed("Destination CIDR", dst_cidr_str), unsafe_allow_html=True)
-                        st.markdown(format_boxed("Destination Port", dst_port_str), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Destination Port", st.session_state["snapshot"]["dst_port"]), unsafe_allow_html=True)
 
                     with col3:
                         #st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
-                        st.markdown(format_boxed("Protocol", proto_str), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Protocol", st.session_state["snapshot"]["protocol"]), unsafe_allow_html=True)
 
                     st.markdown("---")
 
