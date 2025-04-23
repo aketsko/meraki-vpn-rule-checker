@@ -1170,6 +1170,9 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
         if st.button("🔍 Search"):
             st.session_state["rule_check_triggered"] = True
+        if not st.session_state["rule_check_triggered"]:
+            st.info("Press **Search** to evaluate traffic flow.")
+            st.stop()
 
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
         expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
@@ -1209,50 +1212,51 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         show_local = rule_scope["local_needed"]
 
         # 🔍 Traffic Flow Summary (Refined Layout)
-        src_cidr_list = resolve_search_input(source_input)
-        dst_cidr_list = resolve_search_input(destination_input)
+        if st.session_state.get("rule_check_triggered", False):
+            src_cidr_list = resolve_search_input(source_input)
+            dst_cidr_list = resolve_search_input(destination_input)
 
-        src_cidr_str = ", ".join(src_cidr_list) if src_cidr_list else "any"
-        dst_cidr_str = ", ".join(dst_cidr_list) if dst_cidr_list else "any"
+            src_cidr_str = ", ".join(src_cidr_list) if src_cidr_list else "any"
+            dst_cidr_str = ", ".join(dst_cidr_list) if dst_cidr_list else "any"
 
-        src_port_str = source_port_input.strip() if source_port_input.strip().lower() != "any" else "any"
-        dst_port_str = port_input.strip() if port_input.strip().lower() != "any" else "any"
-        proto_str = protocol.strip().upper() if protocol.strip().lower() != "any" else "ANY"
+            src_port_str = source_port_input.strip() if source_port_input.strip().lower() != "any" else "any"
+            dst_port_str = port_input.strip() if port_input.strip().lower() != "any" else "any"
+            proto_str = protocol.strip().upper() if protocol.strip().lower() != "any" else "ANY"
 
-        col1, col2 = st.columns([1, 10])
-        with col1:
-            st.subheader("🔍 Traffic Flow")
-        with col2:
-            with st.expander("### Details", expanded=False):
+            col1, col2 = st.columns([1, 10])
+            with col1:
+                st.subheader("🔍 Traffic Flow")
+            with col2:
+                with st.expander("### Details", expanded=False):
 
-                col1, col2, col3 = st.columns([6, 6, 1])
+                    col1, col2, col3 = st.columns([6, 6, 1])
 
-                def format_boxed(label, value):
-                    return f"""
-                    <div style="margin-bottom: 0.75rem;">
-                        <span style="font-weight: 600; color: #1a237e; font-size: 1.1rem;">{label}</span><br>
-                        <div style="background-color: #ecf0f1; padding: 10px 14px; border-radius: 8px; margin-top: 4px;">
-                            <code style="font-size: 1.05rem;">{value}</code>
+                    def format_boxed(label, value):
+                        return f"""
+                        <div style="margin-bottom: 0.75rem;">
+                            <span style="font-weight: 600; color: #1a237e; font-size: 1.1rem;">{label}</span><br>
+                            <div style="background-color: #ecf0f1; padding: 10px 14px; border-radius: 8px; margin-top: 4px;">
+                                <code style="font-size: 1.05rem;">{value}</code>
+                            </div>
                         </div>
-                    </div>
-                    """
+                        """
 
 
-                with col1:
-                    st.markdown(format_boxed("Source Object", source_input or "-"), unsafe_allow_html=True)
-                    st.markdown(format_boxed("Source CIDR", src_cidr_str), unsafe_allow_html=True)
-                    st.markdown(format_boxed("Source Port", src_port_str), unsafe_allow_html=True)
+                    with col1:
+                        st.markdown(format_boxed("Source Object", source_input or "-"), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Source CIDR", src_cidr_str), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Source Port", src_port_str), unsafe_allow_html=True)
 
-                with col2:
-                    st.markdown(format_boxed("Destination Object", destination_input or "-"), unsafe_allow_html=True)
-                    st.markdown(format_boxed("Destination CIDR", dst_cidr_str), unsafe_allow_html=True)
-                    st.markdown(format_boxed("Destination Port", dst_port_str), unsafe_allow_html=True)
+                    with col2:
+                        st.markdown(format_boxed("Destination Object", destination_input or "-"), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Destination CIDR", dst_cidr_str), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Destination Port", dst_port_str), unsafe_allow_html=True)
 
-                with col3:
-                    #st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
-                    st.markdown(format_boxed("Protocol", proto_str), unsafe_allow_html=True)
+                    with col3:
+                        #st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
+                        st.markdown(format_boxed("Protocol", proto_str), unsafe_allow_html=True)
 
-                st.markdown("---")
+                    st.markdown("---")
 
 
 
