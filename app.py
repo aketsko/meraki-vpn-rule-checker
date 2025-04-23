@@ -548,6 +548,26 @@ def passthrough_port(term: str):
     term = term.strip()
     return [(f"Use: {term}", term)] if term else []
 
+def resolve_names(cidr_str, object_map, group_map):
+    parts = [p.strip() for p in cidr_str.split(",")]
+    resolved = []
+    for p in parts:
+        if p.startswith("OBJ(") and p.endswith(")"):
+            obj = object_map.get(p[4:-1])
+            if obj:
+                resolved.append(f"{obj['name']} ({p})")
+            else:
+                resolved.append(p)
+        elif p.startswith("GRP(") and p.endswith(")"):
+            grp = group_map.get(p[4:-1])
+            if grp:
+                resolved.append(f"{grp['name']} ({p})")
+            else:
+                resolved.append(p)
+        else:
+            resolved.append(p)
+    return ", ".join(resolved)
+
 st.markdown("""
 <style>
 /* Force main container to always use full width */
@@ -1044,6 +1064,21 @@ elif selected_tab == "🔎 Search Object or Group":
     filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
     filtered_grps = [g for g in groups_data if search_term in g.get("name", "").lower()] if search_term else groups_data
 
+    invalid_objects = get_invalid_objects(objects_data)
+    if invalid_objects:
+        st.subheader("⚠️ Objects with Invalid CIDRs")
+        with st.expander(f"⚠️ Show Invalid Entries ({len(invalid_objects)})", expanded=False):
+            df_invalid = pd.DataFrame(invalid_objects)
+            st.dataframe(df_invalid, use_container_width=True)
+
+            st.download_button(
+                label="📥 Download Invalid CIDRs Report",
+                data=df_invalid.to_json(orient="records", indent=2),
+                file_name="invalid_objects_cidr_report.json",
+                mime="application/json"
+            )
+
+
     st.subheader("🔹 Matching Network Objects")
     object_rows = []
     for o in filtered_objs:
@@ -1057,7 +1092,7 @@ elif selected_tab == "🔎 Search Object or Group":
             "Location": ", ".join(sorted(locs)),
             "Groups": ", ".join(group_names)
         })
-
+    
     df_obj = pd.DataFrame(object_rows)
     st.dataframe(df_obj, use_container_width=True)
 
@@ -1194,9 +1229,9 @@ elif selected_tab == "🔎 Search Object or Group":
                         "Number": i + 1,
                         "Policy": rule.get("policy", "").upper(),
                         "Protocol": rule.get("protocol", ""),
-                        "Source": rule.get("srcCidr", ""),
+                        "Source": resolve_names(rule.get("srcCidr", ""), object_map, group_map),
                         "SRC Port": rule.get("srcPort", ""),
-                        "Destination": rule.get("destCidr", ""),
+                        "Destination": resolve_names(rule.get("destCidr", ""), object_map, group_map),
                         "DST Port": rule.get("destPort", ""),
                         "Comment": rule.get("comment", "")
                     })
@@ -1215,9 +1250,9 @@ elif selected_tab == "🔎 Search Object or Group":
                             "Number": i + 1,
                             "Policy": rule.get("policy", "").upper(),
                             "Protocol": rule.get("protocol", ""),
-                            "Source": rule.get("srcCidr", ""),
+                            "Source": resolve_names(rule.get("srcCidr", ""), object_map, group_map),
                             "SRC Port": rule.get("srcPort", ""),
-                            "Destination": rule.get("destCidr", ""),
+                            "Destination": resolve_names(rule.get("destCidr", ""), object_map, group_map),
                             "DST Port": rule.get("destPort", ""),
                             "Comment": rule.get("comment", "")
                         })
