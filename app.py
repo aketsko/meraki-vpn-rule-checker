@@ -9,7 +9,7 @@ from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
 from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, resolve_to_cidrs_supernet_aware, find_object_locations, build_object_location_map
 from streamlit_searchbox import st_searchbox
-#from utils.API import fetch_meraki_data_extended
+from streamlit_extras.customize_running import center_running
 
 # ------------------ PAGE SETUP ------------------
 st.set_page_config(
@@ -380,6 +380,7 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
     }
 
     try:
+        center_running()
         with st.spinner("🔄 Fetching network list..."):
             networks_url = f"{base_url}/organizations/{org_id}/networks"
             networks_resp = requests.get(networks_url, headers=headers)
