@@ -1123,13 +1123,13 @@ elif selected_tab == "🔎 Search Object or Group":
         ]
 
         if unused_objects:
-            st.markdown(f"### 🧱 Unused Network Objects ({len(unused_objects)}):")
+            st.markdown(f"### 🧹🔹 Unused Network Objects ({len(unused_objects)}):")
             st.dataframe(pd.DataFrame(unused_objects)[["name", "cidr", "fqdn"]], use_container_width=True)
         else:
             st.success("✅ All objects are used.")
 
         if unused_groups:
-            st.markdown(f"### 🗂️ Unused Object Groups ({len(unused_groups)}):")
+            st.markdown(f"### 🧹🔸 Unused Object Groups ({len(unused_groups)}):")
             st.dataframe(pd.DataFrame(unused_groups)[["name", "category"]], use_container_width=True)
         else:
             st.success("✅ All groups are used.")
