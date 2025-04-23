@@ -1164,7 +1164,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
         protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
         st.markdown("### ⚙️ View Settings")
-        dynamic_mode = st.checkbox("🔄 Dynamic update", value=st.session_state.get("fw_dynamic_update", False), key="fw_dynamic_update")
+
+        if "rule_check_triggered" not in st.session_state:
+            st.session_state["rule_check_triggered"] = False
+
+        if st.button("🔍 Search"):
+            st.session_state["rule_check_triggered"] = True
+
         filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
         expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
 
@@ -1177,8 +1183,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             "partial_deny": st.session_state.get("partial_deny", "#F7EF81")
         }
 
-    if not st.session_state["fw_dynamic_update"]:
-        st.info("Dynamic update is disabled. Switch to Dynamic update mode to evaluate.")
+    if not st.session_state.get("rule_check_triggered", False):
+        st.info("Press **Search** to evaluate traffic flow.")
         st.stop()
 
     from utils.match_logic import evaluate_rule_scope_from_inputs
