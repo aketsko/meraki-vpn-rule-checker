@@ -156,6 +156,8 @@ def find_object_locations(input_list, object_location_map):
 
 
 def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
+    import ipaddress
+
     src_locs = find_object_locations(source_cidrs, obj_location_map)
     dst_locs = find_object_locations(dest_cidrs, obj_location_map)
     shared_locs = src_locs & dst_locs
@@ -164,13 +166,32 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
     src_vpn_locs = {loc for (loc, vpn) in src_locs if vpn}
     dst_vpn_locs = {loc for (loc, vpn) in dst_locs if vpn}
 
-    # Determine if VPN rules are needed (different VPN-enabled locations)
-    vpn_needed = bool(src_vpn_locs and dst_vpn_locs and src_vpn_locs.isdisjoint(dst_vpn_locs))
+    # Detect if either input is a supernet (e.g., /0, /8, /16)
+    def contains_supernet(cidr_list):
+        try:
+            return any(ipaddress.ip_network(c).prefixlen < 24 for c in cidr_list if c != "0.0.0.0/0")
+        except Exception:
+            return False
+
+    src_supernet = contains_supernet(source_cidrs)
+    dst_supernet = contains_supernet(dest_cidrs)
+    is_any_src = source_cidrs == ["0.0.0.0/0"]
+    is_any_dst = dest_cidrs == ["0.0.0.0/0"]
+
+    # Determine if VPN is needed
+    vpn_needed = (
+        bool(src_vpn_locs and dst_vpn_locs) and
+        (
+            src_vpn_locs.isdisjoint(dst_vpn_locs) or
+            src_supernet or dst_supernet or
+            is_any_src or is_any_dst
+        )
+    )
 
     # Determine if local rules are needed
     local_needed = (
-        bool(shared_locs and not vpn_needed) or  # local within site
-        (src_locs and not dst_locs)              # internal to internet
+        bool(shared_locs and not vpn_needed) or
+        (src_locs and not dst_locs)
     )
 
     # Determine which locations to use for local rule evaluation
@@ -191,7 +212,6 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
         "local_needed": local_needed,
         "local_rule_locations": list(local_rule_locations)
     }
-
 
 
 
@@ -238,5 +258,4 @@ def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
                 continue
 
     return list(resolved)
-
 
