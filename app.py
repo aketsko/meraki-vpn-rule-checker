@@ -1165,11 +1165,11 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     # --- Sidebar Controls (Tab-Specific) ---
     with st.sidebar:
         st.markdown("### ↔️ Traffic Flow")
-        source_input = st_searchbox(custom_search, label="Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
-        source_port_input = st_searchbox(passthrough_port, label="Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
-        destination_input = st_searchbox(custom_search, label="Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
-        port_input = st_searchbox(passthrough_port, label="Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
-        protocol = st_searchbox(search_protocol, label="Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
+        source_input = st_searchbox(custom_search, label="##🌐 Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
+        source_port_input = st_searchbox(passthrough_port, label="##🔌 Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
+        destination_input = st_searchbox(custom_search, label="##🌐 Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
+        port_input = st_searchbox(passthrough_port, label="##🔌 Destination Port(s)", placeholder="e.g. 443,1000-2000", key="dstport_searchbox", default="any")
+        protocol = st_searchbox(search_protocol, label="##🧭 Protocol", placeholder="any, tcp, udp...", key="protocol_searchbox", default="any")
         st.markdown("### ⚙️ View Settings")
 
         if "rule_check_triggered" not in st.session_state:
