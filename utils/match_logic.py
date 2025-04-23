@@ -199,6 +199,7 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
         "shared_locations": shared_locs,
         "vpn_needed": vpn_needed,
         "local_needed": local_needed,
+        "local_rule_locations": list(src_locs if src_locs and not dst_locs else shared_locs)
     }
 
 
