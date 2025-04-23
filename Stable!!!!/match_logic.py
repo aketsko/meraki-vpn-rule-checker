@@ -188,7 +188,11 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
     )
 
     # Show Local if any shared location exists
-    local_needed = bool(shared_locs)
+    local_needed = (
+    bool(shared_locs) or
+        (src_locs and not dst_locs) or
+        (dest_cidrs == ["0.0.0.0/0"])  # when DST is any, assume local rule needed
+    )
 
     return {
         "src_location_map": src_locs,
