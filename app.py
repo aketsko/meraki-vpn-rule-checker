@@ -1181,8 +1181,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
             st.info("Press **Search** to evaluate traffic flow.")
             st.stop()
 
-        filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", False), key="fw_filter_toggle")
-        expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", False), key="fw_expand_local")
+        filter_toggle = st.checkbox("✅ Show only matching rules", value=st.session_state.get("fw_filter_toggle", True), key="fw_filter_toggle")
+        expand_all_local = st.checkbox("🧱 Expand Local Firewall Rule sections", value=st.session_state.get("fw_expand_local", True), key="fw_expand_local")
 
 
 
