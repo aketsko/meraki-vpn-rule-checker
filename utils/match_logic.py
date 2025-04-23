@@ -160,45 +160,36 @@ def find_object_locations(input_list, object_location_map):
 
 
 
-def evaluate_rule_scope_from_inputs(source_cidrs, destination_cidrs, object_location_map):
-
-    # Resolve location maps
-    src_locs = find_object_locations(source_cidrs, object_location_map)
-    dst_locs = find_object_locations(destination_cidrs, object_location_map)
+def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
+    src_locs = find_object_locations(source_cidrs, obj_location_map)
+    dst_locs = find_object_locations(dest_cidrs, obj_location_map)
     shared_locs = src_locs & dst_locs
 
-    # Categorize shared locations
-    vpn_shared = {(loc, vpn) for (loc, vpn) in shared_locs if vpn}
-    local_shared = {(loc, vpn) for (loc, vpn) in shared_locs if not vpn}
+    src_vpn_locs = set()
+    dst_vpn_locs = set()
 
-    # Case 1: VPN traffic between distinct VPN locations
-    vpn_needed = (
-        src_locs and dst_locs and
-        all(vpn for _, vpn in src_locs) and
-        all(vpn for _, vpn in dst_locs) and
-        not shared_locs  # no common site
+    for cidr in source_cidrs:
+        for entry in obj_location_map.get(cidr, []):
+            if isinstance(entry, dict) and entry.get("useVpn"):
+                src_vpn_locs.add(entry.get("network"))
+
+    for cidr in dest_cidrs:
+        for entry in obj_location_map.get(cidr, []):
+            if isinstance(entry, dict) and entry.get("useVpn"):
+                dst_vpn_locs.add(entry.get("network"))
+
+    # 🔧 Updated logic:
+    # Show VPN if there is at least one (src,dst) pair with useVpn=True and different locations
+    vpn_needed = any(
+        dst != src and dst in dst_vpn_locs and src in src_vpn_locs
+        for src in src_vpn_locs for dst in dst_vpn_locs
     )
 
-    # Case 2: Local traffic within a site or to internet
+    # Show Local if any shared location exists
     local_needed = (
-        bool(local_shared) or
-        (src_locs and not dst_locs) or   # internal → internet
-        (not vpn_needed and shared_locs)  # shared locations that are not distinct VPN sites
+    bool(shared_locs) or
+        (src_locs and not dst_locs)
     )
-
-# Only show local rules when not VPN between different sites
-    if vpn_needed:
-        local_needed = False
-        local_rule_locations = set()
-    elif src_locs and not dst_locs:
-        # Only allow local rules from SRC if it's not a single IP that maps to remote VPN
-        if not any(vpn for (_, vpn) in src_locs):
-            local_rule_locations = src_locs
-            local_needed = True
-        else:
-            local_rule_locations = set()
-            local_needed = False
-
 
     return {
         "src_location_map": src_locs,
@@ -206,7 +197,7 @@ def evaluate_rule_scope_from_inputs(source_cidrs, destination_cidrs, object_loca
         "shared_locations": shared_locs,
         "vpn_needed": vpn_needed,
         "local_needed": local_needed,
-        "local_rule_locations": list(local_rule_locations)
+        "local_rule_locations": list(src_locs if src_locs and not dst_locs else shared_locs)
     }
 
 
