@@ -127,30 +127,29 @@ def find_object_locations(input_list, object_location_map):
     for item in input_list:
         matches = []
 
-        # Direct mapping if available
+        # Exact match
         direct = object_location_map.get(item, [])
         if isinstance(direct, list):
             matches.extend(direct)
 
-        # Special handling for "any"
+        # Special case: 0.0.0.0/0 (any)
         if item == "0.0.0.0/0":
             any_match = object_location_map.get("0.0.0.0/0", [])
             if isinstance(any_match, list):
                 matches.extend(any_match)
 
-        # Avoid fallback to other broader CIDRs unless explicitly needed
-        # Commented this out to prevent false location attribution:
-        # try:
-        #     ip_net = ipaddress.ip_network(item, strict=False)
-        #     for cidr, entries in object_location_map.items():
-        #         try:
-        #             net = ipaddress.ip_network(cidr, strict=False)
-        #             if ip_net.subnet_of(net) or ip_net == net:
-        #                 matches.extend(entries)
-        #         except ValueError:
-        #             continue
-        # except ValueError:
-        #     pass  # skip if not CIDR
+        # New: Try containment logic
+        try:
+            ip_net = ipaddress.ip_network(item, strict=False)
+            for cidr, entries in object_location_map.items():
+                try:
+                    net = ipaddress.ip_network(cidr, strict=False)
+                    if ip_net.subnet_of(net) or ip_net == net or net.subnet_of(ip_net):
+                        matches.extend(entries)
+                except ValueError:
+                    continue
+        except ValueError:
+            pass  # skip non-CIDR input
 
         for match in matches:
             key = (match["network"], match["useVpn"])
@@ -159,6 +158,7 @@ def find_object_locations(input_list, object_location_map):
                 results.append(match)
 
     return {(entry["network"], entry["useVpn"]) for entry in results if isinstance(entry, dict)}
+
 
 
 
