@@ -1078,10 +1078,9 @@ elif selected_tab == "🔎 Search Object or Group":
                 file_name="invalid_objects_cidr_report.json",
                 mime="application/json"
             )
-    with st.expander("🧹 Unused Network Objects"):
+    with st.expander("🧹 Unused Network Objects & Groups"):
         used_ids = set()
 
-        # 1. Collect all directly used object/group IDs from rules
         def extract_ids(cidrs):
             ids = []
             for cid in cidrs.split(","):
@@ -1090,39 +1089,52 @@ elif selected_tab == "🔎 Search Object or Group":
                     ids.append(cid)
             return ids
 
-        # VPN rules
+        # Collect all used OBJ(...) and GRP(...) from rules
         for rule in rules_data:
             used_ids.update(extract_ids(rule.get("srcCidr", "")))
             used_ids.update(extract_ids(rule.get("destCidr", "")))
-
-        # Local rules
         for net in extended_data.get("network_details", {}).values():
             for rule in net.get("firewall_rules", []):
                 used_ids.update(extract_ids(rule.get("srcCidr", "")))
                 used_ids.update(extract_ids(rule.get("destCidr", "")))
 
-        # 2. Track group members for any GRP ID that is used
+        # Resolve object IDs used directly or via group membership
         used_object_ids = set()
+        used_group_ids = set()
+
         for used_id in used_ids:
             if used_id.startswith("OBJ("):
                 used_object_ids.add(used_id[4:-1])
             elif used_id.startswith("GRP("):
-                grp = group_map.get(used_id[4:-1])
+                gid = used_id[4:-1]
+                used_group_ids.add(gid)
+                grp = group_map.get(gid)
                 if grp:
                     used_object_ids.update(str(oid) for oid in grp.get("objectIds", []))
 
-        # 3. Find unused objects
+        # Find unused objects
         unused_objects = [
             obj for obj in objects_data if str(obj["id"]) not in used_object_ids
         ]
 
+        # Find unused groups
+        unused_groups = [
+            grp for grp in groups_data if str(grp["id"]) not in used_group_ids
+        ]
+
         if unused_objects:
-            st.markdown(f"**Found {len(unused_objects)} unused network object(s):**")
+            st.markdown(f"### 🧱 Unused Network Objects ({len(unused_objects)}):")
             st.dataframe(pd.DataFrame(unused_objects)[["name", "cidr", "fqdn"]], use_container_width=True)
         else:
-            st.info("All objects are used in rules or referenced via groups.")
+            st.success("✅ All objects are used.")
 
-        st.subheader("🔹 Matching Network Objects")
+        if unused_groups:
+            st.markdown(f"### 🗂️ Unused Object Groups ({len(unused_groups)}):")
+            st.dataframe(pd.DataFrame(unused_groups)[["name", "category"]], use_container_width=True)
+        else:
+            st.success("✅ All groups are used.")
+
+
     object_rows = []
     for o in filtered_objs:
         cidr = o.get("cidr", "")
