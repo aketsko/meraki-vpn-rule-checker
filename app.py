@@ -1267,7 +1267,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
 
-            if show_local:
+            if show_local and rule_scope.get("local_rule_locations"):
+
                 st.subheader("🧱 Local Firewall Rules")
                 with st.sidebar:
                     location_filter_title = f"📍 Location Filter ({len(set(loc for loc, _ in local_rule_locations))} found)"
