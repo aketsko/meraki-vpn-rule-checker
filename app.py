@@ -1029,22 +1029,22 @@ elif selected_tab == "🔎 Search Object or Group":
 #             options=[f"{r['Name']} ({r['CIDR']})" for r in object_rows] if object_rows else [],
 #             index=0 if object_rows else None
 # )   
-#     #selected_obj = df_obj.get("selected_rows", [])
-#     if selected_obj:
-#         selected_cidr = selected_obj.split("(")[-1].strip(")")
-#         st.markdown("### 🔍 Subnet Metadata")
-#         for net_info in network_details.values():
-#             for s in net_info.get("vpn_settings", {}).get("subnets", []):
-#                 if s.get("localSubnet") == selected_cidr:
-#                     st.write(f"📍 **Network**: {net_info['network_name']}")
-#                     st.write(f"🔌 **In VPN**: {'✅' if s.get('useVpn') else '❌'}")
-#                     for meta in s.get('metadata', []):
-#                         st.write(f"📝 **Name**: {meta.get('name', '—')}")
-#                         st.write(f"📝 **Type**: {meta.get('type', '—')}")
-#                     if not s.get('metadata'):
-#                         st.write("📝 No metadata available.")
+    #selected_obj = df_obj.get("selected_rows", [])
+    # if selected_obj:
+    #     selected_cidr = selected_obj.split("(")[-1].strip(")")
+    #     st.markdown("### 🔍 Subnet Metadata")
+    #     for net_info in network_details.values():
+    #         for s in net_info.get("vpn_settings", {}).get("subnets", []):
+    #             if s.get("localSubnet") == selected_cidr:
+    #                 st.write(f"📍 **Network**: {net_info['network_name']}")
+    #                 st.write(f"🔌 **In VPN**: {'✅' if s.get('useVpn') else '❌'}")
+    #                 for meta in s.get('metadata', []):
+    #                     st.write(f"📝 **Name**: {meta.get('name', '—')}")
+    #                     st.write(f"📝 **Type**: {meta.get('type', '—')}")
+    #                 if not s.get('metadata'):
+    #                     st.write("📝 No metadata available.")
 
-#     st.markdown("---")
+    # st.markdown("---")
 
 
     col1, col2, col3 = st.columns([2, 4, 6])  # Adjust column width ratios as needed
@@ -1053,10 +1053,13 @@ elif selected_tab == "🔎 Search Object or Group":
         st.markdown("🔍 Subnet Metadata")
 
     with col2:
-        cidr_options = [r["CIDR"] for r in object_rows if r["CIDR"]]
-        selected_cidr = st.selectbox(" ", options=cidr_options, label_visibility="collapsed")
-
+        selected_obj = st.selectbox(
+            "⬇️ Show subnet metadata for CIDR:",
+             options=[f"{r['Name']} ({r['CIDR']})" for r in object_rows] if object_rows else [],
+             index=0 if object_rows else None
+        )
     with col3:
+        selected_cidr = selected_obj.split("(")[-1].strip(")") if selected_obj else None
         if selected_cidr:
             # Display metadata here
             st.markdown(f"**Selected Subnet:** `{selected_cidr}`")
