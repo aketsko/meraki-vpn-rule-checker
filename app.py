@@ -7,7 +7,7 @@ from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
-from utils.match_logic import resolve_to_cidrs, match_input_to_rule, is_exact_subnet_match, resolve_to_cidrs_supernet_aware, find_object_locations, build_object_location_map
+from utils.match_logic import match_input_to_rule, is_exact_subnet_match, resolve_to_cidrs_supernet_aware,  build_object_location_map
 from streamlit_searchbox import st_searchbox
 from streamlit_extras.customize_running import center_running
 
@@ -129,40 +129,6 @@ def show_rule_summary(indexes):
             st.warning(f"⚠️ Skipping invalid rule index: {i}")
     if rows:
         st.dataframe(pd.DataFrame(rows), use_container_width=True)
-
-st.markdown("""
-<style>
-/* Force main container to always use full width */
-.css-18e3th9 {
-    flex: 1 1 100%;
-    max-width: 50%;
-}
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-    <style>
-    /* Sidebar file uploader text color */
-    section[data-testid="stSidebar"] .stFileUploader label,
-    section[data-testid="stSidebar"] .stFileUploader span {
-        color: black !important;
-    }
-    .stButton > button {
-        width: 100%;
-    }
-    /* More reliable targeting of expander headers */
-    details > summary {
-        font-size: 20px !important;
-        font-weight: bold;
-    }
-
-    /* Optional: spacing and padding adjustments */
-    summary {
-        padding: 4px;
-        margin-bottom: 4px;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 def generate_rule_table(rules, 
     source_port_input,
@@ -326,7 +292,6 @@ def generate_rule_table(rules,
         key=key
     )
 
-# ------------------ API CONFIG ------------------
 def get_api_headers(api_key, org_id):
     return {
         "X-Cisco-Meraki-API-Key": api_key,
@@ -544,6 +509,41 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
     filename = f"meraki_snapshot_{timestamp}.json"
 
     return json.dumps(snapshot, indent=2), filename
+
+st.markdown("""
+<style>
+/* Force main container to always use full width */
+.css-18e3th9 {
+    flex: 1 1 100%;
+    max-width: 50%;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+    <style>
+    /* Sidebar file uploader text color */
+    section[data-testid="stSidebar"] .stFileUploader label,
+    section[data-testid="stSidebar"] .stFileUploader span {
+        color: black !important;
+    }
+    .stButton > button {
+        width: 100%;
+    }
+    /* More reliable targeting of expander headers */
+    details > summary {
+        font-size: 20px !important;
+        font-weight: bold;
+    }
+
+    /* Optional: spacing and padding adjustments */
+    summary {
+        padding: 4px;
+        margin-bottom: 4px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 
 
 st.sidebar.header("☰ Menu")
