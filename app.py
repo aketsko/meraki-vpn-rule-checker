@@ -1178,24 +1178,23 @@ elif selected_tab == "🔎 Search Object or Group":
 
         selected_cidrs = resolve_to_cidrs_supernet_aware(cidr_refs, object_map, group_map)
 
-        def cidr_matches_rule(cidr, rule_fields):
+        def cidr_overlaps_any(rule_cidr_list, search_cidr_list):
             try:
-                cidr_net = ipaddress.ip_network(cidr, strict=False)
-                for field in rule_fields:
-                    try:
-                        field_net = ipaddress.ip_network(field.strip(), strict=False)
-                        if cidr_net.subnet_of(field_net) or field_net.subnet_of(cidr_net):
-                            return True
-                    except:
-                        continue
-            except:
+                rule_networks = [ipaddress.ip_network(c.strip(), strict=False) for c in rule_cidr_list]
+                search_networks = [ipaddress.ip_network(c.strip(), strict=False) for c in search_cidr_list]
+            except ValueError:
                 return False
+
+            for rule_net in rule_networks:
+                for search_net in search_networks:
+                    if rule_net.overlaps(search_net):
+                        return True
             return False
-        # --- VPN Firewall Rules
+                # --- VPN Firewall Rules
         for rule in rules_data:
             rule_srcs = [s.strip() for s in rule.get("srcCidr", "").split(",")]
             rule_dsts = [d.strip() for d in rule.get("destCidr", "").split(",")]
-            if any(cidr_matches_rule(c, rule_srcs + rule_dsts) for c in selected_cidrs):
+            if cidr_overlaps_any(rule_srcs + rule_dsts, selected_cidrs):
                 all_matches.append({
                     "Type": "VPN",
                     "Location": "(global)",
@@ -1215,7 +1214,7 @@ elif selected_tab == "🔎 Search Object or Group":
             for rule in info.get("firewall_rules", []):
                 rule_srcs = [s.strip() for s in rule.get("srcCidr", "").split(",")]
                 rule_dsts = [d.strip() for d in rule.get("destCidr", "").split(",")]
-                if any(cidr_matches_rule(c, rule_srcs + rule_dsts) for c in selected_cidrs):
+                if cidr_overlaps_any(rule_srcs + rule_dsts, selected_cidrs):
                     all_matches.append({
                         "Type": "Local",
                         "Location": location,
