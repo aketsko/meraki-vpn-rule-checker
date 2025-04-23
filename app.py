@@ -25,6 +25,7 @@ default_colours = {
     "partial_allow": "#99E2B4",
     "partial_deny": "#F7EF81"
 }
+center_running()
 
 for k, v in default_colours.items():
     st.session_state.setdefault(k, v)
@@ -380,7 +381,7 @@ def fetch_meraki_data_extended(api_key: str, org_id: str, update_progress=None, 
     }
 
     try:
-        center_running()
+        
         with st.spinner("🔄 Fetching network list..."):
             networks_url = f"{base_url}/organizations/{org_id}/networks"
             networks_resp = requests.get(networks_url, headers=headers)
