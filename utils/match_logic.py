@@ -161,7 +161,7 @@ def find_object_locations(input_list, object_location_map):
 
 
 def evaluate_rule_scope_from_inputs(source_cidrs, destination_cidrs, object_location_map):
-    from .location_matcher import find_object_locations
+    from utils.location_matcher import find_object_locations
 
     # Resolve location maps
     src_locs = find_object_locations(source_cidrs, object_location_map)
