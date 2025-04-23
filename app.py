@@ -1198,6 +1198,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         src_locs = rule_scope["src_location_map"]
         dst_locs = rule_scope["dst_location_map"]
         shared_locs = rule_scope["shared_locations"]
+        local_rule_locations = rule_scope.get("local_rule_locations", shared_locs)
         show_vpn = rule_scope["vpn_needed"]
         show_local = rule_scope["local_needed"]
 
@@ -1252,8 +1253,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
         if show_local:
             st.subheader("🧱 Local Firewall Rules")
             with st.sidebar:
-                location_filter_title = f"📍 Location Filter ({len(set(loc for loc, _ in shared_locs))} found)"
-                all_locations = sorted(set(loc for loc, _ in shared_locs))
+                location_filter_title = f"📍 Location Filter ({len(set(loc for loc, _ in local_rule_locations))} found)"
+                all_locations = sorted(set(loc for loc, _ in local_rule_locations))
                 st.session_state.setdefault("selected_local_locations", all_locations)
 
                 with st.expander(location_filter_title, expanded=True):
