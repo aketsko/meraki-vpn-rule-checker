@@ -238,7 +238,7 @@ def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
                 input_net = ipaddress.ip_network(entry, strict=False)
                 # Only include known networks that are *contained within* the input
                 for known in known_cidrs:
-                    if known.subnet_of(input_net):
+                    if input_net.subnet_of(known) or known.subnet_of(input_net) or input_net == known:
                         resolved.add(str(known))
                 # Also allow exact matches
                 if input_net in known_cidrs:
