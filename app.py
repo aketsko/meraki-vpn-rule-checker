@@ -1078,9 +1078,51 @@ elif selected_tab == "🔎 Search Object or Group":
                 file_name="invalid_objects_cidr_report.json",
                 mime="application/json"
             )
+    with st.expander("🧹 Unused Network Objects"):
+        used_ids = set()
 
+        # 1. Collect all directly used object/group IDs from rules
+        def extract_ids(cidrs):
+            ids = []
+            for cid in cidrs.split(","):
+                cid = cid.strip()
+                if cid.startswith("OBJ(") or cid.startswith("GRP("):
+                    ids.append(cid)
+            return ids
 
-    st.subheader("🔹 Matching Network Objects")
+        # VPN rules
+        for rule in rules_data:
+            used_ids.update(extract_ids(rule.get("srcCidr", "")))
+            used_ids.update(extract_ids(rule.get("destCidr", "")))
+
+        # Local rules
+        for net in extended_data.get("network_details", {}).values():
+            for rule in net.get("firewall_rules", []):
+                used_ids.update(extract_ids(rule.get("srcCidr", "")))
+                used_ids.update(extract_ids(rule.get("destCidr", "")))
+
+        # 2. Track group members for any GRP ID that is used
+        used_object_ids = set()
+        for used_id in used_ids:
+            if used_id.startswith("OBJ("):
+                used_object_ids.add(used_id[4:-1])
+            elif used_id.startswith("GRP("):
+                grp = group_map.get(used_id[4:-1])
+                if grp:
+                    used_object_ids.update(str(oid) for oid in grp.get("objectIds", []))
+
+        # 3. Find unused objects
+        unused_objects = [
+            obj for obj in objects_data if str(obj["id"]) not in used_object_ids
+        ]
+
+        if unused_objects:
+            st.markdown(f"**Found {len(unused_objects)} unused network object(s):**")
+            st.dataframe(pd.DataFrame(unused_objects)[["name", "cidr", "fqdn"]], use_container_width=True)
+        else:
+            st.info("All objects are used in rules or referenced via groups.")
+
+        st.subheader("🔹 Matching Network Objects")
     object_rows = []
     for o in filtered_objs:
         cidr = o.get("cidr", "")
