@@ -162,45 +162,56 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
     dst_locs = find_object_locations(dest_cidrs, obj_location_map)
     shared_locs = src_locs & dst_locs
 
-    # Extract VPN-enabled locations only
+    # Extract VPN-enabled location names
     src_vpn_locs = {loc for (loc, vpn) in src_locs if vpn}
     dst_vpn_locs = {loc for (loc, vpn) in dst_locs if vpn}
 
-    # Detect if either input is a supernet (e.g., /0, /8, /16)
-    def contains_supernet(cidr_list):
+    # Detect if user input is broad
+    def is_supernet_or_any(cidr_list):
         try:
-            return any(ipaddress.ip_network(c).prefixlen < 24 for c in cidr_list if c != "0.0.0.0/0")
+            return (
+                "0.0.0.0/0" in cidr_list or
+                any(ipaddress.ip_network(c).prefixlen < 24 for c in cidr_list)
+            )
         except Exception:
             return False
 
-    src_supernet = contains_supernet(source_cidrs)
-    dst_supernet = contains_supernet(dest_cidrs)
-    is_any_src = source_cidrs == ["0.0.0.0/0"]
-    is_any_dst = dest_cidrs == ["0.0.0.0/0"]
+    src_is_supernet = is_supernet_or_any(source_cidrs)
+    dst_is_supernet = is_supernet_or_any(dest_cidrs)
 
-    # Determine if VPN is needed
+    # Decide if VPN rules are needed
     vpn_needed = (
         bool(src_vpn_locs and dst_vpn_locs) and
         (
             src_vpn_locs.isdisjoint(dst_vpn_locs) or
-            src_supernet or dst_supernet or
-            is_any_src or is_any_dst
+            src_is_supernet or dst_is_supernet
         )
     )
 
-    # Determine if local rules are needed
+    # Decide if local rules are needed
     local_needed = (
         bool(shared_locs and not vpn_needed) or
-        (src_locs and not dst_locs)
+        (src_locs and not dst_locs) or
+        (dst_locs and not src_locs) or
+        src_is_supernet or dst_is_supernet
     )
 
-    # Determine which locations to use for local rule evaluation
-    if vpn_needed:
+    # Decide which locations to use for local rule filtering
+    if vpn_needed and not local_needed:
         local_rule_locations = set()
     elif src_locs and not dst_locs:
         local_rule_locations = src_locs
+    elif dst_locs and not src_locs:
+        local_rule_locations = dst_locs
     elif shared_locs:
         local_rule_locations = shared_locs
+    elif src_is_supernet or dst_is_supernet:
+        # Show all known locations (both VPN and local) — fallback
+        local_rule_locations = {
+            (entry["network"], entry["useVpn"])
+            for locs in obj_location_map.values()
+            for entry in locs if isinstance(entry, dict)
+        }
     else:
         local_rule_locations = set()
 
