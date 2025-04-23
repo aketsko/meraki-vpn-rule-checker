@@ -1184,7 +1184,10 @@ elif selected_tab == "🔎 Search Object or Group":
         if match_id:
             # --- VPN Rules ---
             for i, rule in enumerate(rules_data):
-                if match_id in rule.get("srcCidr", "") or match_id in rule.get("destCidr", ""):
+                src_list = [s.strip() for s in rule.get("srcCidr", "").split(",")]
+                dst_list = [d.strip() for d in rule.get("destCidr", "").split(",")]
+
+                if match_id in src_list or match_id in dst_list:
                     rule_refs.append({
                         "Type": "VPN",
                         "Location": "(global)",
@@ -1202,7 +1205,10 @@ elif selected_tab == "🔎 Search Object or Group":
             for net_id, net_info in extended_data.get("network_details", {}).items():
                 location = net_info.get("network_name", net_id)
                 for i, rule in enumerate(net_info.get("firewall_rules", [])):
-                    if match_id in rule.get("srcCidr", "") or match_id in rule.get("destCidr", ""):
+                    src_list = [s.strip() for s in rule.get("srcCidr", "").split(",")]
+                    dst_list = [d.strip() for d in rule.get("destCidr", "").split(",")]
+
+                    if match_id in src_list or match_id in dst_list:
                         rule_refs.append({
                             "Type": "Local",
                             "Location": location,
