@@ -1260,90 +1260,90 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
 
-        if show_local:
-            st.subheader("🧱 Local Firewall Rules")
-            with st.sidebar:
-                location_filter_title = f"📍 Location Filter ({len(set(loc for loc, _ in local_rule_locations))} found)"
-                all_locations = sorted(set(loc for loc, _ in local_rule_locations))
-                st.session_state.setdefault("selected_local_locations", all_locations)
+            if show_local:
+                st.subheader("🧱 Local Firewall Rules")
+                with st.sidebar:
+                    location_filter_title = f"📍 Location Filter ({len(set(loc for loc, _ in local_rule_locations))} found)"
+                    all_locations = sorted(set(loc for loc, _ in local_rule_locations))
+                    st.session_state.setdefault("selected_local_locations", all_locations)
 
-                with st.expander(location_filter_title, expanded=True):
-                    if st.button("✅ Select All", key="loc_select_all"):
-                        st.session_state["selected_local_locations"] = all_locations
-                    if st.button("❌ Deselect All", key="loc_deselect_all"):
-                        st.session_state["selected_local_locations"] = []
+                    with st.expander(location_filter_title, expanded=True):
+                        if st.button("✅ Select All", key="loc_select_all"):
+                            st.session_state["selected_local_locations"] = all_locations
+                        if st.button("❌ Deselect All", key="loc_deselect_all"):
+                            st.session_state["selected_local_locations"] = []
 
-                st.multiselect(
-                    "Pick location(s) to display:",
-                    options=all_locations,
-                    default=st.session_state["selected_local_locations"],
-                    key="selected_local_locations"
-                )
-                selected_locations = st.session_state["selected_local_locations"]
-
-
-
-            seen_locations = set()
-
-
-            with st.expander(f"Collapse - `{len(selected_locations)}`", expanded=st.session_state["fw_expand_local"]):
-                for location_name in all_locations:
-                    if location_name not in selected_locations:
-                        continue
-                    if location_name in seen_locations:
-                        continue
-                    seen_locations.add(location_name)
-                    networks = extended_data.get("network_details", {})
-                    matched = next(
-                        ((net_id, info) for net_id, info in networks.items() if info.get("network_name") == location_name),
-                        None
+                    st.multiselect(
+                        "Pick location(s) to display:",
+                        options=all_locations,
+                        default=st.session_state["selected_local_locations"],
+                        key="selected_local_locations"
                     )
+                    selected_locations = st.session_state["selected_local_locations"]
 
-                    if matched:
-                        net_id, info = matched
-                        rules = info.get("firewall_rules", [])
-                    # for net_id, info in extended_data.get("network_details", {}).items():
-                    #     if info.get("network_name") == location_name:
-                    #         rules = info.get("firewall_rules", [])
-                        st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
-                        st.markdown(f"_Total rules: {len(rules)}_")
-                        if rules:
-   #                         with st.expander(f"Collapse - `{location_name}`", expanded=st.session_state["fw_expand_local"]):
-                             generate_rule_table(
-                                 rules=rules,
-                                 source_port_input=source_port_input,
-                                 port_input=port_input,
-                                 protocol=protocol,
-                                 filter_toggle=st.session_state["fw_filter_toggle"],
-                                 object_map=object_map,
-                                 group_map=group_map,
-                                 highlight_colors=highlight_colors,
-                                 source_cidrs=source_cidrs,
-                                 destination_cidrs=destination_cidrs,
-                                 skip_src_check=skip_src_check,
-                                 skip_dst_check=skip_dst_check,
-                                 key=f"local_{net_id}_{location_name}"
-                             )
-                        else:
-                            st.warning("No rules found for this location.")
 
-        if show_vpn:
-            st.subheader("🌐 VPN Firewall Rules")
-            generate_rule_table(
-                rules=rules_data,
-                source_port_input=source_port_input,
-                port_input=port_input,
-                protocol=protocol,
-                filter_toggle=st.session_state["fw_filter_toggle"],
-                object_map=object_map,
-                group_map=group_map,
-                highlight_colors=highlight_colors,
-                source_cidrs=source_cidrs,
-                destination_cidrs=destination_cidrs,
-                skip_src_check=skip_src_check,
-                skip_dst_check=skip_dst_check,
-                key="vpn_table"
-            )
+
+                seen_locations = set()
+
+
+                with st.expander(f"Collapse - `{len(selected_locations)}`", expanded=st.session_state["fw_expand_local"]):
+                    for location_name in all_locations:
+                        if location_name not in selected_locations:
+                            continue
+                        if location_name in seen_locations:
+                            continue
+                        seen_locations.add(location_name)
+                        networks = extended_data.get("network_details", {})
+                        matched = next(
+                            ((net_id, info) for net_id, info in networks.items() if info.get("network_name") == location_name),
+                            None
+                        )
+
+                        if matched:
+                            net_id, info = matched
+                            rules = info.get("firewall_rules", [])
+                        # for net_id, info in extended_data.get("network_details", {}).items():
+                        #     if info.get("network_name") == location_name:
+                        #         rules = info.get("firewall_rules", [])
+                            st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
+                            st.markdown(f"_Total rules: {len(rules)}_")
+                            if rules:
+    #                         with st.expander(f"Collapse - `{location_name}`", expanded=st.session_state["fw_expand_local"]):
+                                generate_rule_table(
+                                    rules=rules,
+                                    source_port_input=source_port_input,
+                                    port_input=port_input,
+                                    protocol=protocol,
+                                    filter_toggle=st.session_state["fw_filter_toggle"],
+                                    object_map=object_map,
+                                    group_map=group_map,
+                                    highlight_colors=highlight_colors,
+                                    source_cidrs=source_cidrs,
+                                    destination_cidrs=destination_cidrs,
+                                    skip_src_check=skip_src_check,
+                                    skip_dst_check=skip_dst_check,
+                                    key=f"local_{net_id}_{location_name}"
+                                )
+                            else:
+                                st.warning("No rules found for this location.")
+
+            if show_vpn:
+                st.subheader("🌐 VPN Firewall Rules")
+                generate_rule_table(
+                    rules=rules_data,
+                    source_port_input=source_port_input,
+                    port_input=port_input,
+                    protocol=protocol,
+                    filter_toggle=st.session_state["fw_filter_toggle"],
+                    object_map=object_map,
+                    group_map=group_map,
+                    highlight_colors=highlight_colors,
+                    source_cidrs=source_cidrs,
+                    destination_cidrs=destination_cidrs,
+                    skip_src_check=skip_src_check,
+                    skip_dst_check=skip_dst_check,
+                    key="vpn_table"
+                )
 
 
         st.sidebar.markdown("🔘 Set Colors")
