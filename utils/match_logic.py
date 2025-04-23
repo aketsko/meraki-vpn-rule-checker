@@ -119,17 +119,34 @@ def match_input_to_rule(rule_cidrs, input_cidr):
     return False
 
 def find_object_locations(input_list, object_location_map):
+    import ipaddress
+
     results = []
     seen = set()
+
+    known_keys = list(object_location_map.keys())
 
     for item in input_list:
         matches = []
 
-        # Direct match only
+        # Exact match
         if item in object_location_map:
             matches.extend(object_location_map[item])
         elif item == "0.0.0.0/0" and "0.0.0.0/0" in object_location_map:
             matches.extend(object_location_map["0.0.0.0/0"])
+        else:
+            # Only apply overlap if input is known to belong to some object
+            try:
+                ip_net = ipaddress.ip_network(item, strict=False)
+                for cidr in known_keys:
+                    try:
+                        net = ipaddress.ip_network(cidr, strict=False)
+                        if ip_net.subnet_of(net):
+                            matches.extend(object_location_map.get(cidr, []))
+                    except ValueError:
+                        continue
+            except ValueError:
+                continue
 
         for match in matches:
             key = (match["network"], match["useVpn"])
