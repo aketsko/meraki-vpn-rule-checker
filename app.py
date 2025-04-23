@@ -1156,18 +1156,27 @@ elif selected_tab == "🔎 Search Object or Group":
     # 📄 Referenced Firewall Rules
     st.markdown("---")
     st.subheader("📄 Referenced Firewall Rules")
-    if not selected_obj and not selected_grp:
-        st.info("Select an object or group above to see where it's used in firewall rules.")
-    if selected_obj or selected_grp:
-        search_name = selected_obj or selected_grp
 
-        if selected_obj:
-            cidr_refs = [f"OBJ({o['id']})" for o in objects_data if o["name"] == selected_obj]
+    object_or_group_names = [f"🔹 {o['name']}" for o in objects_data] + [f"🔸 {g['name']}" for g in groups_data]
+
+    selected_ref_entity = st.selectbox(
+        "Select object or group to search in firewall rules:",
+        options=object_or_group_names,
+        index=0 if object_or_group_names else None
+    )
+
+    all_matches = []
+
+    if selected_ref_entity:
+        entity_name = selected_ref_entity[2:]  # Remove icon prefix
+        is_object = selected_ref_entity.startswith("🔹")
+
+        if is_object:
+            cidr_refs = [f"OBJ({o['id']})" for o in objects_data if o["name"] == entity_name]
         else:
-            cidr_refs = [f"GRP({g['id']})" for g in groups_data if g["name"] == selected_grp]
+            cidr_refs = [f"GRP({g['id']})" for g in groups_data if g["name"] == entity_name]
 
         selected_cidrs = resolve_to_cidrs_supernet_aware(cidr_refs, object_map, group_map)
-
 
         # --- VPN Firewall Rules
         for rule in rules_data:
@@ -1207,10 +1216,11 @@ elif selected_tab == "🔎 Search Object or Group":
                         "DST Port": rule.get("destPort", "")
                     })
 
-        if all_matches:
-            st.dataframe(safe_dataframe(all_matches), use_container_width=True)
-        else:
-            st.info("This object or group is not used in any firewall rules.")
+    if all_matches:
+        st.dataframe(safe_dataframe(all_matches), use_container_width=True)
+    else:
+        st.info("This object or group is not used in any firewall rules.")
+
 
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
