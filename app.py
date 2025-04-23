@@ -547,10 +547,10 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
 
 st.sidebar.header("☰ Menu")
 st.session_state["api_data_expander"] = False
-collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data") or st.session_state["api_data_expander"])
+#collapse_expanders = bool(st.session_state.get("extended_data") or st.session_state.get("rules_data") or st.session_state["api_data_expander"])
 
 st.sidebar.markdown("📦 Load Meraki Dashboard Data")
-with st.sidebar.expander("🔽 Fetch Data", expanded=not collapse_expanders):
+with st.sidebar.expander("🔽 Fetch Data", expanded=not):# collapse_expanders):
 
     org_id = st.text_input("🆔 Enter your Organization ID", value="")
     api_key = st.text_input("🔑 Enter your Meraki API Key", type="password")
