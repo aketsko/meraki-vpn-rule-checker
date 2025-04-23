@@ -236,16 +236,15 @@ def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
         else:
             try:
                 input_net = ipaddress.ip_network(entry, strict=False)
-                # Only include known networks that are *contained within* the input
                 for known in known_cidrs:
                     if known.overlaps(input_net):
                         resolved.add(str(known))
-
-                # Also allow exact matches
+                # Always include exact match if registered
                 if input_net in known_cidrs:
                     resolved.add(str(input_net))
             except ValueError:
                 continue
 
     return list(resolved)
+
 
