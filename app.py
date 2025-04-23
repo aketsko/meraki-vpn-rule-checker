@@ -1178,11 +1178,24 @@ elif selected_tab == "🔎 Search Object or Group":
 
         selected_cidrs = resolve_to_cidrs_supernet_aware(cidr_refs, object_map, group_map)
 
+        def cidr_matches_rule(cidr, rule_fields):
+            try:
+                cidr_net = ipaddress.ip_network(cidr, strict=False)
+                for field in rule_fields:
+                    try:
+                        field_net = ipaddress.ip_network(field.strip(), strict=False)
+                        if cidr_net.subnet_of(field_net) or field_net.subnet_of(cidr_net):
+                            return True
+                    except:
+                        continue
+            except:
+                return False
+            return False
         # --- VPN Firewall Rules
         for rule in rules_data:
             rule_srcs = [s.strip() for s in rule.get("srcCidr", "").split(",")]
             rule_dsts = [d.strip() for d in rule.get("destCidr", "").split(",")]
-            if any(c in rule_srcs + rule_dsts for c in selected_cidrs):
+            if any(cidr_matches_rule(c, rule_srcs + rule_dsts) for c in selected_cidrs):
                 all_matches.append({
                     "Type": "VPN",
                     "Location": "(global)",
@@ -1202,7 +1215,7 @@ elif selected_tab == "🔎 Search Object or Group":
             for rule in info.get("firewall_rules", []):
                 rule_srcs = [s.strip() for s in rule.get("srcCidr", "").split(",")]
                 rule_dsts = [d.strip() for d in rule.get("destCidr", "").split(",")]
-                if any(c in rule_srcs + rule_dsts for c in selected_cidrs):
+                if any(cidr_matches_rule(c, rule_srcs + rule_dsts) for c in selected_cidrs):
                     all_matches.append({
                         "Type": "Local",
                         "Location": location,
