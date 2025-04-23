@@ -119,37 +119,17 @@ def match_input_to_rule(rule_cidrs, input_cidr):
     return False
 
 def find_object_locations(input_list, object_location_map):
-    import ipaddress
-
     results = []
     seen = set()
 
     for item in input_list:
         matches = []
 
-        # Exact match
-        direct = object_location_map.get(item, [])
-        if isinstance(direct, list):
-            matches.extend(direct)
-
-        # Special case: 0.0.0.0/0 (any)
-        if item == "0.0.0.0/0":
-            any_match = object_location_map.get("0.0.0.0/0", [])
-            if isinstance(any_match, list):
-                matches.extend(any_match)
-
-        # New: Try containment logic
-        try:
-            ip_net = ipaddress.ip_network(item, strict=False)
-            for cidr, entries in object_location_map.items():
-                try:
-                    net = ipaddress.ip_network(cidr, strict=False)
-                    if ip_net.subnet_of(net) or ip_net == net or net.subnet_of(ip_net):
-                        matches.extend(entries)
-                except ValueError:
-                    continue
-        except ValueError:
-            pass  # skip non-CIDR input
+        # Direct match only
+        if item in object_location_map:
+            matches.extend(object_location_map[item])
+        elif item == "0.0.0.0/0" and "0.0.0.0/0" in object_location_map:
+            matches.extend(object_location_map["0.0.0.0/0"])
 
         for match in matches:
             key = (match["network"], match["useVpn"])
@@ -158,6 +138,7 @@ def find_object_locations(input_list, object_location_map):
                 results.append(match)
 
     return {(entry["network"], entry["useVpn"]) for entry in results if isinstance(entry, dict)}
+
 
 
 
