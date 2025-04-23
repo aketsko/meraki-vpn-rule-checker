@@ -187,15 +187,18 @@ def evaluate_rule_scope_from_inputs(source_cidrs, destination_cidrs, object_loca
         (not vpn_needed and shared_locs)  # shared locations that are not distinct VPN sites
     )
 
-    # Decide locations to show local firewall rules from
-    if src_locs and not dst_locs:
+    # Only show local rules when not VPN between different sites
+    if vpn_needed:
+        local_rule_locations = set()
+    elif src_locs and not dst_locs:
         local_rule_locations = src_locs
     elif local_shared:
         local_rule_locations = local_shared
-    elif not vpn_needed and shared_locs:
+    elif shared_locs:
         local_rule_locations = shared_locs
     else:
         local_rule_locations = set()
+
 
     return {
         "src_location_map": src_locs,
