@@ -186,17 +186,18 @@ def evaluate_rule_scope_from_inputs(source_cidrs, destination_cidrs, object_loca
         (not vpn_needed and shared_locs)  # shared locations that are not distinct VPN sites
     )
 
-    # Only show local rules when not VPN between different sites
+# Only show local rules when not VPN between different sites
     if vpn_needed:
+        local_needed = False
         local_rule_locations = set()
     elif src_locs and not dst_locs:
-        local_rule_locations = src_locs
-    elif local_shared:
-        local_rule_locations = local_shared
-    elif shared_locs:
-        local_rule_locations = shared_locs
-    else:
-        local_rule_locations = set()
+        # Only allow local rules from SRC if it's not a single IP that maps to remote VPN
+        if not any(vpn for (_, vpn) in src_locs):
+            local_rule_locations = src_locs
+            local_needed = True
+        else:
+            local_rule_locations = set()
+            local_needed = False
 
 
     return {
