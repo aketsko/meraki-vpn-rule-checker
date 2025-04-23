@@ -176,29 +176,29 @@ def evaluate_rule_scope_from_inputs(source_cidrs, destination_cidrs, object_loca
         src_locs and dst_locs and
         all(vpn for _, vpn in src_locs) and
         all(vpn for _, vpn in dst_locs) and
-        not shared_locs  # no common site
+        not shared_locs
     )
 
-    # Case 2: Local traffic within a site or to internet
-    local_needed = (
-        bool(local_shared) or
-        (src_locs and not dst_locs) or   # internal → internet
-        (not vpn_needed and shared_locs)  # shared locations that are not distinct VPN sites
-    )
+    # Default
+    local_needed = False
+    local_rule_locations = set()
 
-# Only show local rules when not VPN between different sites
+    # Case 2: Local traffic within same location or to Internet
     if vpn_needed:
         local_needed = False
         local_rule_locations = set()
     elif src_locs and not dst_locs:
-        # Only allow local rules from SRC if it's not a single IP that maps to remote VPN
-        if not any(vpn for (_, vpn) in src_locs):
-            local_rule_locations = src_locs
+        # Source is from a known location, destination is external
+        # Only allow local rules if source is not from a VPN-enabled location
+        if any(not vpn for _, vpn in src_locs):
             local_needed = True
-        else:
-            local_rule_locations = set()
-            local_needed = False
-
+            local_rule_locations = src_locs
+    elif local_shared:
+        local_needed = True
+        local_rule_locations = local_shared
+    elif shared_locs and not vpn_needed:
+        local_needed = True
+        local_rule_locations = shared_locs
 
     return {
         "src_location_map": src_locs,
@@ -208,6 +208,7 @@ def evaluate_rule_scope_from_inputs(source_cidrs, destination_cidrs, object_loca
         "local_needed": local_needed,
         "local_rule_locations": list(local_rule_locations)
     }
+
 
 
 def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
