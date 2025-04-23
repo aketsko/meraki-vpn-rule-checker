@@ -1134,7 +1134,7 @@ elif selected_tab == "🔎 Search Object or Group":
         else:
             st.success("✅ All groups are used.")
 
-
+    st.subheader("🔹 Matching Objects")
     object_rows = []
     for o in filtered_objs:
         cidr = o.get("cidr", "")
@@ -1152,6 +1152,33 @@ elif selected_tab == "🔎 Search Object or Group":
     st.dataframe(df_obj, use_container_width=True)
 
 
+    
+    st.subheader("🔸 Matching Object Groups")
+
+    group_rows = []
+    for g in filtered_grps:
+        members = g.get("objectIds", [])
+        locs = set()
+        for oid in members:
+            obj = object_map.get(oid)
+            if obj:
+                cidr = obj.get("cidr", "")
+                for e in location_map.get(cidr, []) + location_map.get(f"OBJ({oid})", []):
+                    if isinstance(e, dict):
+                        locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
+        for e in location_map.get(f"GRP({g['id']})", []):
+            if isinstance(e, dict):
+                locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
+        group_rows.append({
+            "ID": g["id"],
+            "Name": g["name"],
+            "Object Count": len(members),
+            "Location": ", ".join(sorted(locs))
+        })
+
+    df_grps = pd.DataFrame(group_rows)
+    st.dataframe(df_grps, use_container_width=True)
+    
     st.markdown("---")
     col2, col3 = st.columns([4, 6])  # Adjust column width ratios as needed
 
@@ -1179,32 +1206,7 @@ elif selected_tab == "🔎 Search Object or Group":
                             st.write("📝 No metadata available.")
     
     st.markdown("---")
-    st.subheader("🔸 Matching Object Groups")
 
-    group_rows = []
-    for g in filtered_grps:
-        members = g.get("objectIds", [])
-        locs = set()
-        for oid in members:
-            obj = object_map.get(oid)
-            if obj:
-                cidr = obj.get("cidr", "")
-                for e in location_map.get(cidr, []) + location_map.get(f"OBJ({oid})", []):
-                    if isinstance(e, dict):
-                        locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
-        for e in location_map.get(f"GRP({g['id']})", []):
-            if isinstance(e, dict):
-                locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
-        group_rows.append({
-            "ID": g["id"],
-            "Name": g["name"],
-            "Object Count": len(members),
-            "Location": ", ".join(sorted(locs))
-        })
-
-    df_grps = pd.DataFrame(group_rows)
-    st.dataframe(df_grps, use_container_width=True)
-    
     selected_grp = st.selectbox("⬇️ Show members of group:", options=[g["Name"] for g in group_rows] if group_rows else [], index=0 if group_rows else None)
     if selected_grp:
         group_obj = next((g for g in group_rows if g["Name"] == selected_grp), None)
