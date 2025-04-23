@@ -1053,7 +1053,7 @@ elif selected_tab == "🔎 Search Object or Group":
         st.markdown("🔍 Subnet Metadata")
 
     with col2:
-        selected_cidr = st.selectbox(" ", options=cidr_options, label_visibility="collapsed")
+        selected_cidr = st.selectbox(" ", label_visibility="collapsed")
 
     with col3:
         if selected_cidr:
@@ -1069,7 +1069,7 @@ elif selected_tab == "🔎 Search Object or Group":
                             st.write(f"📝 **Type**: {meta.get('type', '—')}")
                         if not s.get('metadata'):
                             st.write("📝 No metadata available.")
-                            
+
     st.subheader("🔸 Matching Object Groups")
 
     group_rows = []
