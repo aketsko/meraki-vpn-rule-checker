@@ -148,11 +148,20 @@ def find_object_locations(input_list, object_location_map):
             except ValueError:
                 continue
 
-        for match in matches:
-            key = (match["network"], match["useVpn"])
-            if key not in seen:
-                seen.add(key)
-                results.append(match)
+        # Group by prefix length to find most specific subnets
+        most_specific = {}
+        for cidr_key, entries in object_location_map.items():
+            try:
+                net = ipaddress.ip_network(cidr_key, strict=False)
+                for entry in entries:
+                    key = (entry["network"], entry["useVpn"])
+                    if key not in most_specific or net.prefixlen > most_specific[key][1]:
+                        most_specific[key] = (entry, net.prefixlen)
+            except ValueError:
+                continue
+
+        results = [entry for entry, _ in most_specific.values()]
+
 
     return {(entry["network"], entry["useVpn"]) for entry in results if isinstance(entry, dict)}
 
