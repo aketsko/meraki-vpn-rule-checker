@@ -555,18 +555,19 @@ def resolve_names(cidr_str, object_map, group_map):
         if p.startswith("OBJ(") and p.endswith(")"):
             obj = object_map.get(p[4:-1])
             if obj:
-                resolved.append(f"{obj['name']} ({p})")
+                resolved.append(obj['name'])
             else:
                 resolved.append(p)
         elif p.startswith("GRP(") and p.endswith(")"):
             grp = group_map.get(p[4:-1])
             if grp:
-                resolved.append(f"{grp['name']} ({p})")
+                resolved.append(grp['name'])
             else:
                 resolved.append(p)
         else:
             resolved.append(p)
     return ", ".join(resolved)
+
 
 st.markdown("""
 <style>
@@ -1227,13 +1228,14 @@ elif selected_tab == "🔎 Search Object or Group":
                         "Type": "VPN",
                         "Location": "(global)",
                         "Number": i + 1,
+                        "Comment": rule.get("comment", ""),
                         "Policy": rule.get("policy", "").upper(),
                         "Protocol": rule.get("protocol", ""),
                         "Source": resolve_names(rule.get("srcCidr", ""), object_map, group_map),
                         "SRC Port": rule.get("srcPort", ""),
                         "Destination": resolve_names(rule.get("destCidr", ""), object_map, group_map),
-                        "DST Port": rule.get("destPort", ""),
-                        "Comment": rule.get("comment", "")
+                        "DST Port": rule.get("destPort", "")
+                        
                     })
 
             # --- Local Rules ---
@@ -1248,13 +1250,13 @@ elif selected_tab == "🔎 Search Object or Group":
                             "Type": "Local",
                             "Location": location,
                             "Number": i + 1,
+                            "Comment": rule.get("comment", ""),
                             "Policy": rule.get("policy", "").upper(),
                             "Protocol": rule.get("protocol", ""),
                             "Source": resolve_names(rule.get("srcCidr", ""), object_map, group_map),
                             "SRC Port": rule.get("srcPort", ""),
                             "Destination": resolve_names(rule.get("destCidr", ""), object_map, group_map),
-                            "DST Port": rule.get("destPort", ""),
-                            "Comment": rule.get("comment", "")
+                            "DST Port": rule.get("destPort", "")
                         })
 
     if rule_refs:
