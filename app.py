@@ -1053,7 +1053,8 @@ elif selected_tab == "🔎 Search Object or Group":
         st.markdown("🔍 Subnet Metadata")
 
     with col2:
-        selected_cidr = st.selectbox(" ", label_visibility="collapsed")
+        cidr_options = [r["CIDR"] for r in object_rows if r["CIDR"]]
+        selected_cidr = st.selectbox(" ", options=cidr_options, label_visibility="collapsed")
 
     with col3:
         if selected_cidr:
