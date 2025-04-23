@@ -5,7 +5,7 @@ import json
 import ipaddress
 from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
-from utils.file_loader import load_json_file
+#from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
 from utils.match_logic import match_input_to_rule, is_exact_subnet_match, resolve_to_cidrs_supernet_aware,  build_object_location_map
 from streamlit_searchbox import st_searchbox
@@ -30,28 +30,29 @@ center_running()
 for k, v in default_colours.items():
     st.session_state.setdefault(k, v)
 
-def load_json_file(uploaded_file):
-    try:
-        if uploaded_file is None:
-            raise ValueError("No file provided")
+# def load_json_file(uploaded_file):
+#     try:
+#         if uploaded_file is None:
+#             raise ValueError("No file provided")
 
-        content = uploaded_file.read()
-        if not content:
-            raise ValueError("Uploaded file is empty")
+#         content = uploaded_file.read()
+#         if not content:
+#             raise ValueError("Uploaded file is empty")
 
-        if isinstance(content, bytes):
-            content = content.decode("utf-8")
+#         if isinstance(content, bytes):
+#             content = content.decode("utf-8")
 
-        content = content.strip()
-        if not content:
-            raise ValueError("Uploaded file contains no data")
+#         content = content.strip()
+#         if not content:
+#             raise ValueError("Uploaded file contains no data")
 
-        return json.loads(content)
+#         return json.loads(content)
 
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON: {e}")
-    except Exception as e:
-        raise ValueError(f"Error reading uploaded file: {e}")
+#     except json.JSONDecodeError as e:
+#         raise ValueError(f"Invalid JSON: {e}")
+#     except Exception as e:
+#         raise ValueError(f"Error reading uploaded file: {e}")
+    
 def search_objects_and_groups(searchterm: str):
     results = []
 
@@ -509,6 +510,43 @@ def prepare_snapshot(rules_data, objects_data, groups_data, extended_data, objec
     filename = f"meraki_snapshot_{timestamp}.json"
 
     return json.dumps(snapshot, indent=2), filename
+
+def get_all_locations_for_cidrs(cidrs, location_map):
+        locations = set()
+        for cidr in cidrs:
+            mapped = location_map.get(cidr, [])
+            if isinstance(mapped, dict):
+                locations.add((mapped.get("network"), mapped.get("useVpn")))
+            elif isinstance(mapped, list):
+                for entry in mapped:
+                    if isinstance(entry, dict):
+                        locations.add((entry.get("network"), entry.get("useVpn")))
+        return locations
+
+# --- Search input helpers ---
+def custom_search(term: str):
+    term = term.strip()
+    results = []
+    if not objects_data or not groups_data:
+        return [("Data not loaded yet", "any")]
+    if term.lower() == "any":
+        return [("Any (all traffic)", "any")]
+    for obj in objects_data:
+        if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
+            results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
+    for group in groups_data:
+        if term.lower() in group["name"].lower():
+            results.append((f"{group['name']} (Group)", group["name"]))
+    if not results:
+        results.append((f"Use: {term}", term))
+    return results
+def search_protocol(term: str):
+    options = ["any", "tcp", "udp", "icmpv4", "icmpv6"]
+    term = term.strip().lower()
+    return [(proto.upper(), proto) for proto in options if term in proto]
+def passthrough_port(term: str):
+    term = term.strip()
+    return [(f"Use: {term}", term)] if term else []
 
 st.markdown("""
 <style>
@@ -1123,44 +1161,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     object_map = get_object_map(objects_data)
     group_map = get_group_map(st.session_state.get("groups_data", []))
 
-    def get_all_locations_for_cidrs(cidrs, location_map):
-        locations = set()
-        for cidr in cidrs:
-            mapped = location_map.get(cidr, [])
-            if isinstance(mapped, dict):
-                locations.add((mapped.get("network"), mapped.get("useVpn")))
-            elif isinstance(mapped, list):
-                for entry in mapped:
-                    if isinstance(entry, dict):
-                        locations.add((entry.get("network"), entry.get("useVpn")))
-        return locations
-
-    # --- Search input helpers ---
-    def custom_search(term: str):
-        term = term.strip()
-        results = []
-        if not objects_data or not groups_data:
-            return [("Data not loaded yet", "any")]
-        if term.lower() == "any":
-            return [("Any (all traffic)", "any")]
-        for obj in objects_data:
-            if term.lower() in obj["name"].lower() or term in obj.get("cidr", ""):
-                results.append((f"{obj['name']} ({obj.get('cidr', '')})", obj["name"]))
-        for group in groups_data:
-            if term.lower() in group["name"].lower():
-                results.append((f"{group['name']} (Group)", group["name"]))
-        if not results:
-            results.append((f"Use: {term}", term))
-        return results
-
-    def search_protocol(term: str):
-        options = ["any", "tcp", "udp", "icmpv4", "icmpv6"]
-        term = term.strip().lower()
-        return [(proto.upper(), proto) for proto in options if term in proto]
-
-    def passthrough_port(term: str):
-        term = term.strip()
-        return [(f"Use: {term}", term)] if term else []
+    
 
     # --- Sidebar Controls (Tab-Specific) ---
     with st.sidebar:
