@@ -1153,86 +1153,73 @@ elif selected_tab == "🔎 Search Object or Group":
             } for o in objects_data if selected_location in ", ".join(
                 f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})" for e in location_map.get(o.get("cidr", ""), []) if isinstance(e, dict))
         ]), use_container_width=True)
-    # 📄 Referenced Firewall Rules
+
+
+  
     st.markdown("---")
-    st.subheader("📄 Referenced Firewall Rules")
+    st.subheader("📄 Firewall Rules Referencing Selected Object or Group")
 
     object_or_group_names = [f"🔹 {o['name']}" for o in objects_data] + [f"🔸 {g['name']}" for g in groups_data]
 
     selected_ref_entity = st.selectbox(
-        "Select object or group to search in firewall rules:",
+        "Select object or group:",
         options=object_or_group_names,
         index=0 if object_or_group_names else None
     )
 
-    all_matches = []
+    rule_refs = []
 
     if selected_ref_entity:
-        entity_name = selected_ref_entity[2:]  # Remove icon prefix
+        entity_name = selected_ref_entity[2:]
         is_object = selected_ref_entity.startswith("🔹")
 
+        # Check both VPN and Local rules
         if is_object:
-            cidr_refs = [f"OBJ({o['id']})" for o in objects_data if o["name"] == entity_name]
+            match_id = [f"OBJ({o['id']})" for o in objects_data if o['name'] == entity_name]
         else:
-            cidr_refs = [f"GRP({g['id']})" for g in groups_data if g["name"] == entity_name]
+            match_id = [f"GRP({g['id']})" for g in groups_data if g['name'] == entity_name]
 
-        selected_cidrs = resolve_to_cidrs_supernet_aware(cidr_refs, object_map, group_map)
+        match_id = match_id[0] if match_id else None
 
-        def cidr_overlaps_any(rule_cidr_list, search_cidr_list):
-            try:
-                rule_networks = [ipaddress.ip_network(c.strip(), strict=False) for c in rule_cidr_list]
-                search_networks = [ipaddress.ip_network(c.strip(), strict=False) for c in search_cidr_list]
-            except ValueError:
-                return False
-
-            for rule_net in rule_networks:
-                for search_net in search_networks:
-                    if rule_net.overlaps(search_net):
-                        return True
-            return False
-                # --- VPN Firewall Rules
-        for rule in rules_data:
-            rule_srcs = [s.strip() for s in rule.get("srcCidr", "").split(",")]
-            rule_dsts = [d.strip() for d in rule.get("destCidr", "").split(",")]
-            if cidr_overlaps_any(rule_srcs + rule_dsts, selected_cidrs):
-                all_matches.append({
-                    "Type": "VPN",
-                    "Location": "(global)",
-                    "Number": rule.get("ruleNumber", ""),
-                    "Comment": rule.get("comment", ""),
-                    "Policy": rule.get("policy", "").upper(),
-                    "Protocol": rule.get("protocol", ""),
-                    "Source": rule.get("srcCidr", ""),
-                    "SRC Port": rule.get("srcPort", ""),
-                    "Destination": rule.get("destCidr", ""),
-                    "DST Port": rule.get("destPort", "")
-                })
-
-        # --- Local Firewall Rules
-        for net_id, info in extended_data.get("network_details", {}).items():
-            location = info.get("network_name", net_id)
-            for rule in info.get("firewall_rules", []):
-                rule_srcs = [s.strip() for s in rule.get("srcCidr", "").split(",")]
-                rule_dsts = [d.strip() for d in rule.get("destCidr", "").split(",")]
-                if cidr_overlaps_any(rule_srcs + rule_dsts, selected_cidrs):
-                    all_matches.append({
-                        "Type": "Local",
-                        "Location": location,
-                        "Number": rule.get("ruleNumber", ""),
-                        "Comment": rule.get("comment", ""),
+        if match_id:
+            # --- VPN Rules ---
+            for i, rule in enumerate(rules_data):
+                if match_id in rule.get("srcCidr", "") or match_id in rule.get("destCidr", ""):
+                    rule_refs.append({
+                        "Type": "VPN",
+                        "Location": "(global)",
+                        "Number": i + 1,
                         "Policy": rule.get("policy", "").upper(),
                         "Protocol": rule.get("protocol", ""),
                         "Source": rule.get("srcCidr", ""),
                         "SRC Port": rule.get("srcPort", ""),
                         "Destination": rule.get("destCidr", ""),
-                        "DST Port": rule.get("destPort", "")
+                        "DST Port": rule.get("destPort", ""),
+                        "Comment": rule.get("comment", "")
                     })
 
-    if all_matches:
-        st.dataframe(safe_dataframe(all_matches), use_container_width=True)
+            # --- Local Rules ---
+            for net_id, net_info in extended_data.get("network_details", {}).items():
+                location = net_info.get("network_name", net_id)
+                for i, rule in enumerate(net_info.get("firewall_rules", [])):
+                    if match_id in rule.get("srcCidr", "") or match_id in rule.get("destCidr", ""):
+                        rule_refs.append({
+                            "Type": "Local",
+                            "Location": location,
+                            "Number": i + 1,
+                            "Policy": rule.get("policy", "").upper(),
+                            "Protocol": rule.get("protocol", ""),
+                            "Source": rule.get("srcCidr", ""),
+                            "SRC Port": rule.get("srcPort", ""),
+                            "Destination": rule.get("destCidr", ""),
+                            "DST Port": rule.get("destPort", ""),
+                            "Comment": rule.get("comment", "")
+                        })
+
+    if rule_refs:
+        st.dataframe(pd.DataFrame(rule_refs), use_container_width=True)
     else:
         st.info("This object or group is not used in any firewall rules.")
-
 
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
