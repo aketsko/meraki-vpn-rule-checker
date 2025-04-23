@@ -178,18 +178,27 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
             if isinstance(entry, dict) and entry.get("useVpn"):
                 dst_vpn_locs.add(entry.get("network"))
 
-    # 🔧 Updated logic:
-    # Show VPN if there is at least one (src,dst) pair with useVpn=True and different locations
+    # 🔧 New condition: true if src and dst are in VPN, but different sites
     vpn_needed = any(
         dst != src and dst in dst_vpn_locs and src in src_vpn_locs
         for src in src_vpn_locs for dst in dst_vpn_locs
     )
 
-    # Show Local if any shared location exists
+    # ✅ New: Only show local if not VPN cross-site
     local_needed = (
-    bool(shared_locs) or
+        bool(shared_locs and not vpn_needed) or
         (src_locs and not dst_locs)
     )
+
+    # ✅ Updated location display rule:
+    if vpn_needed:
+        local_rule_locations = set()
+    elif src_locs and not dst_locs:
+        local_rule_locations = src_locs
+    elif shared_locs:
+        local_rule_locations = shared_locs
+    else:
+        local_rule_locations = set()
 
     return {
         "src_location_map": src_locs,
@@ -197,8 +206,9 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
         "shared_locations": shared_locs,
         "vpn_needed": vpn_needed,
         "local_needed": local_needed,
-        "local_rule_locations": list(src_locs if src_locs and not dst_locs else shared_locs)
+        "local_rule_locations": list(local_rule_locations)
     }
+
 
 
 def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
