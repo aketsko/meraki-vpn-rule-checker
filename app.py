@@ -1156,7 +1156,8 @@ elif selected_tab == "🔎 Search Object or Group":
     # 📄 Referenced Firewall Rules
     st.markdown("---")
     st.subheader("📄 Referenced Firewall Rules")
-
+    if not selected_obj and not selected_grp:
+        st.info("Select an object or group above to see where it's used in firewall rules.")
     if selected_obj or selected_grp:
         search_name = selected_obj or selected_grp
 
