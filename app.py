@@ -1290,12 +1290,19 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         if st.button("❌ Deselect All", key="loc_deselect_all"):
                             st.session_state["selected_local_locations"] = []
 
+                    valid_selected = [
+                        loc for loc in st.session_state.get("selected_local_locations", [])
+                        if loc in all_locations
+                    ]
+                    st.session_state["selected_local_locations"] = valid_selected  # Optional: reset to filtered list
+
                     st.multiselect(
-                        "Pick location(s) to display:",
+                        "Pick location(s)",
                         options=all_locations,
-                        default=st.session_state["selected_local_locations"],
+                        default=valid_selected,
                         key="selected_local_locations"
                     )
+
                     selected_locations = st.session_state["selected_local_locations"]
 
 
