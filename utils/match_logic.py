@@ -119,36 +119,31 @@ def match_input_to_rule(rule_cidrs, input_cidr):
     return False
 
 def find_object_locations(input_list, object_location_map):
-    import ipaddress
-
     results = []
     seen = set()
 
-    known_keys = list(object_location_map.keys())
+    for entry in input_list:
+        try:
+            ip_net = ipaddress.ip_network(entry, strict=False)
+        except ValueError:
+            continue
 
-    for item in input_list:
-        matches = []
+        most_specific_len = -1
+        most_specific = []
 
-        # Exact match
-        if item in object_location_map:
-            matches.extend(object_location_map[item])
-        elif item == "0.0.0.0/0" and "0.0.0.0/0" in object_location_map:
-            matches.extend(object_location_map["0.0.0.0/0"])
-        else:
-            # Only apply overlap if input is known to belong to some object
+        for cidr, mappings in object_location_map.items():
             try:
-                ip_net = ipaddress.ip_network(item, strict=False)
-                for cidr in known_keys:
-                    try:
-                        net = ipaddress.ip_network(cidr, strict=False)
-                        if ip_net.subnet_of(net):
-                            matches.extend(object_location_map.get(cidr, []))
-                    except ValueError:
-                        continue
+                net = ipaddress.ip_network(cidr, strict=False)
+                if ip_net.subnet_of(net) or ip_net == net:
+                    if net.prefixlen > most_specific_len:
+                        most_specific = mappings
+                        most_specific_len = net.prefixlen
+                    elif net.prefixlen == most_specific_len:
+                        most_specific.extend(mappings)
             except ValueError:
                 continue
 
-        for match in matches:
+        for match in most_specific:
             key = (match["network"], match["useVpn"])
             if key not in seen:
                 seen.add(key)
