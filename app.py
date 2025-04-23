@@ -1046,7 +1046,7 @@ elif selected_tab == "🔎 Search Object or Group":
 
     # st.markdown("---")
 
-
+    st.markdown("---")
     col2, col3 = st.columns([4, 6])  # Adjust column width ratios as needed
 
 
@@ -1060,7 +1060,7 @@ elif selected_tab == "🔎 Search Object or Group":
         selected_cidr = selected_obj.split("(")[-1].strip(")") if selected_obj else None
         if selected_cidr:
             # Display metadata here
-            st.markdown(f"**Selected Subnet:** `{selected_cidr}`")
+            #st.markdown(f"**Selected Subnet:** `{selected_cidr}`")
             for net_info in network_details.values():
                 for s in net_info.get("vpn_settings", {}).get("subnets", []):
                     if s.get("localSubnet") == selected_cidr:
@@ -1071,7 +1071,8 @@ elif selected_tab == "🔎 Search Object or Group":
                             st.write(f"📝 **Type**: {meta.get('type', '—')}")
                         if not s.get('metadata'):
                             st.write("📝 No metadata available.")
-
+    
+    st.markdown("---")
     st.subheader("🔸 Matching Object Groups")
 
     group_rows = []
