@@ -160,32 +160,20 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
     dst_locs = find_object_locations(dest_cidrs, obj_location_map)
     shared_locs = src_locs & dst_locs
 
-    src_vpn_locs = set()
-    dst_vpn_locs = set()
+    # Extract VPN-enabled locations only
+    src_vpn_locs = {loc for (loc, vpn) in src_locs if vpn}
+    dst_vpn_locs = {loc for (loc, vpn) in dst_locs if vpn}
 
-    for cidr in source_cidrs:
-        for entry in obj_location_map.get(cidr, []):
-            if isinstance(entry, dict) and entry.get("useVpn"):
-                src_vpn_locs.add(entry.get("network"))
+    # Determine if VPN rules are needed (different VPN-enabled locations)
+    vpn_needed = bool(src_vpn_locs and dst_vpn_locs and src_vpn_locs.isdisjoint(dst_vpn_locs))
 
-    for cidr in dest_cidrs:
-        for entry in obj_location_map.get(cidr, []):
-            if isinstance(entry, dict) and entry.get("useVpn"):
-                dst_vpn_locs.add(entry.get("network"))
-
-    # 🔧 New condition: true if src and dst are in VPN, but different sites
-    vpn_needed = any(
-        dst != src and dst in dst_vpn_locs and src in src_vpn_locs
-        for src in src_vpn_locs for dst in dst_vpn_locs
-    )
-
-    # ✅ New: Only show local if not VPN cross-site
+    # Determine if local rules are needed
     local_needed = (
-        bool(shared_locs and not vpn_needed) or
-        (src_locs and not dst_locs)
+        bool(shared_locs and not vpn_needed) or  # local within site
+        (src_locs and not dst_locs)              # internal to internet
     )
 
-    # ✅ Updated location display rule:
+    # Determine which locations to use for local rule evaluation
     if vpn_needed:
         local_rule_locations = set()
     elif src_locs and not dst_locs:
@@ -203,6 +191,7 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
         "local_needed": local_needed,
         "local_rule_locations": list(local_rule_locations)
     }
+
 
 
 
