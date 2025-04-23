@@ -672,15 +672,15 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=not collapse_expanders):
                 st.session_state.get("groups_data", []),
                 st.session_state.get("extended_data", {}),
                 st.session_state.get("object_location_map", {})
-             )
+            )
 
-            # st.download_button(
-            #     label="📥 Download API Snapshot",
-            data=snapshot_str,
-            file_name=snapshot_filename,
-            mime="application/json",
-            key="auto_snapshot_download"
-        #    )
+            st.download_button(
+                label="📥 Download API Snapshot",
+                data=snapshot_str,
+                file_name=snapshot_filename,
+                mime="application/json",
+                key="auto_snapshot_download"
+            )
         except Exception as e:
             st.error(f"❌ Snapshot error: {e}")
 
