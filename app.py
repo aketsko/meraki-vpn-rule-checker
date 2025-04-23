@@ -1153,6 +1153,63 @@ elif selected_tab == "🔎 Search Object or Group":
             } for o in objects_data if selected_location in ", ".join(
                 f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})" for e in location_map.get(o.get("cidr", ""), []) if isinstance(e, dict))
         ]), use_container_width=True)
+    # 📄 Referenced Firewall Rules
+st.markdown("---")
+st.subheader("📄 Referenced Firewall Rules")
+
+if selected_obj or selected_grp:
+    search_name = selected_obj or selected_grp
+    all_matches = []
+
+    # Get CIDRs associated with the object or group
+    selected_cidrs = resolve_to_cidrs_supernet_aware(
+        [f"OBJ({object_map[selected_obj]['id']})"] if selected_obj else [f"GRP({group_map[selected_grp]['id']})"],
+        object_map,
+        group_map
+    )
+
+    # --- VPN Firewall Rules
+    for rule in rules_data:
+        rule_srcs = [s.strip() for s in rule.get("srcCidr", "").split(",")]
+        rule_dsts = [d.strip() for d in rule.get("destCidr", "").split(",")]
+        if any(c in rule_srcs + rule_dsts for c in selected_cidrs):
+            all_matches.append({
+                "Type": "VPN",
+                "Location": "(global)",
+                "Number": rule.get("ruleNumber", ""),
+                "Comment": rule.get("comment", ""),
+                "Policy": rule.get("policy", "").upper(),
+                "Protocol": rule.get("protocol", ""),
+                "Source": rule.get("srcCidr", ""),
+                "SRC Port": rule.get("srcPort", ""),
+                "Destination": rule.get("destCidr", ""),
+                "DST Port": rule.get("destPort", "")
+            })
+
+    # --- Local Firewall Rules
+    for net_id, info in extended_data.get("network_details", {}).items():
+        location = info.get("network_name", net_id)
+        for rule in info.get("firewall_rules", []):
+            rule_srcs = [s.strip() for s in rule.get("srcCidr", "").split(",")]
+            rule_dsts = [d.strip() for d in rule.get("destCidr", "").split(",")]
+            if any(c in rule_srcs + rule_dsts for c in selected_cidrs):
+                all_matches.append({
+                    "Type": "Local",
+                    "Location": location,
+                    "Number": rule.get("ruleNumber", ""),
+                    "Comment": rule.get("comment", ""),
+                    "Policy": rule.get("policy", "").upper(),
+                    "Protocol": rule.get("protocol", ""),
+                    "Source": rule.get("srcCidr", ""),
+                    "SRC Port": rule.get("srcPort", ""),
+                    "Destination": rule.get("destCidr", ""),
+                    "DST Port": rule.get("destPort", "")
+                })
+
+    if all_matches:
+        st.dataframe(safe_dataframe(all_matches), use_container_width=True)
+    else:
+        st.info("This object or group is not used in any firewall rules.")
 
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
