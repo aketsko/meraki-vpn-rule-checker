@@ -1047,10 +1047,8 @@ elif selected_tab == "🔎 Search Object or Group":
     # st.markdown("---")
 
 
-    col1, col2, col3 = st.columns([2, 4, 6])  # Adjust column width ratios as needed
+    col2, col3 = st.columns([4, 6])  # Adjust column width ratios as needed
 
-    with col1:
-        st.markdown("🔍 Subnet Metadata")
 
     with col2:
         selected_obj = st.selectbox(
