@@ -6,3 +6,4 @@ kaleido
 streamlit-aggrid
 streamlit-searchbox
 streamlit-extras
+st-aggrid>=0.3.3
