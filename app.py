@@ -666,7 +666,6 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=False):
                             else:
                                 st.session_state["extended_data"] = extended_result
                                 st.success("✅ Extended Meraki data fetched successfully.")
-
                                 with st.spinner("🧠 Mapping objects to VPN locations..."):
                                     location_map = build_object_location_map(
                                         st.session_state["objects_data"],
@@ -674,7 +673,13 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=False):
                                         extended_result
                                     )
                                     st.session_state["object_location_map"] = location_map
-
+                                snapshot_str, snapshot_filename = prepare_snapshot(
+                                    st.session_state.get("rules_data", []),
+                                    st.session_state.get("objects_data", []),
+                                    st.session_state.get("groups_data", []),
+                                    st.session_state.get("extended_data", {}),
+                                    st.session_state.get("object_location_map", {})
+                                )
                         except Exception as e:
                             st.error(f"❌ Exception during extended data fetch: {e}")
                             st.session_state["extended_data"] = None
