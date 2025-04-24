@@ -4,10 +4,7 @@ import requests
 import json
 import ipaddress
 from datetime import datetime
-#import streamlit-aggrid
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
-
-
 #from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
 from utils.match_logic import match_input_to_rule, is_exact_subnet_match, resolve_to_cidrs_supernet_aware,  build_object_location_map
@@ -734,13 +731,13 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=False):
     if st.button("💾 Create Data Snapshot"):
         st.session_state["snapshot_expander_open"] = True
         try:
-            # snapshot_str, snapshot_filename = prepare_snapshot(
-            #     st.session_state.get("rules_data", []),
-            #     st.session_state.get("objects_data", []),
-            #     st.session_state.get("groups_data", []),
-            #     st.session_state.get("extended_data", {}),
-            #     st.session_state.get("object_location_map", {})
-            # )
+            snapshot_str, snapshot_filename = prepare_snapshot(
+                st.session_state.get("rules_data", []),
+                st.session_state.get("objects_data", []),
+                st.session_state.get("groups_data", []),
+                st.session_state.get("extended_data", {}),
+                st.session_state.get("object_location_map", {})
+            )
 
             st.download_button(
                 label="📥 Download API Snapshot",
@@ -1256,59 +1253,41 @@ elif selected_tab == "🔎 Search Object or Group":
 
 
   
-    # 📄 Firewall Rules Referencing Selected Object or Group
     st.markdown("---")
     st.subheader("📄 Firewall Rules Referencing Selected Object or Group")
 
-    options = [
-        (o['name'], "object", o['id']) for o in objects_data
-    ] + [
-        (g['name'], "group", g['id']) for g in groups_data
-    ]
+    object_or_group_names = [f"🔹 {o['name']}" for o in objects_data] + [f"🔸 {g['name']}" for g in groups_data]
 
-    selected_tuple = st.selectbox(
+    selected_ref_entity = st.selectbox(
         "Select object or group:",
-        options=options,
-        format_func=lambda x: x[0]
+        options=object_or_group_names,
+        index=0 if object_or_group_names else None
     )
 
     rule_refs = []
 
-    if selected_tuple:
-        name, kind, entity_id = selected_tuple
+    if selected_ref_entity:
+        entity_name = selected_ref_entity[2:]
+        is_object = selected_ref_entity.startswith("🔹")
 
-        match_id = f"OBJ({entity_id})" if kind == "object" else f"GRP({entity_id})"
+        # Check both VPN and Local rules
+        if is_object:
+            match_id = [f"OBJ({o['id']})" for o in objects_data if o['name'] == entity_name]
+        else:
+            match_id = [f"GRP({g['id']})" for g in groups_data if g['name'] == entity_name]
 
-        # --- VPN Rules ---
-        for i, rule in enumerate(rules_data):
-            src_list = [s.strip() for s in rule.get("srcCidr", "").split(",")]
-            dst_list = [d.strip() for d in rule.get("destCidr", "").split(",")]
+        match_id = match_id[0] if match_id else None
 
-            if match_id in src_list or match_id in dst_list:
-                rule_refs.append({
-                    "Type": "VPN",
-                    "Location": "(global)",
-                    "Number": i + 1,
-                    "Comment": rule.get("comment", ""),
-                    "Policy": rule.get("policy", "").upper(),
-                    "Protocol": rule.get("protocol", ""),
-                    "Source": resolve_names(rule.get("srcCidr", ""), object_map, group_map),
-                    "SRC Port": rule.get("srcPort", ""),
-                    "Destination": resolve_names(rule.get("destCidr", ""), object_map, group_map),
-                    "DST Port": rule.get("destPort", "")
-                })
-
-        # --- Local Rules ---
-        for net_id, net_info in extended_data.get("network_details", {}).items():
-            location = net_info.get("network_name", net_id)
-            for i, rule in enumerate(net_info.get("firewall_rules", [])):
+        if match_id:
+            # --- VPN Rules ---
+            for i, rule in enumerate(rules_data):
                 src_list = [s.strip() for s in rule.get("srcCidr", "").split(",")]
                 dst_list = [d.strip() for d in rule.get("destCidr", "").split(",")]
 
                 if match_id in src_list or match_id in dst_list:
                     rule_refs.append({
-                        "Type": "Local",
-                        "Location": location,
+                        "Type": "VPN",
+                        "Location": "(global)",
                         "Number": i + 1,
                         "Comment": rule.get("comment", ""),
                         "Policy": rule.get("policy", "").upper(),
@@ -1317,13 +1296,34 @@ elif selected_tab == "🔎 Search Object or Group":
                         "SRC Port": rule.get("srcPort", ""),
                         "Destination": resolve_names(rule.get("destCidr", ""), object_map, group_map),
                         "DST Port": rule.get("destPort", "")
+                        
                     })
+
+            # --- Local Rules ---
+            for net_id, net_info in extended_data.get("network_details", {}).items():
+                location = net_info.get("network_name", net_id)
+                for i, rule in enumerate(net_info.get("firewall_rules", [])):
+                    src_list = [s.strip() for s in rule.get("srcCidr", "").split(",")]
+                    dst_list = [d.strip() for d in rule.get("destCidr", "").split(",")]
+
+                    if match_id in src_list or match_id in dst_list:
+                        rule_refs.append({
+                            "Type": "Local",
+                            "Location": location,
+                            "Number": i + 1,
+                            "Comment": rule.get("comment", ""),
+                            "Policy": rule.get("policy", "").upper(),
+                            "Protocol": rule.get("protocol", ""),
+                            "Source": resolve_names(rule.get("srcCidr", ""), object_map, group_map),
+                            "SRC Port": rule.get("srcPort", ""),
+                            "Destination": resolve_names(rule.get("destCidr", ""), object_map, group_map),
+                            "DST Port": rule.get("destPort", "")
+                        })
 
     if rule_refs:
         st.dataframe(pd.DataFrame(rule_refs), use_container_width=True)
     else:
         st.info("This object or group is not used in any firewall rules.")
-
 
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
