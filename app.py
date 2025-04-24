@@ -1067,8 +1067,9 @@ elif selected_tab == "🔎 Search Object or Group":
 
     invalid_objects = get_invalid_objects(objects_data)
     #if invalid_objects:
-        #st.subheader("⚠️ Objects with Invalid CIDRs")
-    with st.expander(f"⚠️ Show Objects with Invalid CIDRs ({len(invalid_objects)}) and unused Network Objects & Groups", expanded=False):
+        
+    with st.expander("⚠️ Show Objects with Invalid CIDRs  and unused Network Objects & Groups", expanded=False):
+        st.subheader(f"⚠️ Objects with Invalid CIDRs ({len(invalid_objects)})")
         df_invalid = pd.DataFrame(invalid_objects)
         st.dataframe(df_invalid, use_container_width=True)
         st.download_button(
