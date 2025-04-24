@@ -1066,19 +1066,18 @@ elif selected_tab == "🔎 Search Object or Group":
     filtered_grps = [g for g in groups_data if search_term in g.get("name", "").lower()] if search_term else groups_data
 
     invalid_objects = get_invalid_objects(objects_data)
-    if invalid_objects:
+    #if invalid_objects:
         #st.subheader("⚠️ Objects with Invalid CIDRs")
-        with st.expander(f"⚠️ Show Objects with Invalid CIDRs ({len(invalid_objects)})", expanded=False):
-            df_invalid = pd.DataFrame(invalid_objects)
-            st.dataframe(df_invalid, use_container_width=True)
-
-            st.download_button(
-                label="📥 Download Invalid CIDRs Report",
-                data=df_invalid.to_json(orient="records", indent=2),
-                file_name="invalid_objects_cidr_report.json",
-                mime="application/json"
-            )
-    with st.expander("🧹 Unused Network Objects & Groups"):
+    with st.expander(f"⚠️ Show Objects with Invalid CIDRs ({len(invalid_objects)}) and unused Network Objects & Groups", expanded=False):
+        df_invalid = pd.DataFrame(invalid_objects)
+        st.dataframe(df_invalid, use_container_width=True)
+        st.download_button(
+            label="📥 Download Invalid CIDRs Report",
+            data=df_invalid.to_json(orient="records", indent=2),
+            file_name="invalid_objects_cidr_report.json",
+            mime="application/json"
+        )
+    #with st.expander("🧹 Unused Network Objects & Groups"):
         used_ids = set()
 
         def extract_ids(cidrs):
