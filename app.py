@@ -4,7 +4,7 @@ import requests
 import json
 import ipaddress
 from datetime import datetime
-import streamlit-aggrid
+#import streamlit-aggrid
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
 
