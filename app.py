@@ -1329,8 +1329,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         # for net_id, info in extended_data.get("network_details", {}).items():
                         #     if info.get("network_name") == location_name:
                         #         rules = info.get("firewall_rules", [])
-                            st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
-                            st.markdown(f"_Total rules: {len(rules)}_")
+                            st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name} Total rules: {len(rules)}_</h5>", unsafe_allow_html=True)
+                            #st.markdown(f"_Total rules: {len(rules)}_")
                             if rules:
     #                         with st.expander(f"Collapse - `{location_name}`", expanded=st.session_state["fw_expand_local"]):
                                 generate_rule_table(
