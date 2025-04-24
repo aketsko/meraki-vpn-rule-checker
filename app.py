@@ -1067,8 +1067,8 @@ elif selected_tab == "🔎 Search Object or Group":
 
     invalid_objects = get_invalid_objects(objects_data)
     if invalid_objects:
-        st.subheader("⚠️ Objects with Invalid CIDRs")
-        with st.expander(f"⚠️ Show Invalid Entries ({len(invalid_objects)})", expanded=False):
+        #st.subheader("⚠️ Objects with Invalid CIDRs")
+        with st.expander(f"⚠️ Show Objects with Invalid CIDRs ({len(invalid_objects)})", expanded=False):
             df_invalid = pd.DataFrame(invalid_objects)
             st.dataframe(df_invalid, use_container_width=True)
 
