@@ -3,7 +3,6 @@ pandas
 ipaddress
 plotly
 kaleido
-streamlit-aggrid
+streamlit-aggrid>=0.3.3
 streamlit-searchbox
 streamlit-extras
-st-aggrid
