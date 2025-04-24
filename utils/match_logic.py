@@ -44,6 +44,14 @@ def build_object_location_map(objects_data, groups_data, extended_data):
         if matches:
             object_location_map[cidr] = matches
 
+    # ✅ ENSURE EVERY SUBNET is in the map
+    for net, net_name, use_vpn in declared_subnets:
+        cidr_str = str(net)
+        entry = {"network": net_name, "useVpn": use_vpn}
+        object_location_map.setdefault(cidr_str, []).append(entry)
+        all_entries.append(entry)
+
+
     # Match group entries based on member objects
     for group in groups_data:
         group_id = group.get("id")
@@ -62,7 +70,6 @@ def build_object_location_map(objects_data, groups_data, extended_data):
                         entries.append(entry)
         if entries:
             object_location_map[group_key] = entries
-
     # Add fallback for "any"
     if all_entries:
         object_location_map["0.0.0.0/0"] = list({(e["network"], e["useVpn"]): e for e in all_entries}.values())
@@ -118,6 +125,7 @@ def match_input_to_rule(rule_cidrs, input_cidr):
             continue
     return False
 
+
 def find_object_locations(input_list, object_location_map):
     results = []
     seen = set()
@@ -126,32 +134,33 @@ def find_object_locations(input_list, object_location_map):
         try:
             ip_net = ipaddress.ip_network(entry, strict=False)
         except ValueError:
+            print(f"[WARN] Invalid CIDR/IP in input: {entry}")
             continue
 
-        most_specific_len = -1
-        most_specific = []
+        best_match = None
+        best_len = -1
 
         for cidr, mappings in object_location_map.items():
             try:
                 net = ipaddress.ip_network(cidr, strict=False)
                 if ip_net.subnet_of(net) or ip_net == net:
-                    if net.prefixlen > most_specific_len:
-                        most_specific = mappings
-                        most_specific_len = net.prefixlen
-                    elif net.prefixlen == most_specific_len:
-                        most_specific.extend(mappings)
+                    if net.prefixlen > best_len:
+                        best_match = mappings
+                        best_len = net.prefixlen
             except ValueError:
                 continue
 
-        for match in most_specific:
-            key = (match["network"], match["useVpn"])
-            if key not in seen:
-                seen.add(key)
-                results.append(match)
+        if best_match:
+            print(f"[MATCH] {entry} → {best_len}-bit match")
+            for match in best_match:
+                key = (match["network"], match["useVpn"])
+                if key not in seen:
+                    seen.add(key)
+                    results.append(match)
+        else:
+            print(f"[MISS] {entry} did not match any known subnet")
 
     return {(entry["network"], entry["useVpn"]) for entry in results if isinstance(entry, dict)}
-
-
 
 
 
@@ -160,7 +169,10 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
 
     src_locs = find_object_locations(source_cidrs, obj_location_map)
     dst_locs = find_object_locations(dest_cidrs, obj_location_map)
-    shared_locs = src_locs & dst_locs
+    shared_networks = {s[0] for s in src_locs} & {d[0] for d in dst_locs}
+    shared_locs = {(net, True) for net in shared_networks if (net, True) in src_locs or (net, True) in dst_locs}
+    shared_locs |= {(net, False) for net in shared_networks if (net, False) in src_locs or (net, False) in dst_locs}
+
 
     # Extract VPN-enabled location names
     src_vpn_locs = {loc for (loc, vpn) in src_locs if vpn}
@@ -190,23 +202,21 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
 
     # Decide if local rules are needed
     local_needed = (
-        bool(shared_locs and not vpn_needed) or
+        bool(shared_locs) or
         (src_locs and not dst_locs) or
         (dst_locs and not src_locs) or
         src_is_supernet or dst_is_supernet
     )
 
+
     # Decide which locations to use for local rule filtering
-    if vpn_needed and not local_needed:
-        local_rule_locations = set()
+    if shared_locs:
+        local_rule_locations = shared_locs
     elif src_locs and not dst_locs:
         local_rule_locations = src_locs
     elif dst_locs and not src_locs:
         local_rule_locations = dst_locs
-    elif shared_locs:
-        local_rule_locations = shared_locs
     elif src_is_supernet or dst_is_supernet:
-        # Show all known locations (both VPN and local) — fallback
         local_rule_locations = {
             (entry["network"], entry["useVpn"])
             for locs in obj_location_map.values()
@@ -214,6 +224,7 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
         }
     else:
         local_rule_locations = set()
+
 
     return {
         "src_location_map": src_locs,

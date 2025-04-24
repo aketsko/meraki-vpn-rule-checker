@@ -5,7 +5,6 @@ import json
 import ipaddress
 from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
-#from utils.file_loader import load_json_file
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
 from utils.match_logic import match_input_to_rule, is_exact_subnet_match, resolve_to_cidrs_supernet_aware,  build_object_location_map
 from streamlit_searchbox import st_searchbox
@@ -30,29 +29,6 @@ center_running()
 for k, v in default_colours.items():
     st.session_state.setdefault(k, v)
 
-# def load_json_file(uploaded_file):
-#     try:
-#         if uploaded_file is None:
-#             raise ValueError("No file provided")
-
-#         content = uploaded_file.read()
-#         if not content:
-#             raise ValueError("Uploaded file is empty")
-
-#         if isinstance(content, bytes):
-#             content = content.decode("utf-8")
-
-#         content = content.strip()
-#         if not content:
-#             raise ValueError("Uploaded file contains no data")
-
-#         return json.loads(content)
-
-#     except json.JSONDecodeError as e:
-#         raise ValueError(f"Invalid JSON: {e}")
-#     except Exception as e:
-#         raise ValueError(f"Error reading uploaded file: {e}")
-    
 def search_objects_and_groups(searchterm: str):
     results = []
 
@@ -281,7 +257,9 @@ def generate_rule_table(rules,
     gb.configure_grid_options(getRowStyle=row_style_js, domLayout='autoHeight')
     grid_options = gb.build()
 
-    st.markdown(title_prefix)
+    if title_prefix.strip().lower() != "rules":
+        st.markdown(title_prefix)
+
 #    st.dataframe(df_to_show)
     AgGrid(
         df_to_show,
@@ -548,6 +526,27 @@ def passthrough_port(term: str):
     term = term.strip()
     return [(f"Use: {term}", term)] if term else []
 
+def resolve_names(cidr_str, object_map, group_map):
+    parts = [p.strip() for p in cidr_str.split(",")]
+    resolved = []
+    for p in parts:
+        if p.startswith("OBJ(") and p.endswith(")"):
+            obj = object_map.get(p[4:-1])
+            if obj:
+                resolved.append(obj['name'])
+            else:
+                resolved.append(p)
+        elif p.startswith("GRP(") and p.endswith(")"):
+            grp = group_map.get(p[4:-1])
+            if grp:
+                resolved.append(grp['name'])
+            else:
+                resolved.append(p)
+        else:
+            resolved.append(p)
+    return ", ".join(resolved)
+
+
 st.markdown("""
 <style>
 /* Force main container to always use full width */
@@ -645,7 +644,6 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=False):
                             else:
                                 st.session_state["extended_data"] = extended_result
                                 st.success("✅ Extended Meraki data fetched successfully.")
-
                                 with st.spinner("🧠 Mapping objects to VPN locations..."):
                                     location_map = build_object_location_map(
                                         st.session_state["objects_data"],
@@ -653,7 +651,13 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=False):
                                         extended_result
                                     )
                                     st.session_state["object_location_map"] = location_map
-
+                                snapshot_str, snapshot_filename = prepare_snapshot(
+                                    st.session_state.get("rules_data", []),
+                                    st.session_state.get("objects_data", []),
+                                    st.session_state.get("groups_data", []),
+                                    st.session_state.get("extended_data", {}),
+                                    st.session_state.get("object_location_map", {})
+                                )
                         except Exception as e:
                             st.error(f"❌ Exception during extended data fetch: {e}")
                             st.session_state["extended_data"] = None
@@ -666,7 +670,18 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=False):
                 except Exception as e:
                     st.error(f"❌ Exception during data fetch: {e}")
                     st.session_state["fetched_from_api"] = False
-
+        if (
+            "objects_data" in st.session_state and
+            "groups_data" in st.session_state and
+            "extended_data" in st.session_state
+        ):
+            st.session_state["object_location_map"] = build_object_location_map(
+                st.session_state["objects_data"],
+                st.session_state["groups_data"],
+                st.session_state["extended_data"]
+            )
+            st.write("[✅] Rebuilt object_location_map using latest logic")
+        
 
     # Upload Snapshot to restore everything
     uploaded_snapshot = st.file_uploader("📤 Load Snapshot (.json)", type="json")
@@ -934,7 +949,7 @@ if selected_tab == "📘 Overview":
                 st.info("No subnets found for this network.")
 
             st.markdown("---")
-           # st.subheader("🧱 View Local Firewall Rules by Location")
+          
 
             extended_data = st.session_state.get("extended_data", {})
             network_details = extended_data.get("network_details", {}) if extended_data else {}
@@ -1044,7 +1059,76 @@ elif selected_tab == "🔎 Search Object or Group":
     filtered_objs = [o for o in objects_data if match_object(o, search_term)] if search_term else objects_data
     filtered_grps = [g for g in groups_data if search_term in g.get("name", "").lower()] if search_term else groups_data
 
-    st.subheader("🔹 Matching Network Objects")
+    invalid_objects = get_invalid_objects(objects_data)
+    #if invalid_objects:
+        
+    with st.expander("⚠️ Show Objects with Invalid CIDRs  and unused Network Objects & Groups", expanded=False):
+        st.subheader(f"⚠️ Objects with Invalid CIDRs ({len(invalid_objects)})")
+        df_invalid = pd.DataFrame(invalid_objects)
+        st.dataframe(df_invalid, use_container_width=True)
+        st.download_button(
+            label="📥 Download Invalid CIDRs Report",
+            data=df_invalid.to_json(orient="records", indent=2),
+            file_name="invalid_objects_cidr_report.json",
+            mime="application/json"
+        )
+    #with st.expander("🧹 Unused Network Objects & Groups"):
+        used_ids = set()
+
+        def extract_ids(cidrs):
+            ids = []
+            for cid in cidrs.split(","):
+                cid = cid.strip()
+                if cid.startswith("OBJ(") or cid.startswith("GRP("):
+                    ids.append(cid)
+            return ids
+
+        # Collect all used OBJ(...) and GRP(...) from rules
+        for rule in rules_data:
+            used_ids.update(extract_ids(rule.get("srcCidr", "")))
+            used_ids.update(extract_ids(rule.get("destCidr", "")))
+        for net in extended_data.get("network_details", {}).values():
+            for rule in net.get("firewall_rules", []):
+                used_ids.update(extract_ids(rule.get("srcCidr", "")))
+                used_ids.update(extract_ids(rule.get("destCidr", "")))
+
+        # Resolve object IDs used directly or via group membership
+        used_object_ids = set()
+        used_group_ids = set()
+
+        for used_id in used_ids:
+            if used_id.startswith("OBJ("):
+                used_object_ids.add(used_id[4:-1])
+            elif used_id.startswith("GRP("):
+                gid = used_id[4:-1]
+                used_group_ids.add(gid)
+                grp = group_map.get(gid)
+                if grp:
+                    used_object_ids.update(str(oid) for oid in grp.get("objectIds", []))
+
+        # Find unused objects
+        unused_objects = [
+            obj for obj in objects_data if str(obj["id"]) not in used_object_ids
+        ]
+
+        # Find unused groups
+        unused_groups = [
+            grp for grp in groups_data if str(grp["id"]) not in used_group_ids
+        ]
+
+        if unused_objects:
+            st.markdown(f"### 🧹🔹 Unused Network Objects ({len(unused_objects)}):")
+            st.dataframe(pd.DataFrame(unused_objects)[["name", "cidr", "fqdn"]], use_container_width=True)
+        else:
+            st.success("✅ All objects are used.")
+
+        if unused_groups:
+            st.markdown(f"### 🧹🔸 Unused Object Groups ({len(unused_groups)}):")
+            st.dataframe(pd.DataFrame(unused_groups)[["name", "category"]], use_container_width=True)
+        else:
+            st.success("✅ All groups are used.")
+
+    st.subheader("🔹 Matching Objects")
     object_rows = []
     for o in filtered_objs:
         cidr = o.get("cidr", "")
@@ -1057,11 +1141,38 @@ elif selected_tab == "🔎 Search Object or Group":
             "Location": ", ".join(sorted(locs)),
             "Groups": ", ".join(group_names)
         })
-
+    
     df_obj = pd.DataFrame(object_rows)
     st.dataframe(df_obj, use_container_width=True)
 
 
+    
+    st.subheader("🔸 Matching Object Groups")
+
+    group_rows = []
+    for g in filtered_grps:
+        members = g.get("objectIds", [])
+        locs = set()
+        for oid in members:
+            obj = object_map.get(oid)
+            if obj:
+                cidr = obj.get("cidr", "")
+                for e in location_map.get(cidr, []) + location_map.get(f"OBJ({oid})", []):
+                    if isinstance(e, dict):
+                        locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
+        for e in location_map.get(f"GRP({g['id']})", []):
+            if isinstance(e, dict):
+                locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
+        group_rows.append({
+            "ID": g["id"],
+            "Name": g["name"],
+            "Object Count": len(members),
+            "Location": ", ".join(sorted(locs))
+        })
+
+    df_grps = pd.DataFrame(group_rows)
+    st.dataframe(df_grps, use_container_width=True)
+    
     st.markdown("---")
     col2, col3 = st.columns([4, 6])  # Adjust column width ratios as needed
 
@@ -1089,32 +1200,7 @@ elif selected_tab == "🔎 Search Object or Group":
                             st.write("📝 No metadata available.")
     
     st.markdown("---")
-    st.subheader("🔸 Matching Object Groups")
 
-    group_rows = []
-    for g in filtered_grps:
-        members = g.get("objectIds", [])
-        locs = set()
-        for oid in members:
-            obj = object_map.get(oid)
-            if obj:
-                cidr = obj.get("cidr", "")
-                for e in location_map.get(cidr, []) + location_map.get(f"OBJ({oid})", []):
-                    if isinstance(e, dict):
-                        locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
-        for e in location_map.get(f"GRP({g['id']})", []):
-            if isinstance(e, dict):
-                locs.add(f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})")
-        group_rows.append({
-            "ID": g["id"],
-            "Name": g["name"],
-            "Object Count": len(members),
-            "Location": ", ".join(sorted(locs))
-        })
-
-    df_grps = pd.DataFrame(group_rows)
-    st.dataframe(df_grps, use_container_width=True)
-    
     selected_grp = st.selectbox("⬇️ Show members of group:", options=[g["Name"] for g in group_rows] if group_rows else [], index=0 if group_rows else None)
     if selected_grp:
         group_obj = next((g for g in group_rows if g["Name"] == selected_grp), None)
@@ -1153,6 +1239,80 @@ elif selected_tab == "🔎 Search Object or Group":
             } for o in objects_data if selected_location in ", ".join(
                 f"{e['network']} ({'VPN' if e['useVpn'] else 'Local'})" for e in location_map.get(o.get("cidr", ""), []) if isinstance(e, dict))
         ]), use_container_width=True)
+
+
+  
+    st.markdown("---")
+    st.subheader("📄 Firewall Rules Referencing Selected Object or Group")
+
+    object_or_group_names = [f"🔹 {o['name']}" for o in objects_data] + [f"🔸 {g['name']}" for g in groups_data]
+
+    selected_ref_entity = st.selectbox(
+        "Select object or group:",
+        options=object_or_group_names,
+        index=0 if object_or_group_names else None
+    )
+
+    rule_refs = []
+
+    if selected_ref_entity:
+        entity_name = selected_ref_entity[2:]
+        is_object = selected_ref_entity.startswith("🔹")
+
+        # Check both VPN and Local rules
+        if is_object:
+            match_id = [f"OBJ({o['id']})" for o in objects_data if o['name'] == entity_name]
+        else:
+            match_id = [f"GRP({g['id']})" for g in groups_data if g['name'] == entity_name]
+
+        match_id = match_id[0] if match_id else None
+
+        if match_id:
+            # --- VPN Rules ---
+            for i, rule in enumerate(rules_data):
+                src_list = [s.strip() for s in rule.get("srcCidr", "").split(",")]
+                dst_list = [d.strip() for d in rule.get("destCidr", "").split(",")]
+
+                if match_id in src_list or match_id in dst_list:
+                    rule_refs.append({
+                        "Type": "VPN",
+                        "Location": "(global)",
+                        "Number": i + 1,
+                        "Comment": rule.get("comment", ""),
+                        "Policy": rule.get("policy", "").upper(),
+                        "Protocol": rule.get("protocol", ""),
+                        "Source": resolve_names(rule.get("srcCidr", ""), object_map, group_map),
+                        "SRC Port": rule.get("srcPort", ""),
+                        "Destination": resolve_names(rule.get("destCidr", ""), object_map, group_map),
+                        "DST Port": rule.get("destPort", "")
+                        
+                    })
+
+            # --- Local Rules ---
+            for net_id, net_info in extended_data.get("network_details", {}).items():
+                location = net_info.get("network_name", net_id)
+                for i, rule in enumerate(net_info.get("firewall_rules", [])):
+                    src_list = [s.strip() for s in rule.get("srcCidr", "").split(",")]
+                    dst_list = [d.strip() for d in rule.get("destCidr", "").split(",")]
+
+                    if match_id in src_list or match_id in dst_list:
+                        rule_refs.append({
+                            "Type": "Local",
+                            "Location": location,
+                            "Number": i + 1,
+                            "Comment": rule.get("comment", ""),
+                            "Policy": rule.get("policy", "").upper(),
+                            "Protocol": rule.get("protocol", ""),
+                            "Source": resolve_names(rule.get("srcCidr", ""), object_map, group_map),
+                            "SRC Port": rule.get("srcPort", ""),
+                            "Destination": resolve_names(rule.get("destCidr", ""), object_map, group_map),
+                            "DST Port": rule.get("destPort", "")
+                        })
+
+    if rule_refs:
+        st.dataframe(pd.DataFrame(rule_refs), use_container_width=True)
+    else:
+        st.info("This object or group is not used in any firewall rules.")
 
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
@@ -1261,13 +1421,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         st.markdown(format_boxed("Source Object", st.session_state["snapshot"]["src"] or "-"), unsafe_allow_html=True)
                         st.markdown(format_boxed("Source CIDR", src_cidr_str), unsafe_allow_html=True)
                         st.markdown(format_boxed("Source Port", st.session_state["snapshot"]["src_port"]), unsafe_allow_html=True)
-                        #st.markdown(format_boxed("Source Location", src_locs), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Source Location", src_locs), unsafe_allow_html=True)
 
                     with col2:
                         st.markdown(format_boxed("Destination Object", st.session_state["snapshot"]["dst"] or "-"), unsafe_allow_html=True)
                         st.markdown(format_boxed("Destination CIDR", dst_cidr_str), unsafe_allow_html=True)
                         st.markdown(format_boxed("Destination Port", st.session_state["snapshot"]["dst_port"]), unsafe_allow_html=True)
-
+                        st.markdown(format_boxed("Source Location", dst_locs), unsafe_allow_html=True)
                     with col3:
                         #st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
                         st.markdown(format_boxed("Protocol", st.session_state["snapshot"]["protocol"]), unsafe_allow_html=True)
@@ -1290,20 +1450,20 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         if st.button("❌ Deselect All", key="loc_deselect_all"):
                             st.session_state["selected_local_locations"] = []
 
-                    valid_selected = [
-                        loc for loc in st.session_state.get("selected_local_locations", [])
-                        if loc in all_locations
-                    ]
-                    st.session_state["selected_local_locations"] = valid_selected  # Optional: reset to filtered list
+                        valid_selected = [
+                            loc for loc in st.session_state.get("selected_local_locations", [])
+                            if loc in all_locations
+                        ]
+                        st.session_state["selected_local_locations"] = valid_selected  # Optional: reset to filtered list
 
-                    st.multiselect(
-                        "Pick location(s)",
-                        options=all_locations,
-                        default=valid_selected,
-                        key="selected_local_locations"
-                    )
+                        st.multiselect(
+                            "Pick location(s)",
+                            options=all_locations,
+                            default=valid_selected,
+                            key="selected_local_locations"
+                        )
 
-                    selected_locations = st.session_state["selected_local_locations"]
+                        selected_locations = st.session_state["selected_local_locations"]
 
 
 
@@ -1311,7 +1471,15 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
                 with st.expander(f"Collapse - `{len(selected_locations)}`", expanded=st.session_state["fw_expand_local"]):
-                    for location_name in all_locations:
+                    for location_name in selected_locations:
+                        print("🔍 Selected locations for local rules:")
+                        print(selected_locations)
+                        print("🔍 Available local_rule_locations:")
+                        print(local_rule_locations)
+                        print("🔍 Final matched extended_data network names:")
+                        all_networks = [info.get("network_name") for info in extended_data.get("network_details", {}).values()]
+                        print(all_networks)
+
                         if location_name not in selected_locations:
                             continue
                         if location_name in seen_locations:
@@ -1329,10 +1497,13 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         # for net_id, info in extended_data.get("network_details", {}).items():
                         #     if info.get("network_name") == location_name:
                         #         rules = info.get("firewall_rules", [])
-                            st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name} Total rules: {len(rules)}_</h5>", unsafe_allow_html=True)
-                            #st.markdown(f"_Total rules: {len(rules)}_")
+                            st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
+                            st.markdown(f"_Total rules: {len(rules)}_")
                             if rules:
-    #                         with st.expander(f"Collapse - `{location_name}`", expanded=st.session_state["fw_expand_local"]):
+                                print(f"🧱 Rendering rules for: {location_name}")
+                                print(f"📄 Found network '{location_name}' with net_id '{net_id}'")
+                                print(f"📄 Info keys: {list(info.keys())}")
+                                print(f"📄 Rules count: {len(info.get('firewall_rules', []))}")
                                 generate_rule_table(
                                     rules=rules,
                                     source_port_input=source_port_input,
@@ -1352,7 +1523,8 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                 st.warning("No rules found for this location.")
 
             if show_vpn:
-                st.subheader("🌐 VPN Firewall Rules")
+                st.markdown("<h5 style='margin-bottom: 0.5rem;'>🌐 VPN Firewall Rules</h5>", unsafe_allow_html=True)
+                st.markdown(f"_Total rules: {len(rules_data)}_")
                 generate_rule_table(
                     rules=rules_data,
                     source_port_input=source_port_input,
