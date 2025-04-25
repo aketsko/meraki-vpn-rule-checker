@@ -17,6 +17,45 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
+st.markdown("""
+    <style>
+    /* Responsive tweaks for mobile devices */
+    @media only screen and (max-width: 768px) {
+
+        /* Reduce padding on mobile */
+        .block-container {
+            padding: 1rem 0.5rem !important;
+        }
+
+        /* Make buttons and selects full width */
+        button, .stButton>button, .stSelectbox div, .stTextInput input {
+            width: 100% !important;
+        }
+
+        /* Improve visibility for labels */
+        label, h1, h2, h3, h4 {
+            font-size: 1.1rem !important;
+        }
+
+        /* Reduce margins for headings */
+        h1, h2, h3 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Resize code blocks */
+        pre code {
+            font-size: 0.9rem;
+        }
+    }
+
+    /* Optional: Smooth section anchors */
+    html {
+        scroll-behavior: smooth;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Define default_colours with some example values
 default_colours = {
     "exact_allow": "#09BC8A",
@@ -821,7 +860,7 @@ if selected_tab == "📘 Overview":
             - You can manually pick a network from the dropdown.
             - All Subnets belonging to this Network will be shown with their atributes.
             - Matching objects (exact CIDR match) will be listed.
-            - Local Wirewall rules for this Network will be also shown
+            - Local Firewall rules for this Network will be also shown
             """)
 
         
@@ -1031,6 +1070,12 @@ if selected_tab == "📘 Overview":
 
 # 🔎 Search Object or Group Tab (Interactive Rebuild)
 elif selected_tab == "🔎 Search Object or Group":
+    with st.expander("📘 About this tab (click to collapse)", expanded=False):
+            st.markdown("""
+            Use this section to explore Object and Group structure.
+            - You can check for invalid or unused Objects and Groups. 
+            - Tha page helps to discover references between elemants of the structure and locations.
+            """)
     toc_sections = []
     from utils.match_logic import build_object_location_map
 
