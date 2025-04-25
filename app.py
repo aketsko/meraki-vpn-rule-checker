@@ -582,7 +582,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-
+st.sidebar.header("Meraki SDWAN Analysis Toolkit V1.0")
 st.sidebar.header("☰ Menu")
 st.session_state["api_data_expander"] = False
 
@@ -670,17 +670,17 @@ with st.sidebar.expander("🔽 Fetch Data", expanded=False):
                 except Exception as e:
                     st.error(f"❌ Exception during data fetch: {e}")
                     st.session_state["fetched_from_api"] = False
-        # if (
-        #     "objects_data" in st.session_state and
-        #     "groups_data" in st.session_state and
-        #     "extended_data" in st.session_state
-        # ):
-        #     st.session_state["object_location_map"] = build_object_location_map(
-        #         st.session_state["objects_data"],
-        #         st.session_state["groups_data"],
-        #         st.session_state["extended_data"]
-        #     )
-        #     st.write("[✅] Rebuilt object_location_map using latest logic")
+        if (
+            "objects_data" in st.session_state and
+            "groups_data" in st.session_state and
+            "extended_data" in st.session_state
+        ):
+            st.session_state["object_location_map"] = build_object_location_map(
+                st.session_state["objects_data"],
+                st.session_state["groups_data"],
+                st.session_state["extended_data"]
+            )
+            st.write("[✅] Rebuilt object_location_map using latest logic")
         
 
     # Upload Snapshot to restore everything
@@ -1031,6 +1031,7 @@ if selected_tab == "📘 Overview":
 
 # 🔎 Search Object or Group Tab (Interactive Rebuild)
 elif selected_tab == "🔎 Search Object or Group":
+    toc_sections = []
     from utils.match_logic import build_object_location_map
 
     if "object_location_map" not in st.session_state and "extended_data" in st.session_state and st.session_state["extended_data"]:
@@ -1061,8 +1062,12 @@ elif selected_tab == "🔎 Search Object or Group":
 
     invalid_objects = get_invalid_objects(objects_data)
     #if invalid_objects:
-        
+    
+    st.markdown('<a name="top"></a>', unsafe_allow_html=True) 
+    st.markdown("---")    
     with st.expander("⚠️ Show Objects with Invalid CIDRs  and unused Network Objects & Groups", expanded=False):
+        toc_sections.append("⚠️ Problems")
+        st.markdown('<a name="problems"></a>', unsafe_allow_html=True) 
         st.subheader(f"⚠️ Objects with Invalid CIDRs ({len(invalid_objects)})")
         df_invalid = pd.DataFrame(invalid_objects)
         st.dataframe(df_invalid, use_container_width=True)
@@ -1127,8 +1132,13 @@ elif selected_tab == "🔎 Search Object or Group":
             st.dataframe(pd.DataFrame(unused_groups)[["name", "category"]], use_container_width=True)
         else:
             st.success("✅ All groups are used.")
+            
 
+    toc_sections.append("🔹 Matching Objects")
+    
+    st.markdown('<a name="matching_objects"></a>', unsafe_allow_html=True)
     st.subheader("🔹 Matching Objects")
+
     object_rows = []
     for o in filtered_objs:
         cidr = o.get("cidr", "")
@@ -1146,7 +1156,10 @@ elif selected_tab == "🔎 Search Object or Group":
     st.dataframe(df_obj, use_container_width=True)
 
 
-    
+
+    toc_sections.append("🔸 Matching Object Groups")
+    st.subheader("🔸 Matching Object Groups")
+    st.markdown('<a name="matching_groups"></a>', unsafe_allow_html=True)
     st.subheader("🔸 Matching Object Groups")
 
     group_rows = []
@@ -1242,8 +1255,13 @@ elif selected_tab == "🔎 Search Object or Group":
 
 
   
-    st.markdown("---")
+    
+
+    toc_sections.append("📄 Firewall Rules Referencing Selected Object or Group")
     st.subheader("📄 Firewall Rules Referencing Selected Object or Group")
+    st.markdown("---")
+    st.markdown('<a name="rule_refs"></a>', unsafe_allow_html=True)
+   
 
     object_or_group_names = [f"🔹 {o['name']}" for o in objects_data] + [f"🔸 {g['name']}" for g in groups_data]
 
@@ -1313,6 +1331,18 @@ elif selected_tab == "🔎 Search Object or Group":
         st.dataframe(pd.DataFrame(rule_refs), use_container_width=True)
     else:
         st.info("This object or group is not used in any firewall rules.")
+    
+    with st.sidebar.expander("🧭 Quick Navigation", expanded=True):
+        for section in toc_sections:
+            if section.startswith("⚠️"):
+                st.markdown(f"- [{section}](#problems)")
+            elif section.startswith("🔹"):
+                st.markdown(f"- [{section}](#matching_objects)")
+            elif section.startswith("🔸"):
+                st.markdown(f"- [{section}](#matching_groups)")
+            elif section.startswith("📄"):
+                st.markdown(f"- [{section}](#rule_refs)")
+        st.markdown("- [⬆️ Back to Top](#top)")
 
 
 elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
@@ -1322,10 +1352,11 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     group_map = get_group_map(st.session_state.get("groups_data", []))
 
     
-
+    st.markdown('<a name="top"></a>', unsafe_allow_html=True)
+    st.markdown("---")
     # --- Sidebar Controls (Tab-Specific) ---
-    with st.sidebar:
-        st.markdown("### ↔️ Traffic Flow")
+    with st.sidebar.expander("### ↔️ Traffic Flow", expanded=True):
+        #st.markdown("### ↔️ Traffic Flow")
         source_input = st_searchbox(custom_search, label="🌐 Source", placeholder="Object, Group, CIDR, or 'any'", key="src_searchbox", default="any")
         source_port_input = st_searchbox(passthrough_port, label="🔌 Source Port(s)", placeholder="e.g. 80,443", key="srcport_searchbox", default="any")
         destination_input = st_searchbox(custom_search, label="🌐 Destination", placeholder="Object, Group, CIDR, or 'any'", key="dst_searchbox", default="any")
@@ -1378,6 +1409,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
     if obj_loc_map and extended_data:
+        toc_sections = []
         rule_scope = evaluate_rule_scope_from_inputs(source_cidrs, destination_cidrs, obj_loc_map)
         src_locs = rule_scope["src_location_map"]
         dst_locs = rule_scope["dst_location_map"]
@@ -1437,7 +1469,9 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
 
 
             if show_local and rule_scope.get("local_rule_locations"):
-
+                toc_sections.append("🧱 Local Firewall Rules")
+                st.markdown('<a name="local_rules"></a>', unsafe_allow_html=True)
+                st.markdown("---")
                 st.subheader("🧱 Local Firewall Rules")
                 with st.sidebar:
                     location_filter_title = f"📍 Location Filter ({len(set(loc for loc, _ in local_rule_locations))} found)"
@@ -1497,7 +1531,12 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         # for net_id, info in extended_data.get("network_details", {}).items():
                         #     if info.get("network_name") == location_name:
                         #         rules = info.get("firewall_rules", [])
+                            anchor = location_name.replace(" ", "_").replace(".", "_")
+                            toc_sections.append(f"🔹 {location_name}")
+                            st.markdown("---")
+                            st.markdown(f'<a name="{anchor}"></a>', unsafe_allow_html=True)
                             st.markdown(f"<h5 style='margin-bottom: 0.5rem; margin-top: 0.5rem;'>🧱 {location_name}</h5>", unsafe_allow_html=True)
+
                             st.markdown(f"_Total rules: {len(rules)}_")
                             if rules:
                                 print(f"🧱 Rendering rules for: {location_name}")
@@ -1523,7 +1562,11 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                                 st.warning("No rules found for this location.")
 
             if show_vpn:
+                toc_sections.append("🌐 VPN Firewall Rules")
+                st.markdown('<a name="vpn_rules"></a>', unsafe_allow_html=True)
+                st.markdown("---")
                 st.markdown("<h5 style='margin-bottom: 0.5rem;'>🌐 VPN Firewall Rules</h5>", unsafe_allow_html=True)
+
                 st.markdown(f"_Total rules: {len(rules_data)}_")
                 generate_rule_table(
                     rules=rules_data,
@@ -1540,6 +1583,19 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                     skip_dst_check=skip_dst_check,
                     key="vpn_table"
                 )
+
+        with st.sidebar.expander("### 🧭 Quick Navigation",  expanded=True):
+            if toc_sections:
+                #st.markdown("### 🧭 Quick Navigation")
+                for section in toc_sections:
+                    if section == "🧱 Local Firewall Rules":
+                        st.markdown(f"- [{section}](#local_rules)")
+                    elif section == "🌐 VPN Firewall Rules":
+                        st.markdown(f"- [{section}](#vpn_rules)")
+                    elif section.startswith("🔹"):
+                        anchor = section[2:].replace(" ", "_").replace(".", "_")
+                        st.markdown(f"- [{section}](#{anchor})")
+                st.markdown("- [⬆️ Back to Top](#top)")  
 
 
         st.sidebar.markdown("🔘 Set Colors")
