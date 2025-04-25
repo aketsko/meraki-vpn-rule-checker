@@ -1158,7 +1158,6 @@ elif selected_tab == "🔎 Search Object or Group":
 
 
     toc_sections.append("🔸 Matching Object Groups")
-    st.subheader("🔸 Matching Object Groups")
     st.markdown('<a name="matching_groups"></a>', unsafe_allow_html=True)
     st.subheader("🔸 Matching Object Groups")
 
