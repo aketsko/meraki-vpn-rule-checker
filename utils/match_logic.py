@@ -138,20 +138,6 @@ def find_object_locations(input_list, object_location_map):
             if isinstance(any_match, list):
                 matches.extend(any_match)
 
-        # Avoid fallback to other broader CIDRs unless explicitly needed
-        # Commented this out to prevent false location attribution:
-        # try:
-        #     ip_net = ipaddress.ip_network(item, strict=False)
-        #     for cidr, entries in object_location_map.items():
-        #         try:
-        #             net = ipaddress.ip_network(cidr, strict=False)
-        #             if ip_net.subnet_of(net) or ip_net == net:
-        #                 matches.extend(entries)
-        #         except ValueError:
-        #             continue
-        # except ValueError:
-        #     pass  # skip if not CIDR
-
         for match in matches:
             key = (match["network"], match["useVpn"])
             if key not in seen:
@@ -161,46 +147,6 @@ def find_object_locations(input_list, object_location_map):
     return {(entry["network"], entry["useVpn"]) for entry in results if isinstance(entry, dict)}
 
 
-
-# def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
-#     src_locs = find_object_locations(source_cidrs, obj_location_map)
-#     dst_locs = find_object_locations(dest_cidrs, obj_location_map)
-#     shared_locs = src_locs & dst_locs
-
-#     src_vpn_locs = set()
-#     dst_vpn_locs = set()
-
-#     for cidr in source_cidrs:
-#         for entry in obj_location_map.get(cidr, []):
-#             if isinstance(entry, dict) and entry.get("useVpn"):
-#                 src_vpn_locs.add(entry.get("network"))
-
-#     for cidr in dest_cidrs:
-#         for entry in obj_location_map.get(cidr, []):
-#             if isinstance(entry, dict) and entry.get("useVpn"):
-#                 dst_vpn_locs.add(entry.get("network"))
-
-#     # 🔧 Updated logic:
-#     # Show VPN if there is at least one (src,dst) pair with useVpn=True and different locations
-#     vpn_needed = any(
-#         dst != src and dst in dst_vpn_locs and src in src_vpn_locs
-#         for src in src_vpn_locs for dst in dst_vpn_locs
-#     )
-
-#     # Show Local if any shared location exists
-#     local_needed = (
-#         bool(shared_locs)
-#         or (src_locs and not dst_locs)
-#         or (dst_locs and not src_locs)
-#     )
-
-#     return {
-#         "src_location_map": src_locs,
-#         "dst_location_map": dst_locs,
-#         "shared_locations": shared_locs,
-#         "vpn_needed": vpn_needed,
-#         "local_needed": local_needed,
-#     }
 
 def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
     src_locs = find_object_locations(source_cidrs, obj_location_map)

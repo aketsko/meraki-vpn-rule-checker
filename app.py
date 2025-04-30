@@ -1540,7 +1540,6 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         st.multiselect(
                             "Pick location(s)",
                             options=all_locations,
-                            default=valid_selected,
                             key="selected_local_locations"
                         )
 
