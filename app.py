@@ -30,34 +30,6 @@ for k, v in default_colours.items():
     st.session_state.setdefault(k, v)
 
 
-client = openai.OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key="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"  # Replace this
-)
-
-def query_openrouter(prompt):
-
-    try:
-        response = client.chat.completions.create(
-            model="anthropic/claude-3.5-haiku",
-            messages=[
-                {"role": "system", "content": system_instruction},
-                {"role": "user", "content": full_prompt}
-            ],
-            temperature=0.5
-        )
-
-        if hasattr(response, "choices") and response.choices:
-            ai_reply = response.choices[0].message.content
-            st.success("✅ AI Response:")
-            st.markdown(ai_reply)
-        else:
-            st.error("❌ API call returned no results.")
-            st.json(response.model_dump() if hasattr(response, "model_dump") else str(response))
-
-    except Exception as e:
-        st.error(f"❌ Failed to interpret: {e}")
-
 
 def search_objects_and_groups(searchterm: str):
     results = []
