@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import json
 import ipaddress
+import openai
 from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
@@ -17,45 +18,6 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
-st.markdown("""
-    <style>
-    /* Responsive tweaks for mobile devices */
-    @media only screen and (max-width: 768px) {
-
-        /* Reduce padding on mobile */
-        .block-container {
-            padding: 1rem 0.5rem !important;
-        }
-
-        /* Make buttons and selects full width */
-        button, .stButton>button, .stSelectbox div, .stTextInput input {
-            width: 100% !important;
-        }
-
-        /* Improve visibility for labels */
-        label, h1, h2, h3, h4 {
-            font-size: 1.1rem !important;
-        }
-
-        /* Reduce margins for headings */
-        h1, h2, h3 {
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        /* Resize code blocks */
-        pre code {
-            font-size: 0.9rem;
-        }
-    }
-
-    /* Optional: Smooth section anchors */
-    html {
-        scroll-behavior: smooth;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 # Define default_colours with some example values
 default_colours = {
     "exact_allow": "#09BC8A",
@@ -67,6 +29,36 @@ center_running()
 
 for k, v in default_colours.items():
     st.session_state.setdefault(k, v)
+
+
+client = openai.OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key="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"  # Replace this
+)
+
+def query_openrouter(prompt):
+
+    try:
+        response = client.chat.completions.create(
+            model="anthropic/claude-3.5-haiku",
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": full_prompt}
+            ],
+            temperature=0.5
+        )
+
+        if hasattr(response, "choices") and response.choices:
+            ai_reply = response.choices[0].message.content
+            st.success("✅ AI Response:")
+            st.markdown(ai_reply)
+        else:
+            st.error("❌ API call returned no results.")
+            st.json(response.model_dump() if hasattr(response, "model_dump") else str(response))
+
+    except Exception as e:
+        st.error(f"❌ Failed to interpret: {e}")
+
 
 def search_objects_and_groups(searchterm: str):
     results = []
@@ -174,11 +166,27 @@ def generate_rule_table(rules,
 
         src_ids = rule["srcCidr"].split(",") if rule["srcCidr"] != "Any" else ["Any"]
         dst_ids = rule["destCidr"].split(",") if rule["destCidr"] != "Any" else ["Any"]
-        resolved_src_cidrs = resolve_to_cidrs_supernet_aware(src_ids, object_map, group_map)
-        resolved_dst_cidrs = resolve_to_cidrs_supernet_aware(dst_ids, object_map, group_map)
+        resolved_rule_srcs = resolve_to_cidrs_supernet_aware(rule.get("srcCidr", "").split(","), object_map, group_map)
+        resolved_rule_dsts = resolve_to_cidrs_supernet_aware(rule.get("destCidr", "").split(","), object_map, group_map)
 
-        src_match = True if skip_src_check else any(match_input_to_rule(resolved_src_cidrs, cidr) for cidr in source_cidrs)
-        dst_match = True if skip_dst_check else any(match_input_to_rule(resolved_dst_cidrs, cidr) for cidr in destination_cidrs)
+
+        def any_cidr_match(rule_cidrs, input_cidrs):
+            for input_cidr in input_cidrs:
+                try:
+                    net_input = ipaddress.ip_network(input_cidr, strict=False)
+                except ValueError:
+                    continue
+                for rule_cidr in rule_cidrs:
+                    try:
+                        net_rule = ipaddress.ip_network(rule_cidr, strict=False)
+                        if net_input.subnet_of(net_rule) or net_input == net_rule:
+                            return True
+                    except ValueError:
+                        continue
+            return False
+
+        src_match = True if skip_src_check else any_cidr_match(resolved_rule_srcs, source_cidrs)
+        dst_match = True if skip_dst_check else any_cidr_match(resolved_rule_dsts, destination_cidrs)
 
         skip_proto_check = protocol.strip().lower() == "any"
         if skip_proto_check:
@@ -205,13 +213,14 @@ def generate_rule_table(rules,
         full_match = src_match and dst_match and proto_match and port_match
 
         exact_src = (
-            True if skip_src_check and "0.0.0.0/0" in resolved_src_cidrs
-            else all(is_exact_subnet_match(cidr, resolved_src_cidrs) for cidr in source_cidrs)
+            True if skip_src_check and "0.0.0.0/0" in resolved_rule_srcs
+            else all(is_exact_subnet_match(cidr, resolved_rule_srcs) for cidr in source_cidrs)
         )
         exact_dst = (
-            True if skip_dst_check and "0.0.0.0/0" in resolved_dst_cidrs
-            else all(is_exact_subnet_match(cidr, resolved_dst_cidrs) for cidr in destination_cidrs)
+            True if skip_dst_check and "0.0.0.0/0" in resolved_rule_dsts
+            else all(is_exact_subnet_match(cidr, resolved_rule_dsts) for cidr in destination_cidrs)
         )
+
 
         input_dports_set = set(p.strip() for p in dports_to_loop if p.strip())
         rule_dports_set = set(rule_dports)
@@ -1070,12 +1079,6 @@ if selected_tab == "📘 Overview":
 
 # 🔎 Search Object or Group Tab (Interactive Rebuild)
 elif selected_tab == "🔎 Search Object or Group":
-    with st.expander("📘 About this tab (click to collapse)", expanded=False):
-            st.markdown("""
-            Use this section to explore Object and Group structure.
-            - You can check for invalid or unused Objects and Groups. 
-            - Tha page helps to discover references between elemants of the structure and locations.
-            """)
     toc_sections = []
     from utils.match_logic import build_object_location_map
 
@@ -1203,6 +1206,7 @@ elif selected_tab == "🔎 Search Object or Group":
 
 
     toc_sections.append("🔸 Matching Object Groups")
+    
     st.markdown('<a name="matching_groups"></a>', unsafe_allow_html=True)
     st.subheader("🔸 Matching Object Groups")
 
@@ -1395,9 +1399,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
     object_map = get_object_map(objects_data)
     group_map = get_group_map(st.session_state.get("groups_data", []))
 
-    
-    st.markdown('<a name="top"></a>', unsafe_allow_html=True)
-    st.markdown("---")
+
     # --- Sidebar Controls (Tab-Specific) ---
     with st.sidebar.expander("### ↔️ Traffic Flow", expanded=True):
         #st.markdown("### ↔️ Traffic Flow")
@@ -1503,7 +1505,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         st.markdown(format_boxed("Destination Object", st.session_state["snapshot"]["dst"] or "-"), unsafe_allow_html=True)
                         st.markdown(format_boxed("Destination CIDR", dst_cidr_str), unsafe_allow_html=True)
                         st.markdown(format_boxed("Destination Port", st.session_state["snapshot"]["dst_port"]), unsafe_allow_html=True)
-                        st.markdown(format_boxed("Source Location", dst_locs), unsafe_allow_html=True)
+                        st.markdown(format_boxed("Destination Location", dst_locs), unsafe_allow_html=True)
                     with col3:
                         #st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
                         st.markdown(format_boxed("Protocol", st.session_state["snapshot"]["protocol"]), unsafe_allow_html=True)
@@ -1518,8 +1520,9 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                 st.markdown("---")
                 st.subheader("🧱 Local Firewall Rules")
                 with st.sidebar:
-                    location_filter_title = f"📍 Location Filter ({len(set(loc for loc, _ in local_rule_locations))} found)"
-                    all_locations = sorted(set(loc for loc, _ in local_rule_locations))
+                    location_filter_title = f"📍 Location Filter ({len(local_rule_locations)} found)"
+                    all_locations = sorted(set(local_rule_locations))
+
                     st.session_state.setdefault("selected_local_locations", all_locations)
 
                     with st.expander(location_filter_title, expanded=True):
