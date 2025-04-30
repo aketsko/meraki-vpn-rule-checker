@@ -3,7 +3,6 @@ import pandas as pd
 import requests
 import json
 import ipaddress
-import openai
 from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from utils.helpers import safe_dataframe, get_object_map, get_group_map, id_to_name
