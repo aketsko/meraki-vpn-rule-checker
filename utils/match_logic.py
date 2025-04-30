@@ -44,14 +44,6 @@ def build_object_location_map(objects_data, groups_data, extended_data):
         if matches:
             object_location_map[cidr] = matches
 
-    # ✅ ENSURE EVERY SUBNET is in the map
-    for net, net_name, use_vpn in declared_subnets:
-        cidr_str = str(net)
-        entry = {"network": net_name, "useVpn": use_vpn}
-        object_location_map.setdefault(cidr_str, []).append(entry)
-        all_entries.append(entry)
-
-
     # Match group entries based on member objects
     for group in groups_data:
         group_id = group.get("id")
@@ -70,6 +62,7 @@ def build_object_location_map(objects_data, groups_data, extended_data):
                         entries.append(entry)
         if entries:
             object_location_map[group_key] = entries
+
     # Add fallback for "any"
     if all_entries:
         object_location_map["0.0.0.0/0"] = list({(e["network"], e["useVpn"]): e for e in all_entries}.values())
@@ -125,106 +118,80 @@ def match_input_to_rule(rule_cidrs, input_cidr):
             continue
     return False
 
-
 def find_object_locations(input_list, object_location_map):
+    import ipaddress
+
     results = []
     seen = set()
 
-    for entry in input_list:
-        try:
-            ip_net = ipaddress.ip_network(entry, strict=False)
-        except ValueError:
-            print(f"[WARN] Invalid CIDR/IP in input: {entry}")
-            continue
+    for item in input_list:
+        matches = []
 
-        best_match = None
-        best_len = -1
+        # Direct mapping if available
+        direct = object_location_map.get(item, [])
+        if isinstance(direct, list):
+            matches.extend(direct)
 
-        for cidr, mappings in object_location_map.items():
-            try:
-                net = ipaddress.ip_network(cidr, strict=False)
-                if ip_net.subnet_of(net) or ip_net == net:
-                    if net.prefixlen > best_len:
-                        best_match = mappings
-                        best_len = net.prefixlen
-            except ValueError:
-                continue
+        # Special handling for "any"
+        if item == "0.0.0.0/0":
+            any_match = object_location_map.get("0.0.0.0/0", [])
+            if isinstance(any_match, list):
+                matches.extend(any_match)
 
-        if best_match:
-            print(f"[MATCH] {entry} → {best_len}-bit match")
-            for match in best_match:
-                key = (match["network"], match["useVpn"])
-                if key not in seen:
-                    seen.add(key)
-                    results.append(match)
-        else:
-            print(f"[MISS] {entry} did not match any known subnet")
+        # Avoid fallback to other broader CIDRs unless explicitly needed
+        # Commented this out to prevent false location attribution:
+        # try:
+        #     ip_net = ipaddress.ip_network(item, strict=False)
+        #     for cidr, entries in object_location_map.items():
+        #         try:
+        #             net = ipaddress.ip_network(cidr, strict=False)
+        #             if ip_net.subnet_of(net) or ip_net == net:
+        #                 matches.extend(entries)
+        #         except ValueError:
+        #             continue
+        # except ValueError:
+        #     pass  # skip if not CIDR
+
+        for match in matches:
+            key = (match["network"], match["useVpn"])
+            if key not in seen:
+                seen.add(key)
+                results.append(match)
 
     return {(entry["network"], entry["useVpn"]) for entry in results if isinstance(entry, dict)}
 
 
 
 def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
-    import ipaddress
-
     src_locs = find_object_locations(source_cidrs, obj_location_map)
     dst_locs = find_object_locations(dest_cidrs, obj_location_map)
-    shared_networks = {s[0] for s in src_locs} & {d[0] for d in dst_locs}
-    shared_locs = {(net, True) for net in shared_networks if (net, True) in src_locs or (net, True) in dst_locs}
-    shared_locs |= {(net, False) for net in shared_networks if (net, False) in src_locs or (net, False) in dst_locs}
+    shared_locs = src_locs & dst_locs
 
+    src_vpn_locs = set()
+    dst_vpn_locs = set()
 
-    # Extract VPN-enabled location names
-    src_vpn_locs = {loc for (loc, vpn) in src_locs if vpn}
-    dst_vpn_locs = {loc for (loc, vpn) in dst_locs if vpn}
+    for cidr in source_cidrs:
+        for entry in obj_location_map.get(cidr, []):
+            if isinstance(entry, dict) and entry.get("useVpn"):
+                src_vpn_locs.add(entry.get("network"))
 
-    # Detect if user input is broad
-    def is_supernet_or_any(cidr_list):
-        try:
-            return (
-                "0.0.0.0/0" in cidr_list or
-                any(ipaddress.ip_network(c).prefixlen < 24 for c in cidr_list)
-            )
-        except Exception:
-            return False
+    for cidr in dest_cidrs:
+        for entry in obj_location_map.get(cidr, []):
+            if isinstance(entry, dict) and entry.get("useVpn"):
+                dst_vpn_locs.add(entry.get("network"))
 
-    src_is_supernet = is_supernet_or_any(source_cidrs)
-    dst_is_supernet = is_supernet_or_any(dest_cidrs)
-
-    # Decide if VPN rules are needed
-    vpn_needed = (
-        bool(src_vpn_locs and dst_vpn_locs) and
-        (
-            src_vpn_locs.isdisjoint(dst_vpn_locs) or
-            src_is_supernet or dst_is_supernet
-        )
+    # 🔧 Updated logic:
+    # Show VPN if there is at least one (src,dst) pair with useVpn=True and different locations
+    vpn_needed = any(
+        dst != src and dst in dst_vpn_locs and src in src_vpn_locs
+        for src in src_vpn_locs for dst in dst_vpn_locs
     )
 
-    # Decide if local rules are needed
+    # Show Local if any shared location exists
     local_needed = (
-        bool(shared_locs) or
-        (src_locs and not dst_locs) or
-        (dst_locs and not src_locs) or
-        src_is_supernet or dst_is_supernet
+    bool(shared_locs) or
+        (src_locs and not dst_locs)
     )
-
-
-    # Decide which locations to use for local rule filtering
-    if shared_locs:
-        local_rule_locations = shared_locs
-    elif src_locs and not dst_locs:
-        local_rule_locations = src_locs
-    elif dst_locs and not src_locs:
-        local_rule_locations = dst_locs
-    elif src_is_supernet or dst_is_supernet:
-        local_rule_locations = {
-            (entry["network"], entry["useVpn"])
-            for locs in obj_location_map.values()
-            for entry in locs if isinstance(entry, dict)
-        }
-    else:
-        local_rule_locations = set()
-
 
     return {
         "src_location_map": src_locs,
@@ -232,9 +199,7 @@ def evaluate_rule_scope_from_inputs(source_cidrs, dest_cidrs, obj_location_map):
         "shared_locations": shared_locs,
         "vpn_needed": vpn_needed,
         "local_needed": local_needed,
-        "local_rule_locations": list(local_rule_locations)
     }
-
 
 
 def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
@@ -270,14 +235,14 @@ def resolve_to_cidrs_supernet_aware(id_list, object_map, group_map):
         else:
             try:
                 input_net = ipaddress.ip_network(entry, strict=False)
+                # Only include known networks that are *contained within* the input
                 for known in known_cidrs:
-                    if known.overlaps(input_net):
+                    if known.subnet_of(input_net):
                         resolved.add(str(known))
-                # Always include exact match if registered
+                # Also allow exact matches
                 if input_net in known_cidrs:
                     resolved.add(str(input_net))
             except ValueError:
                 continue
 
     return list(resolved)
-
