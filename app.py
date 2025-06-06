@@ -4527,4 +4527,72 @@ elif selected_tab == "📟 LAN Reports":
 
 
 if selected_tab == "🌐 VLAN Configuration !ADMIN!":
+    if data_loaded:
+    
+        if "preview_tables" not in st.session_state:
+            st.session_state["preview_tables"] = {}
+        if "selected_locations" not in st.session_state:
+            st.session_state["selected_locations"] = []
+        if "show_table" not in st.session_state:
+            st.session_state["show_table"] = False
+        if "rule_type" not in st.session_state:
+            st.session_state["rule_type"] = "Local"
+
+        # Load API data
+        extended_data = st.session_state["extended_data"]
+        objects_data = st.session_state["objects_data"]
+        groups_data = st.session_state["groups_data"]
+        network_details = extended_data["network_details"]
+        network_map = extended_data["network_map"]
+        object_map = {v["name"]: v["id"] for v in objects_data}
+        group_map = {v["name"]: v["id"] for v in groups_data}
+
+        # Construct location list with VPN included
+        network_names = sorted([v["network_name"] for v in network_details.values()])
+        all_locations = ["VPN"] + network_names
+        with st.sidebar.expander("🔑Admin Log-in", expanded=st.session_state.get("expand_login_section", True)):
+            if not st.session_state.get("org_id"):
+                org_id = st.text_input("🆔 Enter your Organization ID", value="", key="org_id_input")
+            else:
+                org_id = st.session_state.get("org_id")
+                st.markdown(f"🆔 Organization ID: `{org_id}`")
+    
+
+            if not st.session_state.get("api_key2"):
+                api_key = st.text_input("🔑 Enter your Meraki API Key", type="password", key="api_key_input")
+                
+            else:
+                api_key = st.session_state.get("api_key2")
+                masked_key = api_key[:4] + "..." + api_key[-4:] if api_key and len(api_key) > 8 else "****"
+                #st.markdown(f"🔑 API Key: `{masked_key}`")
+                st.success("✅ API access confirmed.")
+
+            preview_tables = st.session_state.get("preview_tables", {})
+            rule_type = st.session_state.get("rule_type", "")
+
+            if st.button("🔍 Check API Access", key="check_api_access"):
+                test_url = "https://api.meraki.com/api/v1/organizations"
+                st.session_state["org_id"] = org_id
+                st.session_state["api_key2"] = api_key
+                
+
+                try:
+                    test_resp = requests.get(test_url, headers={"X-Cisco-Meraki-API-Key": api_key})
+                    if test_resp.ok:
+                        st.success("✅ API access confirmed.")
+                        st.session_state["expand_login_section"] = False  # use this in `expanded=...`
+                        st.session_state["expand_location"] = True
+                    else:
+                        st.error(f"❌ Access denied. Status code: {test_resp.status_code}")
+                    rules_data_c, objects_data_c, groups_data_c, fetched_c = fetch_meraki_data(api_key, org_id)
+                    if not rules_data_c == rules_data or not objects_data_c == objects_data or not groups_data_c == groups_data:
+                        st.warning("The local snapshot is outdated, please fetch the Data from API")
+                        rules_data = rules_data_c
+                        objects_data = objects_data_c
+                        groups_data = groups_data_c
+
+                    else:
+                        st.success("✅ Basic Data is up to date.")
+                except Exception as e:
+                    st.error(f"❌ Error checking API access: {e}")    
 
