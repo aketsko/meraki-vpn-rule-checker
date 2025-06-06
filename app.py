@@ -22,7 +22,7 @@ from streamlit_extras.customize_running import center_running
 
 # USER_CREDENTIALS = {
     # "Systemair": "Systemair_2025",
-
+    
 # }
 
 
@@ -77,7 +77,6 @@ st.markdown("""
     <button style='position: fixed; bottom: 20px; center: 0px; z-index: 100000;'>⬆️ Back to Top</button>
     </a>
 """, unsafe_allow_html=True)
-
 
 # Define default_colours with some example values
 default_colours = {
@@ -427,8 +426,6 @@ def resolve_names(cidr_string, object_map, group_map):
         else:
             results.append(cidr)
     return ", ".join(results)
-
-
 
 
 def search_objects_and_groups(searchterm: str):
@@ -1790,7 +1787,6 @@ if selected_tab == "📘 Overview":
 
 # 🔎 Search Object or Group Tab (Interactive Rebuild)
 elif selected_tab == "🔎 Search Object or Group":
-<<<<<<< HEAD
     with st.expander("📘 About this tab (click to collapse)", expanded=False):
             st.markdown("""
             Use this section to explore Objects & Groups structure. Here you can:
@@ -1799,8 +1795,6 @@ elif selected_tab == "🔎 Search Object or Group":
             - see in which rules the Object or Group is used 
             """)
 
-=======
->>>>>>> 79573c2ebe5c023ae8965a8f5963377db7aca4fe
     toc_sections = []
     # from utils.match_logic import build_object_location_map
 
@@ -2181,10 +2175,7 @@ elif selected_tab == "🛡️ Search in Firewall and VPN Rules":
                         st.markdown(format_boxed("Destination CIDR", dst_cidr_str), unsafe_allow_html=True)
                         st.markdown(format_boxed("Destination Port", st.session_state["snapshot"]["dst_port"]), unsafe_allow_html=True)
                         st.markdown(format_boxed("Destination Location", dst_locs), unsafe_allow_html=True)
-<<<<<<< HEAD
                         #st.markdown(format_boxed("Destination Networks", dst_networks), unsafe_allow_html=True)
-=======
->>>>>>> 79573c2ebe5c023ae8965a8f5963377db7aca4fe
                     with col3:
                         #st.markdown("<div style='margin-top:1.8em'></div>", unsafe_allow_html=True)
                         st.markdown(format_boxed("Protocol", st.session_state["snapshot"]["protocol"]), unsafe_allow_html=True)
@@ -4535,5 +4526,5 @@ elif selected_tab == "📟 LAN Reports":
         st.dataframe(styled_trunk_df, use_container_width=True)
 
 
-
+if selected_tab == "🌐 VLAN Configuration !ADMIN!"
 
