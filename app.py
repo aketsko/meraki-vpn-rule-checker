@@ -4594,79 +4594,78 @@ if selected_tab == "🌐 VLAN Configuration !ADMIN!":
         st.error(f"❌ Error checking API access: {e}")    
     # VLAN configuration sidebar and parameters
     with st.sidebar.expander("🎯 Target Locations", expanded=True):
-        if st.button("✅ Select All", key="vlan_sel_all"):
-            st.session_state["selected_locations"] = ["VPN"] + network_names
-        if st.button("❌ Deselect All", key="vlan_desel_all"):
-            st.session_state["selected_locations"] = []
-        st.multiselect("Locations", ["VPN"] + network_names, key="selected_locations")
-    
-    with st.sidebar:
-        st.button("✅ Confirm", key="vlan_confirm")
-        st.button("🔄 Reset", key="vlan_reset")
-        st.button("🚀 Deploy", key="vlan_deploy")
-    
-    selected_locations = st.session_state.get("selected_locations", [])
+            if st.button("✅ Select All", key="vlan_sel_all"):
+                st.session_state["selected_locations"] = ["VPN"] + network_names
+            if st.button("❌ Deselect All", key="vlan_desel_all"):
+                st.session_state["selected_locations"] = []
+            st.multiselect("Locations", ["VPN"] + network_names, key="selected_locations")
+        
+        with st.sidebar:
+            st.button("✅ Confirm", key="vlan_confirm")
+            st.button("🔄 Reset", key="vlan_reset")
+            st.button("🚀 Deploy", key="vlan_deploy")
+        
+        selected_locations = st.session_state.get("selected_locations", [])
         
     with st.expander("➕ Parameters", expanded=True):
-            col_select, col_mode = st.columns([2, 3])
-            with col_mode:
-                vlan_mode = st.radio(
-                    "Mode",
-                    ["ADD", "Delete", "EDIT", "BACKUP", "Restore"],
-                    key="vlan_mode",
-                    horizontal=True,
-                )
-            common_vlan_ids = None
-            vlan_lookup = {}
+        col_select, col_mode = st.columns([2, 3])
+        with col_mode:
+            vlan_mode = st.radio(
+                "Mode",
+                ["ADD", "Delete", "EDIT", "BACKUP", "Restore"],
+                key="vlan_mode",
+                horizontal=True,
+            )
+        common_vlan_ids = None
+        vlan_lookup = {}
+        for loc in selected_locations:
+            if loc == "VPN":
+                continue
+            nid = network_map.get(loc)
+            vlan_list = network_details.get(nid, {}).get("vlans", [])
+            vlan_lookup[loc] = {v.get("id"): v for v in vlan_list}
+            ids = {v.get("id") for v in vlan_list}
+            common_vlan_ids = ids if common_vlan_ids is None else common_vlan_ids & ids
+        vlan_options = sorted(common_vlan_ids) if common_vlan_ids else []
+        with col_select:
+            selected_vlan_id = st.selectbox(
+                "Select VLAN",
+                [""] + vlan_options,
+                key="selected_vlan_id",
+                disabled=vlan_mode not in ["Delete", "EDIT"],
+            )
+        vlan_fields = [
+            "id",
+            "name",
+            "subnet",
+            "applianceIp",
+            "groupPolicyId",
+            "vpnNatSubnet",
+            "useVpn",
+        ]
+        field_values = {}
+        if vlan_mode in ["EDIT", "Delete"] and selected_vlan_id:
+            values_per_field = {f: [] for f in vlan_fields}
             for loc in selected_locations:
                 if loc == "VPN":
                     continue
-                nid = network_map.get(loc)
-                vlan_list = network_details.get(nid, {}).get("vlans", [])
-                vlan_lookup[loc] = {v.get("id"): v for v in vlan_list}
-                ids = {v.get("id") for v in vlan_list}
-                common_vlan_ids = ids if common_vlan_ids is None else common_vlan_ids & ids
-            vlan_options = sorted(common_vlan_ids) if common_vlan_ids else []
-            with col_select:
-                selected_vlan_id = st.selectbox(
-                    "Select VLAN",
-                    [""] + vlan_options,
-                    key="selected_vlan_id",
-                    disabled=vlan_mode not in ["Delete", "EDIT"],
-                )
-            vlan_fields = [
-                "id",
-                "name",
-                "subnet",
-                "applianceIp",
-                "groupPolicyId",
-                "vpnNatSubnet",
-                "useVpn",
-            ]
-            field_values = {}
-            if vlan_mode in ["EDIT", "Delete"] and selected_vlan_id:
-                values_per_field = {f: [] for f in vlan_fields}
-                for loc in selected_locations:
-                    if loc == "VPN":
-                        continue
-                    vlan = vlan_lookup.get(loc, {}).get(selected_vlan_id)
-                    if vlan:
-                        for f in vlan_fields:
-                            values_per_field[f].append(vlan.get(f))
-                for f in vlan_fields:
-                    vals = values_per_field[f]
-                    if vals and all(v == vals[0] for v in vals):
-                        field_values[f] = vals[0]
-                    else:
-                        field_values[f] = "different values"
-            elif vlan_mode == "ADD":
-                field_values = {f: "" for f in vlan_fields}
+                vlan = vlan_lookup.get(loc, {}).get(selected_vlan_id)
+                if vlan:
+                    for f in vlan_fields:
+                        values_per_field[f].append(vlan.get(f))
             for f in vlan_fields:
-                editable = vlan_mode in ["ADD", "EDIT"] and field_values.get(f) != "different values"
-                st.text_input(
-                    f,
-                    value=str(field_values.get(f, "")),
-                    key=f"vlan_field_{f}",
-                    disabled=not editable,
-                )
-
+                vals = values_per_field[f]
+                if vals and all(v == vals[0] for v in vals):
+                    field_values[f] = vals[0]
+                else:
+                    field_values[f] = "different values"
+        elif vlan_mode == "ADD":
+            field_values = {f: "" for f in vlan_fields}
+        for f in vlan_fields:
+            editable = vlan_mode in ["ADD", "EDIT"] and field_values.get(f) != "different values"
+            st.text_input(
+                f,
+                value=str(field_values.get(f, "")),
+                key=f"vlan_field_{f}",
+                disabled=not editable,
+            )
