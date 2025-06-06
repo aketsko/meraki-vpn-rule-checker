@@ -4527,6 +4527,11 @@ elif selected_tab == "📟 LAN Reports":
 
 
 if selected_tab == "🌐 VLAN Configuration !ADMIN!":
+    data_loaded = (
+        st.session_state.get("rules_data")
+        and st.session_state.get("objects_data")
+        and st.session_state.get("extended_data")
+        
     if data_loaded:
     
         if "preview_tables" not in st.session_state:
