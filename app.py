@@ -15,45 +15,45 @@ from PIL import Image
 from st_aggrid import GridUpdateMode
 import streamlit.components.v1 as components
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
-from utils.API import get_api_key
+#from utils.API import get_api_key
 from streamlit_searchbox import st_searchbox
 from streamlit_extras.customize_running import center_running
 
 
-USER_CREDENTIALS = {
-    "Systemair": "Systemair_2025",
-    # Add more users as needed
-}
+# USER_CREDENTIALS = {
+    # "Systemair": "Systemair_2025",
+
+# }
 
 
 
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
+# if "authenticated" not in st.session_state:
+    # st.session_state["authenticated"] = False
 
-if not st.session_state["authenticated"]:
-    logo = Image.open("Logo.png")
+# if not st.session_state["authenticated"]:
+    # logo = Image.open("Logo.png")
     
-    col0,col1,col2 = st.columns([1, 3, 1]) 
-    with col0:
-        st.markdown("")
-    with col1:
-        st.image(logo)    
-    with col2:
-        st.markdown("")
+    # col0,col1,col2 = st.columns([1, 3, 1]) 
+    # with col0:
+        # st.markdown("")
+    # with col1:
+        # st.image(logo)    
+    # with col2:
+        # st.markdown("")
     
 
-    st.markdown("")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
-            st.session_state["authenticated"] = True
-            st.session_state["username"] = username
-            st.session_state["password"] = password
-            st.rerun()
-        else:
-            st.error("❌ Invalid username or password.")
-    st.stop()
+    # st.markdown("")
+    # username = st.text_input("Username")
+    # password = st.text_input("Password", type="password")
+    # if st.button("Login"):
+        # if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+            # st.session_state["authenticated"] = True
+            # st.session_state["username"] = username
+            # st.session_state["password"] = password
+            # st.rerun()
+        # else:
+            # st.error("❌ Invalid username or password.")
+    # st.stop()
 
 
 
