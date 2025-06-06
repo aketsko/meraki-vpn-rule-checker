@@ -4531,7 +4531,7 @@ if selected_tab == "🌐 VLAN Configuration !ADMIN!":
         st.session_state.get("rules_data")
         and st.session_state.get("objects_data")
         and st.session_state.get("extended_data")
-        
+    )
     if data_loaded:
     
         if "preview_tables" not in st.session_state:
