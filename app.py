@@ -1199,8 +1199,8 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-logo = Image.open("Logo.png")
-st.sidebar.image(logo)
+#logo = Image.open("Logo.png")
+#st.sidebar.image(logo)
 st.sidebar.header("Meraki SDWAN Analysis Toolkit V1.1")
 
 #st.sidebar.header("☰ Menu")
