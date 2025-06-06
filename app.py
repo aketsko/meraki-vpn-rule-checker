@@ -4526,5 +4526,5 @@ elif selected_tab == "📟 LAN Reports":
         st.dataframe(styled_trunk_df, use_container_width=True)
 
 
-if selected_tab == "🌐 VLAN Configuration !ADMIN!"
+if selected_tab == "🌐 VLAN Configuration !ADMIN!":
 
