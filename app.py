@@ -64,7 +64,6 @@ st.set_page_config(
     page_icon="🛡️",
     initial_sidebar_state="expanded"
 )
-<<<<<<< HEAD
 
 st.markdown('<a name="top"></a>', unsafe_allow_html=True)
 
@@ -79,8 +78,7 @@ st.markdown("""
     </a>
 """, unsafe_allow_html=True)
 
-=======
->>>>>>> 79573c2ebe5c023ae8965a8f5963377db7aca4fe
+
 # Define default_colours with some example values
 default_colours = {
     "exact_allow": "#09BC8A",
