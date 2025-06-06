@@ -957,6 +957,7 @@ def fetch_meraki_data_extended(update_progress=None, base_url="https://api.merak
                 "network_name": network_name,
                 "vpn_settings": vpn_data,
                 "firewall_rules": rules_data.get("rules", [])
+                "vlans": vlan_data,
             }
 
         # Rebuild location mapping based on resolved subnets
@@ -4527,55 +4528,6 @@ elif selected_tab == "📟 LAN Reports":
 
 
 if selected_tab == "🌐 VLAN Configuration !ADMIN!":
-    data_loaded = (
-        st.session_state.get("rules_data")
-        and st.session_state.get("objects_data")
-        and st.session_state.get("extended_data")
-    )
-    if data_loaded:
-    
-        if "preview_tables" not in st.session_state:
-            st.session_state["preview_tables"] = {}
-        if "selected_locations" not in st.session_state:
-            st.session_state["selected_locations"] = []
-        if "show_table" not in st.session_state:
-            st.session_state["show_table"] = False
-        if "rule_type" not in st.session_state:
-            st.session_state["rule_type"] = "Local"
-
-        # Load API data
-        extended_data = st.session_state["extended_data"]
-        objects_data = st.session_state["objects_data"]
-        groups_data = st.session_state["groups_data"]
-        network_details = extended_data["network_details"]
-        network_map = extended_data["network_map"]
-        object_map = {v["name"]: v["id"] for v in objects_data}
-        group_map = {v["name"]: v["id"] for v in groups_data}
-
-        # Construct location list with VPN included
-        network_names = sorted([v["network_name"] for v in network_details.values()])
-        all_locations = ["VPN"] + network_names
-        with st.sidebar.expander("🔑Admin Log-in", expanded=st.session_state.get("expand_login_section", True)):
-            if not st.session_state.get("org_id"):
-                org_id = st.text_input("🆔 Enter your Organization ID", value="", key="org_id_input")
-            else:
-                org_id = st.session_state.get("org_id")
-                st.markdown(f"🆔 Organization ID: `{org_id}`")
-    
-
-            if not st.session_state.get("api_key2"):
-                api_key = st.text_input("🔑 Enter your Meraki API Key", type="password", key="api_key_input")
-                
-            else:
-                api_key = st.session_state.get("api_key2")
-                masked_key = api_key[:4] + "..." + api_key[-4:] if api_key and len(api_key) > 8 else "****"
-                #st.markdown(f"🔑 API Key: `{masked_key}`")
-                st.success("✅ API access confirmed.")
-
-            preview_tables = st.session_state.get("preview_tables", {})
-            rule_type = st.session_state.get("rule_type", "")
-
-            if st.button("🔍 Check API Access", key="check_api_access"):
                 test_url = "https://api.meraki.com/api/v1/organizations"
                 st.session_state["org_id"] = org_id
                 st.session_state["api_key2"] = api_key
@@ -4601,3 +4553,80 @@ if selected_tab == "🌐 VLAN Configuration !ADMIN!":
                 except Exception as e:
                     st.error(f"❌ Error checking API access: {e}")    
 
+        # VLAN configuration sidebar and parameters
+        with st.sidebar.expander("🎯 Target Locations", expanded=True):
+            if st.button("✅ Select All", key="vlan_sel_all"):
+                st.session_state["selected_locations"] = ["VPN"] + network_names
+            if st.button("❌ Deselect All", key="vlan_desel_all"):
+                st.session_state["selected_locations"] = []
+            st.multiselect("Locations", ["VPN"] + network_names, key="selected_locations")
+        
+        with st.sidebar:
+            st.button("✅ Confirm", key="vlan_confirm")
+            st.button("🔄 Reset", key="vlan_reset")
+            st.button("🚀 Deploy", key="vlan_deploy")
+        
+        selected_locations = st.session_state.get("selected_locations", [])
+        
+        with st.expander("➕ Parameters", expanded=True):
+            col_select, col_mode = st.columns([2, 3])
+            with col_mode:
+                vlan_mode = st.radio(
+                    "Mode",
+                    ["ADD", "Delete", "EDIT", "BACKUP", "Restore"],
+                    key="vlan_mode",
+                    horizontal=True,
+                )
+            common_vlan_ids = None
+            vlan_lookup = {}
+            for loc in selected_locations:
+                if loc == "VPN":
+                    continue
+                nid = network_map.get(loc)
+                vlan_list = network_details.get(nid, {}).get("vlans", [])
+                vlan_lookup[loc] = {v.get("id"): v for v in vlan_list}
+                ids = {v.get("id") for v in vlan_list}
+                common_vlan_ids = ids if common_vlan_ids is None else common_vlan_ids & ids
+            vlan_options = sorted(common_vlan_ids) if common_vlan_ids else []
+            with col_select:
+                selected_vlan_id = st.selectbox(
+                    "Select VLAN",
+                    [""] + vlan_options,
+                    key="selected_vlan_id",
+                    disabled=vlan_mode not in ["Delete", "EDIT"],
+                )
+            vlan_fields = [
+                "id",
+                "name",
+                "subnet",
+                "applianceIp",
+                "groupPolicyId",
+                "vpnNatSubnet",
+                "useVpn",
+            ]
+            field_values = {}
+            if vlan_mode in ["EDIT", "Delete"] and selected_vlan_id:
+                values_per_field = {f: [] for f in vlan_fields}
+                for loc in selected_locations:
+                    if loc == "VPN":
+                        continue
+                    vlan = vlan_lookup.get(loc, {}).get(selected_vlan_id)
+                    if vlan:
+                        for f in vlan_fields:
+                            values_per_field[f].append(vlan.get(f))
+                for f in vlan_fields:
+                    vals = values_per_field[f]
+                    if vals and all(v == vals[0] for v in vals):
+                        field_values[f] = vals[0]
+                    else:
+                        field_values[f] = "different values"
+            elif vlan_mode == "ADD":
+                field_values = {f: "" for f in vlan_fields}
+            for f in vlan_fields:
+                editable = vlan_mode in ["ADD", "EDIT"] and field_values.get(f) != "different values"
+                st.text_input(
+                    f,
+                    value=str(field_values.get(f, "")),
+                    key=f"vlan_field_{f}",
+                    disabled=not editable,
+                )
