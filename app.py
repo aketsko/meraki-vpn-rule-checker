@@ -8306,6 +8306,7 @@ if selected_tab == "📦 Policy Object/Group Management !ADMIN!":
                 st.warning(f"Objects with FQDN and CIDR can't be grouped together! Affected groups: {', '.join(violating_groups)}")
             
             
+            
 
             new_objects = []
             new_grps = []
